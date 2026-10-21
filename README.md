@@ -9,7 +9,7 @@ Mesa virtual (VTT) para jugar a rol online con amigos, inspirada en Roll20. Pens
 | 1 | Base: cuentas, partidas, invitaciones, roles DM/jugador, presencia en tiempo real, Docker | ✅ |
 | 2 | Tablero en tiempo real: mapas, cuadrícula, tokens, capas y niebla de guerra | ✅ |
 | 3 | Hojas de personaje editables (plantilla D&D 5e, sistema intercambiable) | ✅ |
-| 4 | Chat, dados, iniciativa y guía para conectarse desde fuera | ⏳ |
+| 4 | Chat, dados, iniciativa y guía para conectarse desde fuera | ✅ |
 
 ## Instalar en la Raspberry Pi 5
 
@@ -38,7 +38,7 @@ Abre `http://IP-DE-LA-PI:3000` desde cualquier equipo de tu red. La primera comp
 - **Ver logs:** `docker compose logs -f`
 - **Copia de seguridad:** todo se guarda en la carpeta `data/`. Copiarla es suficiente.
 
-> La guía para que tus amigos entren desde fuera de casa (dominio, HTTPS, túnel) llega en el paso 4.
+> **Para que tus amigos entren desde su casa** sigue [`docs/ACCESO_EXTERNO.md`](docs/ACCESO_EXTERNO.md). La opción recomendada (Tailscale Funnel) es gratis y no hace falta tocar el router. Ahí también se explica cómo hacer copias de seguridad.
 
 ## Cómo se usa el tablero
 
@@ -62,6 +62,12 @@ Abre `http://IP-DE-LA-PI:3000` desde cualquier equipo de tu red. La primera comp
 - **Plantilla editable** (*⚙ Editar plantilla de hoja*): cambia secciones, campos, fórmulas y tiradas; carga otro sistema de serie, o importa y exporta la plantilla en JSON. La 5e viene de serie, pero nada está fijo en el código.
 
 Ejemplos de fórmulas: `floor((fue - 10) / 2)`, `if(sigilo_comp, competencia, 0)`. Ejemplos de tiradas: `1d20 + @{fue_mod}`, `2d20kh1 + 5` (ventaja), `@{dano}` (tira lo que haya escrito en el campo "dano").
+
+## Chat, tiradas e iniciativa
+
+- **Chat** (pestaña por defecto): escribe normal o usa comandos: `/r 1d20+5 Ataque`, `/gr 1d20` (secreta para el DM), `/w Ana texto` (susurro), `/em se esconde`. Con ↑ recuperas lo último que enviaste, y el selector permite hablar como tu personaje.
+- Todas las tiradas (de la hoja o del chat) quedan guardadas en el chat.
+- **Iniciativa**: el DM añade tokens (los de la capa DM entran ocultos) y pulsa *Empezar*. Los jugadores entran tirando *Iniciativa* desde su hoja. El token al que le toca se resalta en el tablero, y cada jugador puede terminar su propio turno.
 
 ## Desarrollo
 

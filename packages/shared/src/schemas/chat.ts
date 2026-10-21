@@ -1,0 +1,55 @@
+import type { DiceRoll } from '../expr.js';
+
+export type ChatKind = 'text' | 'emote' | 'roll' | 'system';
+
+export interface ChatRoll {
+  label: string;
+  expression: string;
+  total: number;
+  rolls: DiceRoll[];
+}
+
+export interface ChatMessage {
+  id: string;
+  campaignId: string;
+  userId: string;
+  userName: string;
+  /** Si habla o tira como un personaje. */
+  characterId: string | null;
+  characterName: string | null;
+  kind: ChatKind;
+  text: string;
+  roll: ChatRoll | null;
+  /** Si no es null, solo lo ven estos usuarios (y quien lo envía). */
+  whisperTo: string[] | null;
+  /** Tirada secreta para el DM. */
+  secret: boolean;
+  createdAt: string;
+}
+
+export interface InitiativeEntry {
+  id: string;
+  name: string;
+  value: number;
+  /** Token del tablero al que corresponde (para resaltarlo). */
+  itemId: string | null;
+  characterId: string | null;
+  /** Oculto a los jugadores (monstruos que aún no han aparecido). */
+  hidden: boolean;
+}
+
+export interface InitiativeState {
+  campaignId: string;
+  entries: InitiativeEntry[];
+  /** Índice del turno actual dentro de `entries`. */
+  turn: number;
+  round: number;
+  active: boolean;
+}
+
+export const CHAT_HELP = [
+  ['/r 1d20+5 Ataque', 'Tirar dados (lo que va detrás de la tirada es la etiqueta)'],
+  ['/gr 1d20', 'Tirada secreta (solo la ves tú y el DM)'],
+  ['/w Ana texto', 'Susurrar a alguien (por su nombre visible)'],
+  ['/em se esconde', 'Acción en tercera persona'],
+] as const;

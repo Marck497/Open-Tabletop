@@ -5,6 +5,7 @@ import useImage from 'use-image';
 import { assetUrl, createResolver, type BoardItem, type BoardLayer, type Fog, type Scene } from '@vtt/shared';
 import { useSheets } from '../sheets/store';
 import { addCharacterToken } from '../sheets/tokens';
+import { useActiveItemId } from '../initiative/store';
 import { emitAck, getSocket } from '../../core/socket';
 import { useBoard } from './store';
 
@@ -31,6 +32,7 @@ export function Board({ isGm, meId }: Props) {
   const tool = useBoard((s) => s.tool);
   const activeLayer = useBoard((s) => s.activeLayer);
   const select = useBoard((s) => s.select);
+  const activeItemId = useActiveItemId();
 
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
@@ -137,6 +139,7 @@ export function Board({ isGm, meId }: Props) {
     interactive: !fogTool && (isGm ? item.layer === activeLayer : item.layer === 'token' && item.ownerIds.includes(meId)),
     ghost: item.layer === 'gm',
     transformable: isGm,
+    turn: item.id === activeItemId,
     onSelect: () => select(item.id),
   });
 
@@ -264,10 +267,12 @@ interface ItemNodeProps {
   interactive: boolean;
   ghost: boolean;
   transformable: boolean;
+  /** Es su turno en la iniciativa. */
+  turn: boolean;
   onSelect: () => void;
 }
 
-function ItemNode({ item, scene, selected, interactive, ghost, transformable, onSelect }: ItemNodeProps) {
+function ItemNode({ item, scene, selected, interactive, ghost, transformable, turn, onSelect }: ItemNodeProps) {
   const groupRef = useRef<Konva.Group>(null);
   const trRef = useRef<Konva.Transformer>(null);
   const lastEmit = useRef(0);
@@ -375,6 +380,9 @@ function ItemNode({ item, scene, selected, interactive, ghost, transformable, on
           </>
         )}
         {selected && !interactive && <Rect width={w} height={h} stroke="#d6a84a" strokeWidth={2} />}
+        {turn && (
+          <Circle x={w / 2} y={h / 2} radius={Math.max(w, h) / 2 + 6} stroke="#d6a84a" strokeWidth={4} dash={[10, 6]} shadowColor="#d6a84a" shadowBlur={12} listening={false} />
+        )}
         {bars.map((b, i) => (
           <Group key={i} y={-8 - i * 8} listening={false}>
             <Rect width={w} height={6} fill="rgba(0,0,0,0.6)" cornerRadius={3} />

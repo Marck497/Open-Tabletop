@@ -5,5 +5,6 @@ export * from './schemas/campaign.js';
 export * from './schemas/board.js';
 export * from './schemas/sheet.js';
 export * from './schemas/character.js';
+export * from './schemas/chat.js';
 export * from './systems/index.js';
 export * from './realtime.js';

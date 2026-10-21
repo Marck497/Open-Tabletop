@@ -1,13 +1,13 @@
-import type { RollResult } from '@vtt/shared';
+import type { ChatMessage, ChatRoll } from '@vtt/shared';
 
 /** Muestra una tirada: quién, qué, los dados (los descartados tachados) y el total. */
-export function RollDetail({ roll }: { roll: RollResult }) {
-  const who = roll.characterName ? `${roll.characterName} (${roll.userName})` : roll.userName;
+export function RollDetail({ message, roll }: { message: ChatMessage; roll: ChatRoll }) {
+  const who = message.characterName ? `${message.characterName} (${message.userName})` : message.userName;
   return (
     <div className="roll">
       <div className="roll-head">
         <strong>{who}</strong>
-        {roll.secret && <span className="badge gm">Secreta</span>}
+        {message.secret && <span className="badge gm">Secreta</span>}
       </div>
       {roll.label && <div className="roll-label">{roll.label}</div>}
       <div className="roll-body">
@@ -15,10 +15,10 @@ export function RollDetail({ roll }: { roll: RollResult }) {
           {roll.expression}
           {roll.rolls.length > 0 && ' → '}
           {roll.rolls.map((d, i) => (
-            <span key={i} className="roll-dice">
+            <span key={i} className="roll-dice" title={d.expr}>
               [
               {d.results.map((v, j) => (
-                <span key={j} className={`${d.kept.includes(j) ? '' : 'dropped'} ${v === d.sides ? 'crit' : v === 1 ? 'fumble' : ''}`}>
+                <span key={j} className={`${d.kept.includes(j) ? '' : 'dropped'} ${d.sides === 20 && v === 20 ? 'crit' : d.sides === 20 && v === 1 ? 'fumble' : ''}`}>
                   {j > 0 && ', '}
                   {v}
                 </span>

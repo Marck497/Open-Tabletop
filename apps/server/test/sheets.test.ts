@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { io as connect, type Socket } from 'socket.io-client';
-import type { AckResult, ClientToServerEvents, RollResult, ServerToClientEvents } from '@vtt/shared';
+import type { AckResult, ClientToServerEvents, ChatMessage, ServerToClientEvents } from '@vtt/shared';
 import { listenWithRealtime, registerUser } from './helpers.js';
 
 type Client = Socket<ServerToClientEvents, ClientToServerEvents>;
@@ -106,11 +106,11 @@ describe('tiradas', () => {
     const gmC = client(gm.cookie);
     const plC = client(pl.cookie);
     for (const c of [gmC, plC]) await call(c, 'campaign:join', { campaignId: campaign.id });
-    const seen = new Promise<RollResult>((r) => gmC.once('roll:result', r));
-    const res = await call<RollResult>(plC, 'roll', { campaignId: campaign.id, characterId: pc.id, expression: '1d20 + @{fue_mod}', label: 'Fuerza' });
+    const seen = new Promise<ChatMessage>((r) => gmC.once('chat:message', r));
+    const res = await call<ChatMessage>(plC, 'roll', { campaignId: campaign.id, characterId: pc.id, expression: '1d20 + @{fue_mod}', label: 'Fuerza' });
     if (!res.ok) throw new Error(res.error);
-    expect(res.data.total).toBeGreaterThanOrEqual(1 + 10);
-    expect(res.data.total).toBeLessThanOrEqual(20 + 10);
+    expect(res.data.roll!.total).toBeGreaterThanOrEqual(1 + 10);
+    expect(res.data.roll!.total).toBeLessThanOrEqual(20 + 10);
     expect(res.data.characterName).toBe('Ana');
     expect((await seen).id).toBe(res.data.id);
   });
@@ -120,9 +120,9 @@ describe('tiradas', () => {
     const pc = (await req(gm.cookie, 'POST', `/campaigns/${campaign.id}/characters`, { name: 'A' })).json().character;
     await req(gm.cookie, 'PATCH', `/characters/${pc.id}`, { values: { ataques: [{ _id: 'r1', nombre: 'Daga', bono: '+100', dano: '1d4' }] } });
     const c = client(gm.cookie);
-    const res = await call<RollResult>(c, 'roll', { campaignId: campaign.id, characterId: pc.id, row: { listKey: 'ataques', rowId: 'r1' }, expression: '1d20 + @{bono}' });
+    const res = await call<ChatMessage>(c, 'roll', { campaignId: campaign.id, characterId: pc.id, row: { listKey: 'ataques', rowId: 'r1' }, expression: '1d20 + @{bono}' });
     if (!res.ok) throw new Error(res.error);
-    expect(res.data.total).toBeGreaterThan(100);
+    expect(res.data.roll!.total).toBeGreaterThan(100);
   });
 
   it('no se puede tirar por el personaje de otro; las secretas solo las ve el DM', async () => {
@@ -133,9 +133,9 @@ describe('tiradas', () => {
 
     const gmC = client(gm.cookie);
     for (const c of [gmC, oC]) await call(c, 'campaign:join', { campaignId: campaign.id });
-    const leaked: RollResult[] = [];
-    oC.on('roll:result', (r) => leaked.push(r));
-    const gmSees = new Promise<RollResult>((r) => gmC.once('roll:result', r));
+    const leaked: ChatMessage[] = [];
+    oC.on('chat:message', (r) => leaked.push(r));
+    const gmSees = new Promise<ChatMessage>((r) => gmC.once('chat:message', r));
     const plC = client(pl.cookie);
     await call(plC, 'campaign:join', { campaignId: campaign.id });
     await call(plC, 'roll', { campaignId: campaign.id, expression: '1d20', secret: true });

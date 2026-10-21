@@ -1,30 +1,30 @@
 import { useEffect, useState } from 'react';
-import type { RollResult } from '@vtt/shared';
+import type { ChatMessage } from '@vtt/shared';
 import { getSocket } from '../../core/socket';
 import { RollDetail } from './RollDetail';
 
-const TTL_MS = 8000;
+const TTL_MS = 6000;
 
-/** Avisos flotantes con las últimas tiradas de la mesa. */
+/** Avisos flotantes con las últimas tiradas (útil cuando el chat no está a la vista). */
 export function RollToasts({ campaignId }: { campaignId: string }) {
-  const [rolls, setRolls] = useState<RollResult[]>([]);
+  const [rolls, setRolls] = useState<ChatMessage[]>([]);
 
   useEffect(() => {
     const socket = getSocket();
-    const onRoll = (r: RollResult) => {
-      if (r.campaignId !== campaignId) return;
-      setRolls((list) => [...list.slice(-4), r]);
-      setTimeout(() => setRolls((list) => list.filter((x) => x.id !== r.id)), TTL_MS);
+    const onMessage = (m: ChatMessage) => {
+      if (m.campaignId !== campaignId || m.kind !== 'roll') return;
+      setRolls((list) => [...list.slice(-3), m]);
+      setTimeout(() => setRolls((list) => list.filter((x) => x.id !== m.id)), TTL_MS);
     };
-    socket.on('roll:result', onRoll);
-    return () => void socket.off('roll:result', onRoll);
+    socket.on('chat:message', onMessage);
+    return () => void socket.off('chat:message', onMessage);
   }, [campaignId]);
 
   return (
     <div className="roll-toasts">
-      {rolls.map((r) => (
-        <div key={r.id} className="card roll-toast">
-          <RollDetail roll={r} />
+      {rolls.map((m) => (
+        <div key={m.id} className="card roll-toast">
+          <RollDetail message={m} roll={m.roll!} />
         </div>
       ))}
     </div>

@@ -8,6 +8,8 @@ import { EventEmitter } from 'node:events';
 export interface DomainEvents {
   'campaign:created': [{ campaignId: string; userId: string }];
   'campaign:deleted': [{ campaignId: string }];
+  /** Una tirada marcada como de iniciativa (la recoge el módulo de iniciativa). */
+  'initiative:rolled': [{ campaignId: string; userId: string; characterId: string | null; name: string; value: number }];
   'campaign:memberRemoved': [{ campaignId: string; userId: string }];
 }
 

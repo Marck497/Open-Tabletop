@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm';
 import { index, integer, primaryKey, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
-import type { BoardLayer, Fog, SheetTemplate, SheetValues } from '@vtt/shared';
+import type { BoardLayer, ChatRoll, Fog, InitiativeEntry, SheetTemplate, SheetValues } from '@vtt/shared';
 
 const timestamps = {
   createdAt: text('created_at').notNull().default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ','now'))`),
@@ -146,3 +146,35 @@ export const characters = sqliteTable(
   },
   (t) => [index('characters_campaign_idx').on(t.campaignId)],
 );
+
+export const chatMessages = sqliteTable(
+  'chat_messages',
+  {
+    id: text('id').primaryKey(),
+    campaignId: text('campaign_id')
+      .notNull()
+      .references(() => campaigns.id, { onDelete: 'cascade' }),
+    userId: text('user_id').references(() => users.id, { onDelete: 'set null' }),
+    /** Copia del nombre al enviar: el historial no cambia si alguien se renombra. */
+    userName: text('user_name').notNull(),
+    characterId: text('character_id'),
+    characterName: text('character_name'),
+    kind: text('kind', { enum: ['text', 'emote', 'roll', 'system'] }).notNull(),
+    text: text('text').notNull().default(''),
+    roll: text('roll', { mode: 'json' }).$type<ChatRoll>(),
+    whisperTo: text('whisper_to', { mode: 'json' }).$type<string[]>(),
+    secret: integer('secret', { mode: 'boolean' }).notNull().default(false),
+    ...timestamps,
+  },
+  (t) => [index('chat_campaign_created_idx').on(t.campaignId, t.createdAt)],
+);
+
+export const initiative = sqliteTable('initiative', {
+  campaignId: text('campaign_id')
+    .primaryKey()
+    .references(() => campaigns.id, { onDelete: 'cascade' }),
+  entries: text('entries', { mode: 'json' }).$type<InitiativeEntry[]>().notNull().default([]),
+  turn: integer('turn').notNull().default(0),
+  round: integer('round').notNull().default(1),
+  active: integer('active', { mode: 'boolean' }).notNull().default(false),
+});

@@ -53,6 +53,7 @@ export function CharacterSheet({ character, template, isGm, meId, members, index
       expression: field.roll,
       label: rowName ? `${label}: ${rowName}` : label,
       row: row ? { listKey: row.listKey, rowId: row.row._id } : null,
+      toInitiative: field.initiative ?? false,
     });
   };
 

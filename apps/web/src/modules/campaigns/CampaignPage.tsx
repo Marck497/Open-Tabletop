@@ -8,7 +8,10 @@ import { ScenesPanel } from '../board/ScenesPanel';
 import { Toolbar } from '../board/Toolbar';
 import { useBoard } from '../board/store';
 import { useSceneSync } from '../board/useSceneSync';
+import { ChatPanel } from '../chat/ChatPanel';
 import { RollToasts } from '../dice/RollToasts';
+import { InitiativeTracker } from '../initiative/InitiativeTracker';
+import { useInitiativeSync } from '../initiative/useInitiativeSync';
 import { CharacterSheet } from '../sheets/CharacterSheet';
 import { CharactersPanel } from '../sheets/CharactersPanel';
 import { useSheets } from '../sheets/store';
@@ -18,9 +21,20 @@ import { useCampaign } from './hooks';
 import { InvitePanel } from './InvitePanel';
 import { MembersPanel } from './MembersPanel';
 
+type Tab = 'chat' | 'characters' | 'scenes' | 'table';
+
+const TAB_KEY = 'vtt:sidebarTab';
+function readTab(): Tab {
+  try {
+    return (localStorage.getItem(TAB_KEY) as Tab | null) ?? 'chat';
+  } catch {
+    return 'chat';
+  }
+}
+
 /**
- * Vista principal de una partida ("la mesa"): tablero en el centro y paneles a la derecha.
- * Los futuros módulos (hojas, chat, dados) se montan aquí como paneles nuevos.
+ * Vista principal de una partida ("la mesa"): tablero en el centro y pestañas a la derecha.
+ * Cada módulo nuevo puede añadir aquí su pestaña o su ventana flotante.
  */
 export function CampaignPage() {
   const { id = '' } = useParams();
@@ -41,16 +55,26 @@ export function CampaignPage() {
     socket.on('scene:removed', onRemoved);
     return () => void socket.off('scene:removed', onRemoved);
   }, []);
-  const viewingSceneId = campaign ? (isGm ? gmSceneId ?? campaign.activeSceneId : campaign.activeSceneId) : null;
+  const viewingSceneId = campaign ? (isGm ? (gmSceneId ?? campaign.activeSceneId) : campaign.activeSceneId) : null;
 
   const { error: sceneError } = useSceneSync(viewingSceneId);
   useSheetsSync(id);
+  useInitiativeSync(id);
+  const scene = useBoard((s) => s.scene);
+  const hasSelection = useBoard((s) => Boolean(s.selectedId));
   const template = useSheets((s) => s.template);
   const openSheets = useSheets((s) => s.open);
   const characters = useSheets((s) => s.characters);
   const [editingTemplate, setEditingTemplate] = useState(false);
-  const scene = useBoard((s) => s.scene);
-  const hasSelection = useBoard((s) => Boolean(s.selectedId));
+  const [tab, setTabState] = useState<Tab>(readTab);
+  const setTab = (t: Tab) => {
+    setTabState(t);
+    try {
+      localStorage.setItem(TAB_KEY, t);
+    } catch {
+      /* sin almacenamiento: no pasa nada */
+    }
+  };
 
   useEffect(() => () => useBoard.getState().clear(), []);
 
@@ -62,6 +86,14 @@ export function CampaignPage() {
       </main>
     );
   if (!campaign) return <main className="container muted">Cargando partida…</main>;
+
+  const tabs: { id: Tab; label: string }[] = [
+    { id: 'chat', label: 'Chat' },
+    { id: 'characters', label: 'Personajes' },
+    ...(isGm ? [{ id: 'scenes' as const, label: 'Escenas' }] : []),
+    { id: 'table', label: `Mesa (${online.length})` },
+  ];
+  const activeTab = tabs.some((t) => t.id === tab) ? tab : 'chat';
 
   return (
     <div className="table-layout">
@@ -85,25 +117,42 @@ export function CampaignPage() {
         ) : (
           <div className="board-placeholder">
             <img src="/d20.svg" alt="" width={64} />
-            <p>{isGm ? 'Crea una escena en el panel de la derecha.' : 'El DM todavía no ha abierto ninguna escena.'}</p>
+            <p>{isGm ? 'Crea una escena en la pestaña Escenas.' : 'El DM todavía no ha abierto ninguna escena.'}</p>
           </div>
         )}
+        <InitiativeTracker campaignId={campaign.id} isGm={isGm} meId={me.id} />
         {template &&
           openSheets.map((cid, i) =>
             characters[cid] ? (
               <CharacterSheet key={cid} index={i} character={characters[cid]} template={template} isGm={isGm} meId={me.id} members={campaign.members} />
             ) : null,
           )}
-        <RollToasts campaignId={campaign.id} />
+        {activeTab !== 'chat' && <RollToasts campaignId={campaign.id} />}
       </section>
       <aside className="table-side">
         {isGm && hasSelection && <ItemPanel campaignId={campaign.id} members={campaign.members} />}
-        {isGm && (
-          <ScenesPanel campaignId={campaign.id} activeSceneId={campaign.activeSceneId} viewingId={viewingSceneId} onView={setGmSceneId} />
-        )}
-        <CharactersPanel campaignId={campaign.id} isGm={isGm} meId={me.id} onEditTemplate={() => setEditingTemplate(true)} />
-        <MembersPanel campaign={campaign} online={online} meId={me.id} />
-        {isGm && campaign.inviteCode && <InvitePanel campaignId={campaign.id} inviteCode={campaign.inviteCode} />}
+        <nav className="tabs" role="tablist">
+          {tabs.map((t) => (
+            <button key={t.id} role="tab" aria-selected={activeTab === t.id} className={activeTab === t.id ? 'active' : ''} onClick={() => setTab(t.id)}>
+              {t.label}
+            </button>
+          ))}
+        </nav>
+        <div className="tab-body">
+          {activeTab === 'chat' && <ChatPanel campaignId={campaign.id} isGm={isGm} meId={me.id} members={campaign.members} />}
+          {activeTab === 'characters' && (
+            <CharactersPanel campaignId={campaign.id} isGm={isGm} meId={me.id} onEditTemplate={() => setEditingTemplate(true)} />
+          )}
+          {activeTab === 'scenes' && isGm && (
+            <ScenesPanel campaignId={campaign.id} activeSceneId={campaign.activeSceneId} viewingId={viewingSceneId} onView={setGmSceneId} />
+          )}
+          {activeTab === 'table' && (
+            <>
+              <MembersPanel campaign={campaign} online={online} meId={me.id} />
+              {isGm && campaign.inviteCode && <InvitePanel campaignId={campaign.id} inviteCode={campaign.inviteCode} />}
+            </>
+          )}
+        </div>
       </aside>
       {editingTemplate && template && <TemplateEditor campaignId={campaign.id} template={template} onClose={() => setEditingTemplate(false)} />}
     </div>
