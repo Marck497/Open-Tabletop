@@ -71,6 +71,7 @@ export function createCampaignService(ctx: AppContext) {
       tx.insert(campaigns).values({ id, ...data, ownerId: userId, inviteCode: newInviteCode() }).run();
       tx.insert(campaignMembers).values({ campaignId: id, userId, role: 'gm' }).run();
     });
+    ctx.events.emit('campaign:created', { campaignId: id, userId });
     return get(id, userId);
   }
 
@@ -98,6 +99,7 @@ export function createCampaignService(ctx: AppContext) {
       systemId: c.systemId,
       createdAt: c.createdAt,
       ownerId: c.ownerId,
+      activeSceneId: c.activeSceneId,
       role,
       inviteCode: role === 'gm' ? c.inviteCode : undefined,
       members,
@@ -117,6 +119,7 @@ export function createCampaignService(ctx: AppContext) {
     if (!c || !getRole(campaignId, userId)) throw notFound('Partida no encontrada');
     if (c.ownerId !== userId) throw forbidden('Solo quien creó la partida puede borrarla');
     db.delete(campaigns).where(eq(campaigns.id, campaignId)).run();
+    ctx.events.emit('campaign:deleted', { campaignId });
     notify(campaignId, 'campaign:updated');
   }
 
@@ -160,6 +163,7 @@ export function createCampaignService(ctx: AppContext) {
     db.delete(campaignMembers)
       .where(and(eq(campaignMembers.campaignId, campaignId), eq(campaignMembers.userId, targetId)))
       .run();
+    ctx.events.emit('campaign:memberRemoved', { campaignId, userId: targetId });
     notify(campaignId, 'campaign:membersChanged');
   }
 

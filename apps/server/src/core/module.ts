@@ -4,6 +4,7 @@ import type { ClientToServerEvents, ServerToClientEvents } from '@vtt/shared';
 import type { AppConfig } from '../config.js';
 import type { Db } from '../db/client.js';
 import type { PublicUser } from '@vtt/shared';
+import type { EventBus } from './events.js';
 
 export type IoServer = Server<ClientToServerEvents, ServerToClientEvents, Record<string, never>, SocketData>;
 export type IoSocket = Socket<ClientToServerEvents, ServerToClientEvents, Record<string, never>, SocketData>;
@@ -16,6 +17,7 @@ export interface SocketData {
 export interface AppContext {
   config: AppConfig;
   db: Db;
+  events: EventBus;
   /** Disponible una vez arrancado Socket.IO (no existe en tests sin realtime). */
   io: IoServer | null;
 }
@@ -26,6 +28,8 @@ export interface AppContext {
  */
 export interface ServerModule {
   name: string;
+  /** Se ejecuta una vez al arrancar (p. ej. para escuchar eventos de otros módulos). */
+  init?: (ctx: AppContext) => void;
   /** Rutas HTTP. Se montan bajo `/api`. */
   routes?: (app: FastifyInstance, ctx: AppContext) => void | Promise<void>;
   /** Manejadores de eventos para cada socket autenticado. */

@@ -44,6 +44,7 @@ export function useCampaign(campaignId: string) {
     socket.on('presence:update', onPresence);
     socket.on('campaign:updated', onChanged);
     socket.on('campaign:membersChanged', onChanged);
+    socket.on('scene:activeChanged', onChanged);
     if (socket.connected) onConnect();
 
     return () => {
@@ -53,6 +54,7 @@ export function useCampaign(campaignId: string) {
       socket.off('presence:update', onPresence);
       socket.off('campaign:updated', onChanged);
       socket.off('campaign:membersChanged', onChanged);
+      socket.off('scene:activeChanged', onChanged);
     };
   }, [campaignId, reload]);
 

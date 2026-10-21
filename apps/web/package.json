@@ -12,10 +12,13 @@
   },
   "dependencies": {
     "@vtt/shared": "workspace:*",
+    "konva": "^10.9.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-konva": "^19.3.2",
     "react-router-dom": "^7.9.4",
     "socket.io-client": "^4.8.1",
+    "use-image": "^1.1.4",
     "zustand": "^5.0.8"
   },
   "devDependencies": {

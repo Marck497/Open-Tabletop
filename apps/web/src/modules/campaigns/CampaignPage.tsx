@@ -1,18 +1,47 @@
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { getSocket } from '../../core/socket';
 import { useAuth } from '../auth/store';
+import { Board } from '../board/Board';
+import { ItemPanel } from '../board/ItemPanel';
+import { ScenesPanel } from '../board/ScenesPanel';
+import { Toolbar } from '../board/Toolbar';
+import { useBoard } from '../board/store';
+import { useSceneSync } from '../board/useSceneSync';
 import { useCampaign } from './hooks';
-import { MembersPanel } from './MembersPanel';
 import { InvitePanel } from './InvitePanel';
+import { MembersPanel } from './MembersPanel';
 
 /**
- * Vista principal de una partida ("la mesa"). El área central alojará el tablero
- * y los paneles laterales (hojas, chat, dados) cuando se añadan esos módulos.
+ * Vista principal de una partida ("la mesa"): tablero en el centro y paneles a la derecha.
+ * Los futuros módulos (hojas, chat, dados) se montan aquí como paneles nuevos.
  */
 export function CampaignPage() {
   const { id = '' } = useParams();
   const navigate = useNavigate();
   const me = useAuth((s) => s.user)!;
   const { campaign, error, online, connected } = useCampaign(id);
+  const isGm = campaign?.role === 'gm';
+
+  // El DM puede abrir cualquier escena sin mover a los jugadores; los jugadores ven la activa.
+  const [gmSceneId, setGmSceneId] = useState<string | null>(null);
+  useEffect(() => {
+    if (isGm && !gmSceneId && campaign?.activeSceneId) setGmSceneId(campaign.activeSceneId);
+  }, [isGm, gmSceneId, campaign?.activeSceneId]);
+  useEffect(() => {
+    // Si borran la escena que el DM estaba mirando, volver a la de los jugadores.
+    const onRemoved = ({ sceneId }: { sceneId: string }) => setGmSceneId((cur) => (cur === sceneId ? null : cur));
+    const socket = getSocket();
+    socket.on('scene:removed', onRemoved);
+    return () => void socket.off('scene:removed', onRemoved);
+  }, []);
+  const viewingSceneId = campaign ? (isGm ? gmSceneId ?? campaign.activeSceneId : campaign.activeSceneId) : null;
+
+  const { error: sceneError } = useSceneSync(viewingSceneId);
+  const scene = useBoard((s) => s.scene);
+  const hasSelection = useBoard((s) => Boolean(s.selectedId));
+
+  useEffect(() => () => useBoard.getState().clear(), []);
 
   if (error)
     return (
@@ -23,8 +52,6 @@ export function CampaignPage() {
     );
   if (!campaign) return <main className="container muted">Cargando partida…</main>;
 
-  const isGm = campaign.role === 'gm';
-
   return (
     <div className="table-layout">
       <header className="table-header">
@@ -33,16 +60,29 @@ export function CampaignPage() {
         </button>
         <h1>{campaign.name}</h1>
         <span className={`badge ${campaign.role}`}>{isGm ? 'DM' : 'Jugador'}</span>
+        {scene && <span className="muted scene-title">· {scene.name}</span>}
+        {isGm && scene && scene.id !== campaign.activeSceneId && <span className="badge warn">Los jugadores no ven esta escena</span>}
         <span className={`conn ${connected ? 'on' : 'off'}`}>{connected ? 'Conectado' : 'Reconectando…'}</span>
       </header>
+      {isGm && <Toolbar campaignId={campaign.id} />}
       <section className="table-main">
-        <div className="board-placeholder">
-          <img src="/d20.svg" alt="" width={64} />
-          <p>Aquí irá el tablero.</p>
-          <p className="muted">Sistema de juego: {campaign.systemId}</p>
-        </div>
+        {viewingSceneId ? (
+          <>
+            <Board isGm={isGm} meId={me.id} />
+            {sceneError && <p className="board-error error">{sceneError}</p>}
+          </>
+        ) : (
+          <div className="board-placeholder">
+            <img src="/d20.svg" alt="" width={64} />
+            <p>{isGm ? 'Crea una escena en el panel de la derecha.' : 'El DM todavía no ha abierto ninguna escena.'}</p>
+          </div>
+        )}
       </section>
       <aside className="table-side">
+        {isGm && hasSelection && <ItemPanel campaignId={campaign.id} members={campaign.members} />}
+        {isGm && (
+          <ScenesPanel campaignId={campaign.id} activeSceneId={campaign.activeSceneId} viewingId={viewingSceneId} onView={setGmSceneId} />
+        )}
         <MembersPanel campaign={campaign} online={online} meId={me.id} />
         {isGm && campaign.inviteCode && <InvitePanel campaignId={campaign.id} inviteCode={campaign.inviteCode} />}
       </aside>

@@ -1,0 +1,66 @@
+import { campaignRoom, sceneRoom, type BoardItem, type CampaignRole, type Scene } from '@vtt/shared';
+import type { AppContext, IoSocket } from '../../core/module.js';
+import { createCampaignService } from '../campaigns/service.js';
+import { canSeeItem } from './visibility.js';
+import type { BoardService } from './service.js';
+
+/**
+ * Envía los cambios del tablero a cada socket de la escena según lo que puede ver.
+ * Un mismo cambio puede llegar como "aparece", "cambia" o "desaparece" según el rol.
+ */
+export function createBoardBroadcaster(ctx: AppContext, board: BoardService) {
+  const campaigns = createCampaignService(ctx);
+
+  async function socketsWithRole(scene: Scene) {
+    if (!ctx.io) return [];
+    const sockets = await ctx.io.in(sceneRoom(scene.id)).fetchSockets();
+    const roles = new Map<string, CampaignRole | null>();
+    return sockets.flatMap((s) => {
+      const userId = s.data.user.id;
+      if (!roles.has(userId)) roles.set(userId, campaigns.getRole(scene.campaignId, userId));
+      const role = roles.get(userId);
+      return role ? [{ socket: s, userId, role }] : [];
+    });
+  }
+
+  async function itemChanged(scene: Scene, before: BoardItem | null, after: BoardItem | null) {
+    for (const { socket, userId, role } of await socketsWithRole(scene)) {
+      const seesAfter = after && canSeeItem(after, scene, role, userId);
+      const seesBefore = before && canSeeItem(before, scene, role, userId);
+      if (seesAfter) socket.emit('item:upserted', { sceneId: scene.id, item: after });
+      else if (seesBefore) socket.emit('item:removed', { sceneId: scene.id, id: before.id });
+    }
+  }
+
+  async function itemMoving(scene: Scene, item: BoardItem, x: number, y: number, from: IoSocket) {
+    const moved = { ...item, x, y };
+    for (const { socket, userId, role } of await socketsWithRole(scene)) {
+      if (socket.id === from.id) continue;
+      // Si el token entra o sale de la niebla durante el arrastre, se resuelve al soltarlo.
+      if (canSeeItem(moved, scene, role, userId)) socket.emit('item:moving', { sceneId: scene.id, id: item.id, x, y });
+    }
+  }
+
+  /** Tras cambiar la niebla: el DM recibe la niebla nueva, los jugadores el estado completo refiltrado. */
+  async function fogChanged(scene: Scene) {
+    for (const { socket, userId, role } of await socketsWithRole(scene)) {
+      if (role === 'gm') socket.emit('fog:updated', { sceneId: scene.id, fog: scene.fog });
+      else socket.emit('scene:sync', board.stateFor(scene, { userId, role }));
+    }
+  }
+
+  function sceneUpdated(scene: Scene) {
+    ctx.io?.to(sceneRoom(scene.id)).emit('scene:updated', { scene });
+    ctx.io?.to(campaignRoom(scene.campaignId)).emit('scenes:changed', { campaignId: scene.campaignId });
+  }
+
+  /** Saca de una escena a los jugadores (p. ej. cuando el DM cambia la escena activa). */
+  async function evictPlayers(campaignId: string, sceneId: string) {
+    if (!ctx.io) return;
+    for (const s of await ctx.io.in(sceneRoom(sceneId)).fetchSockets()) {
+      if (campaigns.getRole(campaignId, s.data.user.id) !== 'gm') s.leave(sceneRoom(sceneId));
+    }
+  }
+
+  return { itemChanged, itemMoving, fogChanged, sceneUpdated, evictPlayers };
+}
