@@ -4,7 +4,7 @@
  */
 import type { BoardItem, CreateItemInput, Fog, Scene, SceneState, UpdateItemInput } from './schemas/board.js';
 import type { Character } from './schemas/character.js';
-import type { DiceRoll } from './expr.js';
+import type { ChatMessage, InitiativeEntry, InitiativeState } from './schemas/chat.js';
 
 export interface PresenceUser {
   userId: string;
@@ -15,23 +15,6 @@ export interface PresenceUser {
 export type AckResult<T = undefined> = { ok: true; data: T } | { ok: false; error: string };
 export type Ack<T = undefined> = (res: AckResult<T>) => void;
 
-/** Resultado de una tirada hecha en el servidor (nadie puede falsearla). */
-export interface RollResult {
-  id: string;
-  campaignId: string;
-  userId: string;
-  userName: string;
-  characterId: string | null;
-  characterName: string | null;
-  label: string;
-  expression: string;
-  total: number;
-  rolls: DiceRoll[];
-  /** Solo la ven el DM y quien tira. */
-  secret: boolean;
-  createdAt: string;
-}
-
 export interface RollRequest {
   campaignId: string;
   expression: string;
@@ -41,6 +24,8 @@ export interface RollRequest {
   /** Para tiradas de una fila de tabla (ataques, conjuros...). */
   row?: { listKey: string; rowId: string } | null;
   secret?: boolean;
+  /** Añade el resultado al orden de iniciativa. */
+  toInitiative?: boolean;
 }
 
 export interface ServerToClientEvents {
@@ -65,8 +50,10 @@ export interface ServerToClientEvents {
   'template:updated': (payload: { campaignId: string }) => void;
   'character:upserted': (payload: { character: Character }) => void;
   'character:removed': (payload: { campaignId: string; id: string }) => void;
-  // Dados
-  'roll:result': (payload: RollResult) => void;
+  // Chat, tiradas e iniciativa
+  'chat:message': (payload: ChatMessage) => void;
+  'chat:cleared': (payload: { campaignId: string }) => void;
+  'initiative:updated': (payload: InitiativeState) => void;
 }
 
 export interface ClientToServerEvents {
@@ -80,8 +67,23 @@ export interface ClientToServerEvents {
   'item:moving': (payload: { sceneId: string; id: string; x: number; y: number }) => void;
   'fog:set': (payload: { sceneId: string; fog: Fog }, ack: Ack) => void;
   'fog:add': (payload: { sceneId: string; op: Fog['ops'][number] }, ack: Ack) => void;
-  'roll': (payload: RollRequest, ack: Ack<RollResult>) => void;
+  'roll': (payload: RollRequest, ack: Ack<ChatMessage>) => void;
+  'chat:send': (payload: { campaignId: string; text: string; asCharacterId?: string | null }, ack: Ack<ChatMessage>) => void;
+  'initiative:get': (payload: { campaignId: string }, ack: Ack<InitiativeState>) => void;
+  /** Acciones sobre el orden de iniciativa (las de gestión, solo el DM). */
+  'initiative:action': (payload: { campaignId: string } & InitiativeAction, ack: Ack<InitiativeState>) => void;
 }
+
+export type InitiativeAction =
+  | { type: 'add'; entry: Omit<InitiativeEntry, 'id'> }
+  | { type: 'update'; id: string; patch: Partial<Omit<InitiativeEntry, 'id'>> }
+  | { type: 'remove'; id: string }
+  | { type: 'sort' }
+  | { type: 'next' }
+  | { type: 'prev' }
+  | { type: 'start' }
+  | { type: 'end' }
+  | { type: 'clear' };
 
 /** Nombre de la sala de Socket.IO de una partida. */
 export const campaignRoom = (campaignId: string) => `campaign:${campaignId}`;

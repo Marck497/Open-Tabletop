@@ -39,6 +39,8 @@ const baseField = {
   /** Ancho en columnas de la sección (1 a 6). */
   span: z.number().int().min(1).max(6).optional(),
   hint: z.string().max(200).optional(),
+  /** Al tirar este campo, el resultado entra en el orden de iniciativa. */
+  initiative: z.boolean().optional(),
 };
 
 export interface SheetField {
@@ -52,6 +54,7 @@ export interface SheetField {
   default?: string | number | boolean;
   span?: number;
   hint?: string;
+  initiative?: boolean;
   /** Solo para tablas: columnas de cada fila. */
   columns?: SheetField[];
 }

@@ -95,6 +95,7 @@ export const dnd5eTemplate: SheetTemplateInput = {
           formula: 'des_mod + iniciativa_bono',
           roll: '1d20 + @{iniciativa}',
           rollLabel: 'Iniciativa',
+          initiative: true,
         },
         { key: 'velocidad', label: 'Velocidad (pies)', type: 'number', default: 30 },
         { key: 'pg_max', label: 'PG máximos', type: 'number', default: 10 },

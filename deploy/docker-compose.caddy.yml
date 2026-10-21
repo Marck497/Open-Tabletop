@@ -1,0 +1,15 @@
+# Caddy como proxy HTTPS (con certificado automático) si abres los puertos 80/443 del router.
+# Uso: docker compose -f docker-compose.yml -f deploy/docker-compose.caddy.yml up -d
+services:
+  caddy:
+    image: caddy:2
+    container_name: dnd-vtt-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./data/caddy:/data
+    depends_on:
+      - vtt

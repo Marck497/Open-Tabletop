@@ -1,0 +1,10 @@
+# Túnel de Cloudflare: publica la mesa en tu dominio sin abrir puertos.
+# Uso: docker compose -f docker-compose.yml -f deploy/docker-compose.cloudflare.yml up -d
+services:
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: dnd-vtt-tunnel
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on:
+      - vtt

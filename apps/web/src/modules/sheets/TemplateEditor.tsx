@@ -378,6 +378,12 @@ function FieldForm({ field, onChange, allowList }: { field: SheetField; onChange
           </label>
         </div>
       )}
+      {field.roll && field.type !== 'list' && (
+        <label className="switch">
+          <input type="checkbox" checked={field.initiative ?? false} onChange={(e) => set('initiative', e.target.checked || undefined)} />
+          Esta tirada es la iniciativa (añade al personaje al orden de turnos)
+        </label>
+      )}
       <div className="field-row three">
         {!['computed', 'list'].includes(field.type) && (
           <label>

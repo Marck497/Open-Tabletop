@@ -1,0 +1,6 @@
+# Cambia el dominio por el tuyo (p. ej. mirol.duckdns.org).
+rol.ejemplo.com {
+	encode gzip
+	# Caddy reenvía también los websockets (tiempo real) sin configuración extra.
+	reverse_proxy vtt:3000
+}
