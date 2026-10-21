@@ -80,6 +80,8 @@ export interface ServerToClientEvents {
   'handout:removed': (payload: { campaignId: string; id: string }) => void;
   /** El DM enseña un documento a la mesa: se abre en pantalla a quien pueda verlo. */
   'handout:show': (payload: { campaignId: string; id: string }) => void;
+  /** Han cambiado las macros de la partida (cada uno recarga las que puede ver). */
+  'macros:changed': (payload: { campaignId: string }) => void;
   // Chat, tiradas e iniciativa
   'chat:message': (payload: ChatMessage) => void;
   'chat:cleared': (payload: { campaignId: string }) => void;
