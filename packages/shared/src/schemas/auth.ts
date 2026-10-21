@@ -1,0 +1,28 @@
+import { z } from 'zod';
+
+export const usernameSchema = z
+  .string()
+  .trim()
+  .min(3, 'Mínimo 3 caracteres')
+  .max(32, 'Máximo 32 caracteres')
+  .regex(/^[a-zA-Z0-9_.-]+$/, 'Solo letras, números, "_", "." y "-"');
+
+export const registerSchema = z.object({
+  username: usernameSchema,
+  displayName: z.string().trim().min(1).max(48),
+  password: z.string().min(8, 'Mínimo 8 caracteres').max(200),
+  registrationCode: z.string().optional(),
+});
+export type RegisterInput = z.infer<typeof registerSchema>;
+
+export const loginSchema = z.object({
+  username: z.string().trim().min(1),
+  password: z.string().min(1),
+});
+export type LoginInput = z.infer<typeof loginSchema>;
+
+export interface PublicUser {
+  id: string;
+  username: string;
+  displayName: string;
+}

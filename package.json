@@ -1,0 +1,18 @@
+{
+  "name": "dnd-vtt",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.28.0",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "dev": "pnpm --parallel --filter @vtt/server --filter @vtt/web dev",
+    "build": "pnpm --filter @vtt/web build && pnpm --filter @vtt/server build",
+    "start": "pnpm --filter @vtt/server start",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "db:generate": "pnpm --filter @vtt/server db:generate"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}

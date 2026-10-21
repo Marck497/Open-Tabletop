@@ -1,0 +1,38 @@
+import { z } from 'zod';
+import type { CampaignRole } from '../roles.js';
+import type { PublicUser } from './auth.js';
+
+export const createCampaignSchema = z.object({
+  name: z.string().trim().min(1).max(80),
+  description: z.string().trim().max(2000).default(''),
+  systemId: z.string().trim().min(1).max(64).default('dnd5e'),
+});
+export type CreateCampaignInput = z.input<typeof createCampaignSchema>;
+
+export const updateCampaignSchema = createCampaignSchema.partial();
+export type UpdateCampaignInput = z.input<typeof updateCampaignSchema>;
+
+export const joinCampaignSchema = z.object({
+  inviteCode: z.string().trim().min(4).max(32),
+});
+
+export interface CampaignSummary {
+  id: string;
+  name: string;
+  description: string;
+  systemId: string;
+  role: CampaignRole;
+  createdAt: string;
+}
+
+export interface CampaignMember extends PublicUser {
+  role: CampaignRole;
+  joinedAt: string;
+}
+
+export interface CampaignDetail extends CampaignSummary {
+  ownerId: string;
+  /** Solo se envía al DM. */
+  inviteCode?: string;
+  members: CampaignMember[];
+}

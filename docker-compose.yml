@@ -1,0 +1,15 @@
+services:
+  vtt:
+    build: .
+    image: dnd-vtt:latest
+    container_name: dnd-vtt
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATA_DIR: /data
+    volumes:
+      - ./data:/data
