@@ -49,6 +49,44 @@ async function setup() {
 }
 
 describe('tablero', () => {
+  it('reglas y pings se reenvían a la escena; los del DM pueden ser solo para DM', async () => {
+    const { gm, sceneId, gmC, plC } = await setup();
+    const measure = { shape: 'ruler', points: [{ x: 35, y: 35 }, { x: 315, y: 35 }] };
+    const seen = next(gmC, 'board:measure');
+    plC.emit('board:measure', { sceneId, measure } as never);
+    expect(await seen).toMatchObject({ sceneId, name: 'JUGADOR', measure });
+
+    // Medición secreta del DM: el jugador no la recibe.
+    let leaked = false;
+    plC.on('board:measure', () => (leaked = true));
+    gmC.emit('board:measure', { sceneId, measure, gmOnly: true } as never);
+    await tick();
+    expect(leaked).toBe(false);
+
+    // Un jugador no puede forzar el "centrar vista"; el DM sí.
+    const ping1 = next(gmC, 'board:ping');
+    plC.emit('board:ping', { sceneId, x: 10, y: 20, focus: true });
+    expect(await ping1).toMatchObject({ x: 10, y: 20, focus: false });
+    const ping2 = next(plC, 'board:ping');
+    gmC.emit('board:ping', { sceneId, x: 1, y: 2, focus: true });
+    expect(await ping2).toMatchObject({ userId: gm.user.id, focus: true });
+
+    // Datos inválidos se ignoran sin romper nada.
+    plC.emit('board:measure', { sceneId, measure: { shape: 'nada', points: [] } } as never);
+    // Al desconectarse, su regla desaparece para los demás.
+    const cleared = next(gmC, 'board:measure');
+    plC.close();
+    expect(await cleared).toMatchObject({ measure: null });
+  });
+
+  it('las escenas guardan la distancia por casilla y la regla de diagonales', async () => {
+    const { app, gm, sceneId } = await setup();
+    const res = await app.inject({ method: 'PATCH', url: `/api/scenes/${sceneId}`, headers: { cookie: gm.cookie }, payload: { cellDistance: 1.5, distanceUnit: 'm', diagonalRule: 'alt' } });
+    expect(res.json().scene).toMatchObject({ cellDistance: 1.5, distanceUnit: 'm', diagonalRule: 'alt' });
+    const bad = await app.inject({ method: 'PATCH', url: `/api/scenes/${sceneId}`, headers: { cookie: gm.cookie }, payload: { diagonalRule: 'raro' } });
+    expect(bad.statusCode).toBe(400);
+  });
+
   it('una partida nueva trae una escena activa; el jugador solo ve la activa', async () => {
     const { app, gm, pl, campaign, sceneId } = await setup();
     expect(sceneId).toBeTruthy();

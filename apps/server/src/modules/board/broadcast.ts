@@ -1,4 +1,4 @@
-import { campaignRoom, sceneRoom, type BoardItem, type CampaignRole, type Scene } from '@vtt/shared';
+import { campaignRoom, sceneRoom, type BoardItem, type CampaignRole, type Scene, type ServerToClientEvents } from '@vtt/shared';
 import type { AppContext, IoSocket } from '../../core/module.js';
 import { createCampaignService } from '../campaigns/service.js';
 import { canSeeItem } from './visibility.js';
@@ -62,5 +62,19 @@ export function createBoardBroadcaster(ctx: AppContext, board: BoardService) {
     }
   }
 
-  return { itemChanged, itemMoving, fogChanged, sceneUpdated, evictPlayers };
+  /** Reenvía un evento efímero (regla, ping) al resto de la escena; con `gmOnly`, solo a los DM. */
+  async function relay<K extends 'board:measure' | 'board:ping'>(
+    scene: Scene,
+    from: IoSocket,
+    event: K,
+    payload: Parameters<ServerToClientEvents[K]>[0],
+    gmOnly = false,
+  ) {
+    for (const { socket, role } of await socketsWithRole(scene)) {
+      if (socket.id === from.id || (gmOnly && role !== 'gm')) continue;
+      (socket.emit as (ev: K, p: typeof payload) => void)(event, payload);
+    }
+  }
+
+  return { itemChanged, itemMoving, fogChanged, sceneUpdated, evictPlayers, relay };
 }

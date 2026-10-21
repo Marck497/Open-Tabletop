@@ -29,6 +29,13 @@
       "when": 1792612796613,
       "tag": "0003_chat",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1792624670747,
+      "tag": "0004_scene_distance",
+      "breakpoints": true
     }
   ]
 }

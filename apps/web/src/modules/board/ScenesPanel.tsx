@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { Scene, UpdateSceneInput } from '@vtt/shared';
+import { DIAGONAL_LABELS, DIAGONAL_RULES, type DiagonalRule, type Scene, type UpdateSceneInput } from '@vtt/shared';
 import { api } from '../../core/api';
 import { getSocket } from '../../core/socket';
 
@@ -116,6 +116,40 @@ function SceneSettings({ scene, onDelete }: { scene: Scene; onDelete: () => void
           <input type="color" value={form.backgroundColor} onChange={(e) => setForm({ ...form, backgroundColor: e.target.value })} onBlur={() => save({ backgroundColor: form.backgroundColor })} />
         </label>
       </div>
+      <div className="field-row">
+        <label>
+          Cada casilla son
+          <input
+            type="number"
+            min={0.1}
+            step={0.5}
+            value={form.cellDistance}
+            onChange={(e) => setForm({ ...form, cellDistance: Number(e.target.value) })}
+            onBlur={() => form.cellDistance > 0 && form.cellDistance !== scene.cellDistance && save({ cellDistance: form.cellDistance })}
+          />
+        </label>
+        <label>
+          Unidad
+          <input value={form.distanceUnit} maxLength={16} onChange={(e) => setForm({ ...form, distanceUnit: e.target.value })} onBlur={() => form.distanceUnit !== scene.distanceUnit && save({ distanceUnit: form.distanceUnit })} />
+        </label>
+      </div>
+      <label>
+        Diagonales
+        <select
+          value={form.diagonalRule}
+          onChange={(e) => {
+            const diagonalRule = e.target.value as DiagonalRule;
+            setForm({ ...form, diagonalRule });
+            save({ diagonalRule });
+          }}
+        >
+          {DIAGONAL_RULES.map((r) => (
+            <option key={r} value={r}>
+              {DIAGONAL_LABELS[r]}
+            </option>
+          ))}
+        </select>
+      </label>
       <label className="switch">
         <input
           type="checkbox"

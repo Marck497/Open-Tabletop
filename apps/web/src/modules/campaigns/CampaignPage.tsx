@@ -107,7 +107,7 @@ export function CampaignPage() {
         {isGm && scene && scene.id !== campaign.activeSceneId && <span className="badge warn">Los jugadores no ven esta escena</span>}
         <span className={`conn ${connected ? 'on' : 'off'}`}>{connected ? 'Conectado' : 'Reconectando…'}</span>
       </header>
-      {isGm && <Toolbar campaignId={campaign.id} />}
+      {scene && <Toolbar campaignId={campaign.id} isGm={isGm} />}
       <section className="table-main">
         {viewingSceneId ? (
           <>

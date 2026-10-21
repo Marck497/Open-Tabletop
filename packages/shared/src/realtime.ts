@@ -3,6 +3,7 @@
  * Cada módulo añade aquí sus eventos para que ambos lados compartan los tipos.
  */
 import type { BoardItem, CreateItemInput, Fog, Scene, SceneState, UpdateItemInput } from './schemas/board.js';
+import type { Measure } from './schemas/measure.js';
 import type { Character } from './schemas/character.js';
 import type { ChatMessage, InitiativeEntry, InitiativeState } from './schemas/chat.js';
 
@@ -14,6 +15,13 @@ export interface PresenceUser {
 /** Respuesta estándar de los eventos con acknowledgement. */
 export type AckResult<T = undefined> = { ok: true; data: T } | { ok: false; error: string };
 export type Ack<T = undefined> = (res: AckResult<T>) => void;
+
+/** Quién hizo una medición o un ping. */
+export interface PointerAuthor {
+  userId: string;
+  name: string;
+  color: string;
+}
 
 export interface RollRequest {
   campaignId: string;
@@ -46,6 +54,9 @@ export interface ServerToClientEvents {
   /** Movimiento en curso mientras se arrastra (no se guarda). */
   'item:moving': (payload: { sceneId: string; id: string; x: number; y: number }) => void;
   'fog:updated': (payload: { sceneId: string; fog: Fog }) => void;
+  /** Regla o plantilla de área de otro usuario (null = la ha quitado). */
+  'board:measure': (payload: { sceneId: string } & PointerAuthor & { measure: Measure | null }) => void;
+  'board:ping': (payload: { sceneId: string } & PointerAuthor & { x: number; y: number; focus: boolean }) => void;
   // Hojas
   'template:updated': (payload: { campaignId: string }) => void;
   'character:upserted': (payload: { character: Character }) => void;
@@ -67,6 +78,10 @@ export interface ClientToServerEvents {
   'item:moving': (payload: { sceneId: string; id: string; x: number; y: number }) => void;
   'fog:set': (payload: { sceneId: string; fog: Fog }, ack: Ack) => void;
   'fog:add': (payload: { sceneId: string; op: Fog['ops'][number] }, ack: Ack) => void;
+  /** Comparte la medición en curso (null = quitarla). `gmOnly`: solo la ven los DM. */
+  'board:measure': (payload: { sceneId: string; measure: Measure | null; gmOnly?: boolean }) => void;
+  /** Señala un punto. Con `focus` (solo DM) centra la vista de todos en él. */
+  'board:ping': (payload: { sceneId: string; x: number; y: number; focus?: boolean }) => void;
   'roll': (payload: RollRequest, ack: Ack<ChatMessage>) => void;
   'chat:send': (payload: { campaignId: string; text: string; asCharacterId?: string | null }, ack: Ack<ChatMessage>) => void;
   'initiative:get': (payload: { campaignId: string }, ack: Ack<InitiativeState>) => void;

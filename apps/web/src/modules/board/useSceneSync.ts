@@ -37,6 +37,8 @@ export function useSceneSync(sceneId: string | null) {
       'fog:updated': (p) => p.sceneId === sceneId && board().setFog(p.fog),
       'scene:sync': (p) => p.scene.id === sceneId && board().load(p),
       'scene:updated': (p) => p.scene.id === sceneId && board().setScene(p.scene),
+      'board:measure': ({ sceneId: sid, measure, ...author }) => sid === sceneId && board().setRemoteMeasure(author, measure),
+      'board:ping': ({ sceneId: sid, x, y, focus, ...author }) => sid === sceneId && board().addPing({ ...author, x, y }, focus),
     };
 
     const entries = Object.entries(handlers) as [keyof ServerToClientEvents, (p: unknown) => void][];

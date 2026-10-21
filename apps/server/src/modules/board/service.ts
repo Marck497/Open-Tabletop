@@ -229,6 +229,7 @@ export function createBoardService(ctx: AppContext) {
     deleteScene,
     setActiveScene,
     activeSceneId,
+    access,
     view,
     stateFor,
     createItem,

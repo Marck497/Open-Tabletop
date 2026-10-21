@@ -1,7 +1,17 @@
 import { create } from 'zustand';
-import type { BoardItem, BoardLayer, Fog, Scene, SceneState } from '@vtt/shared';
+import type { BoardItem, BoardLayer, Fog, Measure, MeasureShape, PointerAuthor, Scene, SceneState } from '@vtt/shared';
 
-export type Tool = 'select' | 'fog-reveal' | 'fog-hide';
+export type Tool = 'select' | 'measure' | 'ping' | 'fog-reveal' | 'fog-hide';
+
+export interface RemoteMeasure extends PointerAuthor {
+  measure: Measure;
+}
+
+export interface Ping extends PointerAuthor {
+  id: number;
+  x: number;
+  y: number;
+}
 
 interface BoardState {
   scene: Scene | null;
@@ -14,6 +24,15 @@ interface BoardState {
   moving: Record<string, { x: number; y: number }>;
   /** Centro de la vista actual en coordenadas de escena (para colocar elementos nuevos). */
   viewCenter: { x: number; y: number };
+  /** Forma de la herramienta de medir. */
+  measureShape: MeasureShape;
+  /** Mi medición actual (también la ven los demás). */
+  myMeasure: Measure | null;
+  /** Mediciones de los demás, por usuario. */
+  remoteMeasures: Record<string, RemoteMeasure>;
+  pings: Ping[];
+  /** Petición del DM de centrar la vista en un punto. */
+  focus: { x: number; y: number; n: number } | null;
 
   load: (state: SceneState) => void;
   clear: () => void;
@@ -26,7 +45,14 @@ interface BoardState {
   setTool: (tool: Tool) => void;
   setActiveLayer: (layer: BoardLayer) => void;
   setViewCenter: (c: { x: number; y: number }) => void;
+  setMeasureShape: (shape: MeasureShape) => void;
+  setMyMeasure: (m: Measure | null) => void;
+  setRemoteMeasure: (author: PointerAuthor, m: Measure | null) => void;
+  addPing: (ping: Omit<Ping, 'id'>, focus?: boolean) => void;
 }
+
+let pingSeq = 0;
+const PING_MS = 2000;
 
 export const useBoard = create<BoardState>((set) => ({
   scene: null,
@@ -36,15 +62,21 @@ export const useBoard = create<BoardState>((set) => ({
   activeLayer: 'token',
   moving: {},
   viewCenter: { x: 0, y: 0 },
+  measureShape: 'ruler',
+  myMeasure: null,
+  remoteMeasures: {},
+  pings: [],
+  focus: null,
 
   load: ({ scene, items }) =>
     set((s) => ({
+      ...(s.scene?.id !== scene.id ? { remoteMeasures: {}, myMeasure: null, pings: [] } : {}),
       scene,
       items: Object.fromEntries(items.map((i) => [i.id, i])),
       moving: {},
       selectedId: items.some((i) => i.id === s.selectedId) ? s.selectedId : null,
     })),
-  clear: () => set({ scene: null, items: {}, selectedId: null, moving: {} }),
+  clear: () => set({ scene: null, items: {}, selectedId: null, moving: {}, remoteMeasures: {}, myMeasure: null, pings: [] }),
   setScene: (scene) => set((s) => (s.scene?.id === scene.id ? { scene } : {})),
   setFog: (fog) => set((s) => (s.scene ? { scene: { ...s.scene, fog } } : {})),
   upsert: (item) =>
@@ -66,6 +98,18 @@ export const useBoard = create<BoardState>((set) => ({
   setTool: (tool) => set({ tool, selectedId: null }),
   setActiveLayer: (activeLayer) => set({ activeLayer, selectedId: null }),
   setViewCenter: (viewCenter) => set({ viewCenter }),
+  setMeasureShape: (measureShape) => set({ measureShape, tool: 'measure', selectedId: null }),
+  setMyMeasure: (myMeasure) => set({ myMeasure }),
+  setRemoteMeasure: (author, measure) =>
+    set((s) => {
+      const { [author.userId]: _, ...rest } = s.remoteMeasures;
+      return { remoteMeasures: measure ? { ...rest, [author.userId]: { ...author, measure } } : rest };
+    }),
+  addPing: (ping, focus) => {
+    const id = ++pingSeq;
+    set((s) => ({ pings: [...s.pings, { ...ping, id }], ...(focus ? { focus: { x: ping.x, y: ping.y, n: id } } : {}) }));
+    setTimeout(() => set((s) => ({ pings: s.pings.filter((p) => p.id !== id) })), PING_MS);
+  },
 }));
 
 export const LAYER_LABELS: Record<BoardLayer, string> = { map: 'Mapa', token: 'Tokens', gm: 'DM (oculta)' };
