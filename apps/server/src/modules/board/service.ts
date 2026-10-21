@@ -20,7 +20,7 @@ import {
 } from '@vtt/shared';
 import type { AppContext } from '../../core/module.js';
 import { badRequest, forbidden, notFound } from '../../core/errors.js';
-import { assets, boardItems, campaigns, scenes } from '../../db/schema.js';
+import { assets, boardItems, campaigns, characters, scenes } from '../../db/schema.js';
 import { createCampaignService } from '../campaigns/service.js';
 import { canSeeItem, PLAYER_EDITABLE_FIELDS } from './visibility.js';
 
@@ -142,10 +142,17 @@ export function createBoardService(ctx: AppContext) {
     if (a?.campaignId !== campaignId) throw badRequest('Imagen no válida');
   }
 
+  function checkCharacter(characterId: string | null | undefined, campaignId: string) {
+    if (!characterId) return;
+    const c = db.select({ campaignId: characters.campaignId }).from(characters).where(eq(characters.id, characterId)).get();
+    if (c?.campaignId !== campaignId) throw badRequest('Personaje no válido');
+  }
+
   function createItem(sceneId: string, userId: string, input: CreateItemInput): { scene: Scene; item: BoardItem } {
     const scene = requireGmScene(sceneId, userId);
     const data = createItemSchema.parse(input);
     checkAsset(data.assetId, scene.campaignId);
+    checkCharacter(data.characterId, scene.campaignId);
     const z = data.z ?? (db.select({ m: max(boardItems.z) }).from(boardItems).where(eq(boardItems.sceneId, sceneId)).get()?.m ?? 0) + 1;
     const id = randomUUID();
     db.insert(boardItems).values({ id, sceneId, ...data, z }).run();
@@ -164,6 +171,7 @@ export function createBoardService(ctx: AppContext) {
     const before = toItem(itemRow(sceneId, itemId));
     if (viewer.role !== 'gm') assertPlayerCanEdit(before, scene, viewer, Object.keys(data));
     checkAsset(data.assetId, scene.campaignId);
+    checkCharacter(data.characterId, scene.campaignId);
     if (Object.keys(data).length) db.update(boardItems).set(data).where(eq(boardItems.id, itemId)).run();
     return { scene, before, after: toItem(itemRow(sceneId, itemId)) };
   }

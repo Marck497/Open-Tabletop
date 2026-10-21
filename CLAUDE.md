@@ -7,3 +7,5 @@
 - Lo oculto a jugadores se filtra en el servidor, nunca solo en el cliente.
 - Antes de subir: `pnpm typecheck && pnpm test && pnpm build`.
 - Cambios de esquema: editar `apps/server/src/db/schema.ts` y ejecutar `pnpm db:generate`.
+- Las reglas de juego son datos (plantillas en `packages/shared/src/systems/`), nunca lógica fija: fórmulas y tiradas pasan por `packages/shared/src/expr.ts`.
+- Las tiradas se resuelven siempre en el servidor (módulo `dice`).

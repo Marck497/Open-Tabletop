@@ -8,6 +8,12 @@ import { ScenesPanel } from '../board/ScenesPanel';
 import { Toolbar } from '../board/Toolbar';
 import { useBoard } from '../board/store';
 import { useSceneSync } from '../board/useSceneSync';
+import { RollToasts } from '../dice/RollToasts';
+import { CharacterSheet } from '../sheets/CharacterSheet';
+import { CharactersPanel } from '../sheets/CharactersPanel';
+import { useSheets } from '../sheets/store';
+import { TemplateEditor } from '../sheets/TemplateEditor';
+import { useSheetsSync } from '../sheets/useSheetsSync';
 import { useCampaign } from './hooks';
 import { InvitePanel } from './InvitePanel';
 import { MembersPanel } from './MembersPanel';
@@ -38,6 +44,11 @@ export function CampaignPage() {
   const viewingSceneId = campaign ? (isGm ? gmSceneId ?? campaign.activeSceneId : campaign.activeSceneId) : null;
 
   const { error: sceneError } = useSceneSync(viewingSceneId);
+  useSheetsSync(id);
+  const template = useSheets((s) => s.template);
+  const openSheets = useSheets((s) => s.open);
+  const characters = useSheets((s) => s.characters);
+  const [editingTemplate, setEditingTemplate] = useState(false);
   const scene = useBoard((s) => s.scene);
   const hasSelection = useBoard((s) => Boolean(s.selectedId));
 
@@ -77,15 +88,24 @@ export function CampaignPage() {
             <p>{isGm ? 'Crea una escena en el panel de la derecha.' : 'El DM todavía no ha abierto ninguna escena.'}</p>
           </div>
         )}
+        {template &&
+          openSheets.map((cid, i) =>
+            characters[cid] ? (
+              <CharacterSheet key={cid} index={i} character={characters[cid]} template={template} isGm={isGm} meId={me.id} members={campaign.members} />
+            ) : null,
+          )}
+        <RollToasts campaignId={campaign.id} />
       </section>
       <aside className="table-side">
         {isGm && hasSelection && <ItemPanel campaignId={campaign.id} members={campaign.members} />}
         {isGm && (
           <ScenesPanel campaignId={campaign.id} activeSceneId={campaign.activeSceneId} viewingId={viewingSceneId} onView={setGmSceneId} />
         )}
+        <CharactersPanel campaignId={campaign.id} isGm={isGm} meId={me.id} onEditTemplate={() => setEditingTemplate(true)} />
         <MembersPanel campaign={campaign} online={online} meId={me.id} />
         {isGm && campaign.inviteCode && <InvitePanel campaignId={campaign.id} inviteCode={campaign.inviteCode} />}
       </aside>
+      {editingTemplate && template && <TemplateEditor campaignId={campaign.id} template={template} onClose={() => setEditingTemplate(false)} />}
     </div>
   );
 }

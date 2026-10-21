@@ -1,0 +1,53 @@
+import { assetUrl, type Character } from '@vtt/shared';
+import { api } from '../../core/api';
+import { useSheets } from './store';
+
+/** Lista de personajes que el usuario puede ver ("diario" en Roll20). */
+export function CharactersPanel({ campaignId, isGm, meId, onEditTemplate }: { campaignId: string; isGm: boolean; meId: string; onEditTemplate: () => void }) {
+  const characters = useSheets((s) => s.characters);
+  const openSheet = useSheets((s) => s.openSheet);
+  const list = Object.values(characters).sort((a, b) => a.name.localeCompare(b.name));
+
+  async function create() {
+    const name = prompt(isGm ? 'Nombre del personaje o PNJ' : 'Nombre de tu personaje');
+    if (!name?.trim()) return;
+    const { character } = await api.post<{ character: Character }>(`/campaigns/${campaignId}/characters`, { name: name.trim() });
+    useSheets.getState().upsert(character);
+    openSheet(character.id);
+  }
+
+  return (
+    <div className="panel">
+      <div className="row spread">
+        <h3>Personajes</h3>
+        <button className="ghost small" onClick={() => void create()}>
+          + Nuevo
+        </button>
+      </div>
+      {list.length === 0 && <p className="muted hint">{isGm ? 'Crea los PJ y PNJ de la partida.' : 'Crea tu personaje o pide al DM que te asigne uno.'}</p>}
+      <ul className="character-list">
+        {list.map((c) => (
+          <li key={c.id}>
+            <button
+              className="ghost character-row"
+              onClick={() => openSheet(c.id)}
+              draggable={isGm}
+              onDragStart={(e) => e.dataTransfer.setData('application/x-vtt-character', c.id)}
+              title={isGm ? 'Abrir hoja (arrástralo al tablero para crear su token)' : 'Abrir hoja'}
+            >
+              <span className="avatar small">{c.avatarAssetId ? <img src={assetUrl(c.avatarAssetId)} alt="" /> : c.name.slice(0, 1)}</span>
+              <span className="member-name">{c.name}</span>
+              {isGm && c.controlledBy.length === 0 && <span className="badge">PNJ</span>}
+              {!isGm && c.controlledBy.includes(meId) && <span className="badge gm">Tuyo</span>}
+            </button>
+          </li>
+        ))}
+      </ul>
+      {isGm && (
+        <button className="ghost small" onClick={onEditTemplate}>
+          ⚙ Editar plantilla de hoja
+        </button>
+      )}
+    </div>
+  );
+}

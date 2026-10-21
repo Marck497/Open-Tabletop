@@ -1,25 +1,13 @@
 import { z } from 'zod';
-import { campaignRoom, sceneRoom, type AckResult } from '@vtt/shared';
+import { campaignRoom, sceneRoom } from '@vtt/shared';
 import type { ServerModule } from '../../core/module.js';
-import { AppError } from '../../core/errors.js';
+import { handleAck } from '../../core/socket-utils.js';
 import { requireUser } from '../auth/index.js';
 import { createBoardBroadcaster } from './broadcast.js';
 import { createBoardService } from './service.js';
 
 const campaignParams = z.object({ id: z.string() });
 const sceneParams = z.object({ sceneId: z.string() });
-
-/** Ejecuta un manejador de socket y responde por el ack con datos o con el mensaje de error. */
-async function handle<T>(ack: ((r: AckResult<T>) => void) | undefined, fn: () => Promise<T> | T) {
-  try {
-    const data = await fn();
-    ack?.({ ok: true, data });
-  } catch (err) {
-    const message = err instanceof AppError || err instanceof z.ZodError ? (err instanceof z.ZodError ? 'Datos no válidos' : err.message) : 'Error interno';
-    if (!(err instanceof AppError) && !(err instanceof z.ZodError)) console.error(err);
-    ack?.({ ok: false, error: message });
-  }
-}
 
 /** Tablero: escenas, tokens, capas y niebla de guerra. */
 export const boardModule: ServerModule = {
@@ -93,7 +81,7 @@ export const boardModule: ServerModule = {
     const userId = () => socket.data.user.id;
 
     socket.on('scene:view', (payload, ack) =>
-      handle(ack, async () => {
+      handleAck(ack, async () => {
         const { sceneId } = sceneParams.parse(payload);
         const { viewer: _v, ...state } = board.view(sceneId, userId());
         // Solo se escucha una escena a la vez.
@@ -104,7 +92,7 @@ export const boardModule: ServerModule = {
     );
 
     socket.on('item:create', (payload, ack) =>
-      handle(ack, async () => {
+      handleAck(ack, async () => {
         const { scene, item } = board.createItem(payload.sceneId, userId(), payload.item);
         await broadcast.itemChanged(scene, null, item);
         return item;
@@ -112,7 +100,7 @@ export const boardModule: ServerModule = {
     );
 
     socket.on('item:update', (payload, ack) =>
-      handle(ack, async () => {
+      handleAck(ack, async () => {
         const { scene, before, after } = board.updateItem(payload.sceneId, payload.id, userId(), payload.patch);
         await broadcast.itemChanged(scene, before, after);
         return after;
@@ -120,7 +108,7 @@ export const boardModule: ServerModule = {
     );
 
     socket.on('item:delete', (payload, ack) =>
-      handle(ack, async () => {
+      handleAck(ack, async () => {
         const { scene, before } = board.deleteItem(payload.sceneId, payload.id, userId());
         await broadcast.itemChanged(scene, before, null);
         return undefined;
@@ -136,14 +124,14 @@ export const boardModule: ServerModule = {
     });
 
     socket.on('fog:set', (payload, ack) =>
-      handle(ack, async () => {
+      handleAck(ack, async () => {
         await broadcast.fogChanged(board.setFog(payload.sceneId, userId(), payload.fog));
         return undefined;
       }),
     );
 
     socket.on('fog:add', (payload, ack) =>
-      handle(ack, async () => {
+      handleAck(ack, async () => {
         await broadcast.fogChanged(board.addFogOp(payload.sceneId, userId(), payload.op));
         return undefined;
       }),
