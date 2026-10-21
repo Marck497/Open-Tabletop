@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm';
 import { index, integer, primaryKey, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
-import type { BoardLayer, Fog } from '@vtt/shared';
+import type { BoardLayer, Fog, SheetTemplate, SheetValues } from '@vtt/shared';
 
 const timestamps = {
   createdAt: text('created_at').notNull().default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ','now'))`),
@@ -114,7 +114,35 @@ export const boardItems = sqliteTable(
     name: text('name').notNull().default(''),
     showName: integer('show_name', { mode: 'boolean' }).notNull().default(false),
     ownerIds: text('owner_ids', { mode: 'json' }).$type<string[]>().notNull().default([]),
+    characterId: text('character_id').references(() => characters.id, { onDelete: 'set null' }),
     ...timestamps,
   },
   (t) => [index('board_items_scene_idx').on(t.sceneId)],
+);
+
+/** Plantilla de hoja de cada partida (editable por el DM). */
+export const sheetTemplates = sqliteTable('sheet_templates', {
+  campaignId: text('campaign_id')
+    .primaryKey()
+    .references(() => campaigns.id, { onDelete: 'cascade' }),
+  definition: text('definition', { mode: 'json' }).$type<SheetTemplate>().notNull(),
+  updatedAt: text('updated_at').notNull().default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ','now'))`),
+});
+
+export const characters = sqliteTable(
+  'characters',
+  {
+    id: text('id').primaryKey(),
+    campaignId: text('campaign_id')
+      .notNull()
+      .references(() => campaigns.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    avatarAssetId: text('avatar_asset_id').references(() => assets.id, { onDelete: 'set null' }),
+    controlledBy: text('controlled_by', { mode: 'json' }).$type<string[]>().notNull().default([]),
+    visibleToAll: integer('visible_to_all', { mode: 'boolean' }).notNull().default(false),
+    values: text('values', { mode: 'json' }).$type<SheetValues>().notNull().default({}),
+    ...timestamps,
+    updatedAt: text('updated_at').notNull().default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ','now'))`),
+  },
+  (t) => [index('characters_campaign_idx').on(t.campaignId)],
 );

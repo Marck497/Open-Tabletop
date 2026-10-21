@@ -85,6 +85,8 @@ export const boardItemFields = {
   showName: z.boolean(),
   /** Jugadores que pueden mover este token. */
   ownerIds: z.array(z.string()).max(50),
+  /** Personaje vinculado (su hoja da nombre, imagen y barras al token). */
+  characterId: z.string().nullable(),
 };
 
 export const createItemSchema = z.object({
@@ -96,6 +98,7 @@ export const createItemSchema = z.object({
   name: boardItemFields.name.default(''),
   showName: boardItemFields.showName.default(false),
   ownerIds: boardItemFields.ownerIds.default([]),
+  characterId: boardItemFields.characterId.default(null),
 });
 export const updateItemSchema = z.object(boardItemFields).partial();
 export type CreateItemInput = z.input<typeof createItemSchema>;
@@ -116,6 +119,7 @@ export interface BoardItem {
   name: string;
   showName: boolean;
   ownerIds: string[];
+  characterId: string | null;
 }
 
 /** Lo que recibe un cliente al abrir una escena (ya filtrado según su rol). */

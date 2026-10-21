@@ -4,6 +4,7 @@ import { emitAck } from '../../core/socket';
 import { updateSelected } from './actions';
 import { AssetPicker } from './AssetPicker';
 import { LAYER_LABELS, useBoard } from './store';
+import { useSheets } from '../sheets/store';
 
 /** Propiedades del elemento seleccionado (solo DM). */
 export function ItemPanel({ campaignId, members }: { campaignId: string; members: CampaignMember[] }) {
@@ -11,6 +12,7 @@ export function ItemPanel({ campaignId, members }: { campaignId: string; members
   const scene = useBoard((s) => s.scene);
   const [name, setName] = useState('');
   const [picker, setPicker] = useState(false);
+  const characters = useSheets((s) => s.characters);
 
   useEffect(() => setName(item?.name ?? ''), [item?.id, item?.name]);
   if (!item || !scene) return null;
@@ -63,6 +65,32 @@ export function ItemPanel({ campaignId, members }: { campaignId: string; members
           </label>
         )}
       </div>
+
+      <label>
+        Personaje vinculado
+        <select
+          value={item.characterId ?? ''}
+          onChange={(e) => {
+            const c = e.target.value ? characters[e.target.value] : undefined;
+            // Al vincular, lo pueden mover quienes controlan al personaje.
+            void updateSelected(c ? { characterId: c.id, ownerIds: c.controlledBy } : { characterId: null });
+          }}
+        >
+          <option value="">Ninguno</option>
+          {Object.values(characters)
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+        </select>
+      </label>
+      {item.characterId && characters[item.characterId] && (
+        <button className="ghost small" onClick={() => useSheets.getState().openSheet(item.characterId!)}>
+          Abrir hoja
+        </button>
+      )}
 
       {players.length > 0 && (
         <fieldset className="owners">

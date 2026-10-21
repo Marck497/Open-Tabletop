@@ -2,7 +2,9 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { Circle, Group, Image as KImage, Layer, Rect, Shape, Stage, Text, Transformer } from 'react-konva';
 import type Konva from 'konva';
 import useImage from 'use-image';
-import { assetUrl, type BoardItem, type BoardLayer, type Fog, type Scene } from '@vtt/shared';
+import { assetUrl, createResolver, type BoardItem, type BoardLayer, type Fog, type Scene } from '@vtt/shared';
+import { useSheets } from '../sheets/store';
+import { addCharacterToken } from '../sheets/tokens';
 import { emitAck, getSocket } from '../../core/socket';
 import { useBoard } from './store';
 
@@ -31,6 +33,7 @@ export function Board({ isGm, meId }: Props) {
   const select = useBoard((s) => s.select);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<Konva.Stage>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [view, setView] = useState<Viewport>({ x: 0, y: 0, scale: 1 });
   const [fogDraft, setFogDraft] = useState<{ x0: number; y0: number; x1: number; y1: number } | null>(null);
@@ -138,8 +141,25 @@ export function Board({ isGm, meId }: Props) {
   });
 
   return (
-    <div ref={containerRef} className={`board-container ${fogTool ? 'crosshair' : ''}`}>
+    <div
+      ref={containerRef}
+      className={`board-container ${fogTool ? 'crosshair' : ''}`}
+      onDragOver={(e) => isGm && e.dataTransfer.types.includes('application/x-vtt-character') && e.preventDefault()}
+      onDrop={(e) => {
+        // Soltar un personaje de la lista sobre el tablero crea su token ahí.
+        const id = e.dataTransfer.getData('application/x-vtt-character');
+        const character = useSheets.getState().characters[id];
+        const stage = stageRef.current;
+        if (!isGm || !character || !stage) return;
+        e.preventDefault();
+        stage.setPointersPositions(e);
+        const p = stage.getRelativePointerPosition()!;
+        useBoard.getState().setViewCenter(p);
+        void addCharacterToken(character);
+      }}
+    >
       <Stage
+        ref={stageRef}
         width={size.width}
         height={size.height}
         x={view.x}
@@ -251,7 +271,20 @@ function ItemNode({ item, scene, selected, interactive, ghost, transformable, on
   const groupRef = useRef<Konva.Group>(null);
   const trRef = useRef<Konva.Transformer>(null);
   const lastEmit = useRef(0);
-  const [image] = useImage(item.assetId ? assetUrl(item.assetId) : '');
+  const character = useSheets((s) => (item.characterId ? s.characters[item.characterId] : undefined));
+  const template = useSheets((s) => s.template);
+  const imageId = item.assetId ?? character?.avatarAssetId ?? null;
+  const [image] = useImage(imageId ? assetUrl(imageId) : '');
+  const name = item.name || character?.name || '';
+  const bars = useMemo(() => {
+    if (!character || !template) return [];
+    const resolve = createResolver(template, character.values);
+    return template.bars.map((b) => {
+      const value = Number(resolve(b.value)) || 0;
+      const max = b.max ? Number(resolve(b.max)) || 0 : 0;
+      return { value, max, color: b.color };
+    });
+  }, [character, template]);
   const isGmSelected = selected && interactive && transformable;
 
   useEffect(() => {
@@ -296,7 +329,7 @@ function ItemNode({ item, scene, selected, interactive, ghost, transformable, on
     });
   }
 
-  const initials = item.name
+  const initials = name
     .split(/\s+/)
     .map((p) => p[0])
     .join('')
@@ -323,6 +356,8 @@ function ItemNode({ item, scene, selected, interactive, ghost, transformable, on
           e.cancelBubble = true;
           onSelect();
         }}
+        onDblClick={() => character && useSheets.getState().openSheet(character.id)}
+        onDblTap={() => character && useSheets.getState().openSheet(character.id)}
         onDragStart={(e) => (e.cancelBubble = true)}
         onDragMove={(e) => {
           e.cancelBubble = true;
@@ -340,9 +375,16 @@ function ItemNode({ item, scene, selected, interactive, ghost, transformable, on
           </>
         )}
         {selected && !interactive && <Rect width={w} height={h} stroke="#d6a84a" strokeWidth={2} />}
-        {item.showName && item.name && (
+        {bars.map((b, i) => (
+          <Group key={i} y={-8 - i * 8} listening={false}>
+            <Rect width={w} height={6} fill="rgba(0,0,0,0.6)" cornerRadius={3} />
+            <Rect width={b.max > 0 ? w * Math.max(0, Math.min(1, b.value / b.max)) : w} height={6} fill={b.color} cornerRadius={3} />
+            {b.max > 0 && b.value > b.max && <Rect width={w} height={6} stroke="#fff" strokeWidth={1} cornerRadius={3} />}
+          </Group>
+        ))}
+        {item.showName && name && (
           <Text
-            text={item.name}
+            text={name}
             y={h + 2}
             x={-w}
             width={w * 3}
