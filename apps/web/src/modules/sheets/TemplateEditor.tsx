@@ -2,7 +2,10 @@ import { useState } from 'react';
 import {
   BUILTIN_TEMPLATES,
   combatOf,
+  DND5E_STATUSES,
+  statusesOf,
   type CombatMapping,
+  type StatusDef,
   checkSyntax,
   FIELD_TYPE_LABELS,
   FIELD_TYPES,
@@ -160,6 +163,7 @@ export function TemplateEditor({ campaignId, template, onClose }: Props) {
               </label>
               <BarsEditor template={draft} update={update} />
               <CombatEditor template={draft} update={update} />
+              <StatusesEditor template={draft} update={update} />
             </div>
             <div className="template-layout">
               <nav className="template-sections">
@@ -329,6 +333,56 @@ function CombatEditor({ template, update }: { template: SheetTemplate; update: (
           {col('damage', 'Daño')}
         </div>
       )}
+    </details>
+  );
+}
+
+/** Estados que se pueden marcar en los tokens (condiciones de 5e por defecto). */
+function StatusesEditor({ template, update }: { template: SheetTemplate; update: (fn: (t: SheetTemplate) => void) => void }) {
+  const list = statusesOf(template);
+  const set = (fn: (l: StatusDef[]) => StatusDef[]) => update((t) => void (t.statuses = fn(statusesOf(t).map((d) => ({ ...d })))));
+  const patch = (i: number, p: Partial<StatusDef>) => set((l) => l.map((d, j) => (j === i ? { ...d, ...p } : d)));
+  const slug = (label: string) =>
+    label
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '')
+      .slice(0, 40) || 'estado';
+  function add() {
+    const label = prompt('Nombre del estado');
+    if (!label?.trim()) return;
+    let id = slug(label);
+    while (list.some((d) => d.id === id)) id += '_2';
+    set((l) => [...l, { id, label: label.trim(), icon: '❗', incapacitated: false }]);
+  }
+  return (
+    <details className="help">
+      <summary>Estados de los tokens ({list.length})</summary>
+      <ul className="status-defs">
+        {list.map((d, i) => (
+          <li key={d.id} className="row">
+            <input className="status-icon" value={d.icon} maxLength={8} aria-label="Icono" onChange={(e) => patch(i, { icon: e.target.value || '❗' })} />
+            <input value={d.label} maxLength={40} aria-label="Nombre" onChange={(e) => patch(i, { label: e.target.value })} />
+            <label className="switch" title="La IA se salta el turno de quien lo tenga">
+              <input type="checkbox" checked={d.incapacitated} onChange={(e) => patch(i, { incapacitated: e.target.checked })} />
+              Pierde el turno
+            </label>
+            <button className="ghost small danger" title="Quitar" onClick={() => set((l) => l.filter((_, j) => j !== i))}>
+              ✕
+            </button>
+          </li>
+        ))}
+      </ul>
+      <div className="row">
+        <button className="ghost small" onClick={add}>
+          + Estado
+        </button>
+        <button className="ghost small" onClick={() => set(() => DND5E_STATUSES.map((d) => ({ ...d })))}>
+          Restaurar los de 5e
+        </button>
+      </div>
     </details>
   );
 }

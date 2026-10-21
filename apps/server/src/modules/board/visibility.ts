@@ -19,4 +19,4 @@ export function forViewer(item: BoardItem, role: CampaignRole): BoardItem {
 }
 
 /** Campos que un jugador puede cambiar en un token suyo. */
-export const PLAYER_EDITABLE_FIELDS = new Set(['x', 'y', 'rotation']);
+export const PLAYER_EDITABLE_FIELDS = new Set(['x', 'y', 'rotation', 'statuses']);

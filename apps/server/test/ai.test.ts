@@ -123,6 +123,20 @@ describe('IA de enemigos', () => {
     expect(plC.inbox.some((m) => m.roll?.label.startsWith('Daño a Ana') && !m.roll.label.includes('→'))).toBe(true);
   });
 
+  it('aturdido pierde el turno; un objetivo sin hoja marcado como muerto se ignora', async () => {
+    const { campaign, sceneId, gmC, orc, init } = await setup();
+    await init({ type: 'start' });
+    ok(await call(gmC.c, 'item:update', { sceneId, id: orc.id, patch: { statuses: ['aturdido'] } }));
+    const stunned = ok(await call<AiTurnResult>(gmC.c, 'ai:act', { campaignId: campaign.id }));
+    expect(stunned).toMatchObject({ moved: 0, attacked: false, summary: 'no puede actuar (aturdido)' });
+
+    ok(await call(gmC.c, 'item:update', { sceneId, id: orc.id, patch: { statuses: [] } }));
+    const corpse = ok(await call<BoardItem>(gmC.c, 'item:create', { sceneId, item: { layer: 'token', x: G, y: G, width: G, height: G, name: 'Cadáver', ownerIds: ['x'], statuses: ['muerto'] } }));
+    const res = ok(await call<AiTurnResult>(gmC.c, 'ai:act', { campaignId: campaign.id }));
+    expect(res.summary).toContain('Ana');
+    expect(corpse).toBeTruthy();
+  });
+
   it('un enemigo escondido (capa DM) actúa en secreto', async () => {
     const { campaign, gmC, plC, init } = await setup('gm');
     await init({ type: 'start' });

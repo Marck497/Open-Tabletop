@@ -8,6 +8,7 @@ import {
   ExprError,
   formatDistance,
   planTurn,
+  statusesOf,
   type AiTurnResult,
   type BoardItem,
   type Character,
@@ -186,6 +187,28 @@ export function createAiService(ctx: AppContext) {
     const character = characterOf(item);
     const self = stats(template, character);
     const name = item.name || character?.name || 'Enemigo';
+    const gm = gmUser(campaignId, opts.userId);
+    const base = {
+      campaignId,
+      userId: gm.id,
+      userName: gm.displayName,
+      characterId: character?.id ?? null,
+      characterName: name,
+      whisperTo: null,
+      // Lo que hace un enemigo escondido (capa del DM) solo lo ve el DM.
+      secret: item.layer === 'gm',
+    };
+
+    // Un estado que incapacita (aturdido, paralizado...) le hace perder el turno.
+    const statuses = statusesOf(template);
+    const incapacitatedBy = (i: BoardItem) => statuses.find((d) => d.incapacitated && i.statuses.includes(d.id));
+    const blocked = incapacitatedBy(item);
+    if (blocked) {
+      const summary = `no puede actuar (${blocked.label.toLowerCase()})`;
+      await say(base, 'emote', `${summary}.`, null);
+      return { itemId: item.id, name, summary, moved: 0, attacked: false, hit: null, damage: null };
+    }
+
     const cellOf = (i: BoardItem) => ({ col: Math.round(i.x / g), row: Math.round(i.y / g) });
     const sizeOf = (i: BoardItem) => Math.max(1, Math.round(Math.max(i.width, i.height) / g));
 
@@ -197,7 +220,9 @@ export function createAiService(ctx: AppContext) {
       const ch = characterOf(other);
       const isPlayer = other.layer === 'token' && (other.ownerIds.length > 0 || (ch?.controlledBy.length ?? 0) > 0);
       const st = stats(template, ch);
-      if (isPlayer && !(st.hp !== null && st.hp <= 0)) {
+      // Fuera de combate: a 0 PG o, si no tiene hoja, marcado con un estado que incapacita (p. ej. muerto).
+      const down = st.hp !== null ? st.hp <= 0 : !!incapacitatedBy(other);
+      if (isPlayer && !down) {
         targets.push({ id: other.id, name: other.name || ch?.name || 'alguien', cell: cellOf(other), size: sizeOf(other), hp: st.hp, hpMax: st.hpMax, item: other, character: ch, ac: st.ac });
       } else {
         others.push({ cell: cellOf(other), size: sizeOf(other) });
@@ -216,18 +241,6 @@ export function createAiService(ctx: AppContext) {
       diagonalCost: scene.diagonalRule === '5e' ? 1 : 1.5,
       rng: secureRng,
     });
-
-    const gm = gmUser(campaignId, opts.userId);
-    const base = {
-      campaignId,
-      userId: gm.id,
-      userName: gm.displayName,
-      characterId: character?.id ?? null,
-      characterName: name,
-      whisperTo: null,
-      // Lo que hace un enemigo escondido (capa del DM) solo lo ve el DM.
-      secret: item.layer === 'gm',
-    };
 
     if (plan.path.length) await animate(scene, item, plan.path);
     const moved = plan.path.length;

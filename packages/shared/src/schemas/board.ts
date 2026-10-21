@@ -96,6 +96,8 @@ export const boardItemFields = {
   ownerIds: z.array(z.string()).max(50),
   /** Personaje vinculado (su hoja da nombre, imagen y barras al token). */
   characterId: z.string().nullable(),
+  /** Estados marcados (ids de los estados de la plantilla). */
+  statuses: z.array(z.string().max(40)).max(30),
   /** IA del enemigo (solo la ve el DM). */
   ai: tokenAiSchema.nullable(),
 };
@@ -111,6 +113,7 @@ export const createItemSchema = z.object({
   ownerIds: boardItemFields.ownerIds.default([]),
   characterId: boardItemFields.characterId.default(null),
   ai: boardItemFields.ai.default(null),
+  statuses: boardItemFields.statuses.default([]),
 });
 export const updateItemSchema = z.object(boardItemFields).partial();
 export type CreateItemInput = z.input<typeof createItemSchema>;
@@ -133,6 +136,7 @@ export interface BoardItem {
   ownerIds: string[];
   characterId: string | null;
   ai: TokenAi | null;
+  statuses: string[];
 }
 
 /** Lo que recibe un cliente al abrir una escena (ya filtrado según su rol). */

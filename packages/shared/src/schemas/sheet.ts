@@ -103,6 +103,17 @@ export const combatMappingSchema = z.object({
 });
 export type CombatMapping = z.infer<typeof combatMappingSchema>;
 
+/** Estado que se puede marcar en un token (condiciones de 5e, concentración...). */
+export const statusDefSchema = z.object({
+  id: keySchema,
+  label: z.string().trim().min(1).max(40),
+  /** Emoji o símbolo corto que se dibuja sobre el token. */
+  icon: z.string().trim().min(1).max(8),
+  /** La criatura no puede actuar (la IA se salta su turno y no la ataca si además está a 0 PG). */
+  incapacitated: z.boolean().default(false),
+});
+export type StatusDef = z.infer<typeof statusDefSchema>;
+
 export const sheetTemplateSchema = z
   .object({
     name: z.string().trim().min(1).max(80),
@@ -111,6 +122,8 @@ export const sheetTemplateSchema = z
     /** Barras que se dibujan sobre los tokens vinculados (p. ej. puntos de golpe). */
     bars: z.array(tokenBarSchema).max(3).default([]),
     combat: combatMappingSchema.optional(),
+    /** Estados para los tokens. Si no hay, se usan las condiciones de 5e. */
+    statuses: z.array(statusDefSchema).max(60).optional(),
   })
   .superRefine((t, ctx) => {
     const seen = new Set<string>();

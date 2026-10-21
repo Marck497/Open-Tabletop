@@ -119,6 +119,7 @@ export const boardItems = sqliteTable(
     ownerIds: text('owner_ids', { mode: 'json' }).$type<string[]>().notNull().default([]),
     characterId: text('character_id').references(() => characters.id, { onDelete: 'set null' }),
     ai: text('ai', { mode: 'json' }).$type<TokenAi>(),
+    statuses: text('statuses', { mode: 'json' }).$type<string[]>().notNull().default([]),
     ...timestamps,
   },
   (t) => [index('board_items_scene_idx').on(t.sceneId)],
