@@ -17,7 +17,8 @@ export function AssetPicker({ campaignId, onPick, onClose }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    api.get<{ assets: Asset[] }>(`/campaigns/${campaignId}/assets`).then((r) => setAssets(r.assets), (e) => setError(e.message));
+    // Aquí solo imágenes (el audio se gestiona en la música).
+    api.get<{ assets: Asset[] }>(`/campaigns/${campaignId}/assets`).then((r) => setAssets(r.assets.filter((a) => a.mime.startsWith('image/'))), (e) => setError(e.message));
   }, [campaignId]);
 
   async function onFiles(files: FileList | null) {

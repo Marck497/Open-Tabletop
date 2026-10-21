@@ -7,6 +7,7 @@ import type { Measure } from './schemas/measure.js';
 import type { AiSettings } from './schemas/ai.js';
 import type { Character } from './schemas/character.js';
 import type { Handout } from './schemas/journal.js';
+import type { JukeboxAction, JukeboxState } from './schemas/jukebox.js';
 import type { ChatMessage, InitiativeEntry, InitiativeState } from './schemas/chat.js';
 
 export interface PresenceUser {
@@ -80,6 +81,8 @@ export interface ServerToClientEvents {
   'handout:removed': (payload: { campaignId: string; id: string }) => void;
   /** El DM enseña un documento a la mesa: se abre en pantalla a quien pueda verlo. */
   'handout:show': (payload: { campaignId: string; id: string }) => void;
+  /** Estado de la música; `serverNow` sirve para sincronizar los relojes. */
+  'jukebox:updated': (payload: { state: JukeboxState; serverNow: number }) => void;
   /** Han cambiado las macros de la partida (cada uno recarga las que puede ver). */
   'macros:changed': (payload: { campaignId: string }) => void;
   // Chat, tiradas e iniciativa
@@ -108,6 +111,9 @@ export interface ClientToServerEvents {
   'initiative:get': (payload: { campaignId: string }, ack: Ack<InitiativeState>) => void;
   /** Acciones sobre el orden de iniciativa (las de gestión, solo el DM). */
   'initiative:action': (payload: { campaignId: string } & InitiativeAction, ack: Ack<InitiativeState>) => void;
+  'jukebox:get': (payload: { campaignId: string }, ack: Ack<{ state: JukeboxState; serverNow: number }>) => void;
+  /** Solo DM: poner, parar y ajustar pistas. */
+  'jukebox:action': (payload: { campaignId: string } & JukeboxAction, ack: Ack) => void;
   /** Solo DM: el token del turno actual (o `itemId`) juega su turno con la IA. */
   'ai:act': (payload: { campaignId: string; itemId?: string | null }, ack: Ack<AiTurnResult>) => void;
 }

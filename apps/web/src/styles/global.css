@@ -289,3 +289,12 @@ textarea { resize: vertical; }
 .macro-name { flex: none; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .macro-cmd { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.8rem; color: var(--muted); }
 .macro-form textarea { width: 100%; font-family: ui-monospace, monospace; }
+
+/* Música */
+.volume-row { flex-wrap: nowrap; gap: 6px; }
+.volume-row input[type='range'], .track-list input[type='range'] { flex: 1; min-width: 60px; padding: 0; }
+.track-list { list-style: none; padding: 0; margin: 8px 0; display: flex; flex-direction: column; gap: 3px; }
+.track-list li { display: flex; align-items: center; gap: 6px; padding: 2px 4px; border-radius: 6px; }
+.track-list li.playing { background: rgba(214, 168, 74, 0.15); }
+.track-name { flex: 2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.9rem; }
+.sound-unlock { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); z-index: 60; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5); }

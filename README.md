@@ -76,6 +76,12 @@ Ejemplos de fórmulas: `floor((fue - 10) / 2)`, `if(sigilo_comp, competencia, 0)
 - Todas las tiradas (de la hoja o del chat) quedan guardadas en el chat.
 - **Iniciativa**: el DM añade tokens (los de la capa DM entran ocultos) y pulsa *Empezar*. Los jugadores entran tirando *Iniciativa* desde su hoja. El token al que le toca se resalta en el tablero, y cada jugador puede terminar su propio turno.
 
+## Música y ambiente
+
+- En la pestaña **Mesa**, el DM sube audio (MP3, OGG, WAV, M4A, FLAC; máx. 25 MB) y pulsa ▶. Suena a la vez para toda la mesa, sincronizado: quien entra tarde lo oye por donde va.
+- Pueden sonar varias pistas a la vez (música + lluvia), cada una con su volumen y en bucle o una sola vez.
+- Cada jugador ajusta su propio volumen o silencia. Si el navegador bloquea el sonido, aparece un botón **🔈 Activar sonido**.
+
 ## Macros
 
 - **⚙ Macros** (arriba a la derecha del tablero): botones con una o varias líneas de chat, como `/em desenvaina` o `/r 1d20 + @{fue_mod} + @{competencia} Ataque`.

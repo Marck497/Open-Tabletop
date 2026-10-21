@@ -17,6 +17,8 @@ import { HandoutWindow } from '../journal/HandoutWindow';
 import { JournalPanel } from '../journal/JournalPanel';
 import { useJournalSync } from '../journal/useJournalSync';
 import { MacroBar } from '../macros/MacroBar';
+import { JukeboxPanel } from '../jukebox/JukeboxPanel';
+import { JukeboxPlayer } from '../jukebox/JukeboxPlayer';
 import { CharacterSheet } from '../sheets/CharacterSheet';
 import { CharactersPanel } from '../sheets/CharactersPanel';
 import { useSheets } from '../sheets/store';
@@ -159,11 +161,13 @@ export function CampaignPage() {
           {activeTab === 'table' && (
             <>
               <MembersPanel campaign={campaign} online={online} meId={me.id} />
+              <JukeboxPanel campaignId={campaign.id} isGm={isGm} />
               {isGm && campaign.inviteCode && <InvitePanel campaignId={campaign.id} inviteCode={campaign.inviteCode} />}
             </>
           )}
         </div>
       </aside>
+      <JukeboxPlayer campaignId={campaign.id} />
       <HandoutWindow campaignId={campaign.id} isGm={isGm} members={campaign.members} />
       {editingTemplate && template && <TemplateEditor campaignId={campaign.id} template={template} onClose={() => setEditingTemplate(false)} />}
     </div>

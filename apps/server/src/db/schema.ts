@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm';
 import { index, integer, primaryKey, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
-import type { AiSettings, BoardLayer, Drawing, ChatRoll, TokenAi, Fog, InitiativeEntry, SheetTemplate, SheetValues } from '@vtt/shared';
+import type { AiSettings, BoardLayer, Drawing, JukeboxTrack, ChatRoll, TokenAi, Fog, InitiativeEntry, SheetTemplate, SheetValues } from '@vtt/shared';
 
 const timestamps = {
   createdAt: text('created_at').notNull().default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ','now'))`),
@@ -226,3 +226,10 @@ export const macros = sqliteTable(
   },
   (t) => [index('macros_campaign_idx').on(t.campaignId)],
 );
+
+export const jukebox = sqliteTable('jukebox', {
+  campaignId: text('campaign_id')
+    .primaryKey()
+    .references(() => campaigns.id, { onDelete: 'cascade' }),
+  tracks: text('tracks', { mode: 'json' }).$type<JukeboxTrack[]>().notNull().default([]),
+});
