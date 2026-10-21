@@ -184,3 +184,23 @@ export const initiative = sqliteTable('initiative', {
   active: integer('active', { mode: 'boolean' }).notNull().default(false),
   ai: text('ai', { mode: 'json' }).$type<AiSettings>().notNull().default({ auto: false, applyDamage: true }),
 });
+
+export const handouts = sqliteTable(
+  'handouts',
+  {
+    id: text('id').primaryKey(),
+    campaignId: text('campaign_id')
+      .notNull()
+      .references(() => campaigns.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    body: text('body').notNull().default(''),
+    imageAssetId: text('image_asset_id').references(() => assets.id, { onDelete: 'set null' }),
+    gmNotes: text('gm_notes').notNull().default(''),
+    visibleToAll: integer('visible_to_all', { mode: 'boolean' }).notNull().default(false),
+    sharedWith: text('shared_with', { mode: 'json' }).$type<string[]>().notNull().default([]),
+    sortOrder: integer('sort_order').notNull().default(0),
+    ...timestamps,
+    updatedAt: text('updated_at').notNull().default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ','now'))`),
+  },
+  (t) => [index('handouts_campaign_idx').on(t.campaignId)],
+);
