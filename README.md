@@ -7,7 +7,7 @@ Mesa virtual (VTT) para jugar a rol online con amigos, inspirada en Roll20. Pens
 | Paso | Contenido | Estado |
 | --- | --- | --- |
 | 1 | Base: cuentas, partidas, invitaciones, roles DM/jugador, presencia en tiempo real, Docker | ✅ |
-| 2 | Tablero en tiempo real: mapas, cuadrícula, tokens, capas y niebla de guerra | ⏳ |
+| 2 | Tablero en tiempo real: mapas, cuadrícula, tokens, capas y niebla de guerra | ✅ |
 | 3 | Hojas de personaje editables (plantilla D&D 5e, sistema intercambiable) | ⏳ |
 | 4 | Chat, dados, iniciativa y guía para conectarse desde fuera | ⏳ |
 
@@ -39,6 +39,19 @@ Abre `http://IP-DE-LA-PI:3000` desde cualquier equipo de tu red. La primera comp
 - **Copia de seguridad:** todo se guarda en la carpeta `data/`. Copiarla es suficiente.
 
 > La guía para que tus amigos entren desde fuera de casa (dominio, HTTPS, túnel) llega en el paso 4.
+
+## Cómo se usa el tablero
+
+**DM**
+- Elige la **capa** en la barra superior: *Mapa* (fondo), *Tokens* (personajes) o *DM* (solo la ves tú). Solo puedes seleccionar elementos de la capa activa.
+- **+ Imagen** sube mapas o retratos; **+ Token** crea una ficha de color. En el panel derecho cambias nombre, tamaño, capa, imagen y qué jugadores pueden moverla.
+- **Niebla**: actívala y usa *Revelar* / *Ocultar* arrastrando rectángulos. Tú la ves semitransparente; los jugadores, negra. Los tokens enemigos bajo la niebla ni siquiera se envían a los jugadores.
+- **Escenas**: puedes preparar otras escenas sin que los jugadores las vean y llevarlos con *Llevar aquí*.
+
+**Todos**
+- Arrastra el fondo para moverte y usa la rueda para hacer zoom.
+- Los tokens se ajustan a la cuadrícula al soltarlos (mantén **Alt** para moverlos libremente).
+- **Supr** borra el elemento seleccionado (DM) y **Esc** quita la selección.
 
 ## Desarrollo
 

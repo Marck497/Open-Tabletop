@@ -1,0 +1,135 @@
+import { useEffect, useState } from 'react';
+import type { Scene, UpdateSceneInput } from '@vtt/shared';
+import { api } from '../../core/api';
+import { getSocket } from '../../core/socket';
+
+interface Props {
+  campaignId: string;
+  activeSceneId: string | null;
+  viewingId: string | null;
+  onView: (sceneId: string) => void;
+}
+
+/** Lista de escenas del DM: abrir, crear, configurar y llevar a los jugadores. */
+export function ScenesPanel({ campaignId, activeSceneId, viewingId, onView }: Props) {
+  const [scenes, setScenes] = useState<Scene[]>([]);
+  const [editing, setEditing] = useState(false);
+
+  useEffect(() => {
+    const load = () => api.get<{ scenes: Scene[] }>(`/campaigns/${campaignId}/scenes`).then((r) => setScenes(r.scenes));
+    void load();
+    const onChanged = (p: { campaignId: string }) => p.campaignId === campaignId && void load();
+    const socket = getSocket();
+    socket.on('scenes:changed', onChanged);
+    return () => void socket.off('scenes:changed', onChanged);
+  }, [campaignId]);
+
+  const viewing = scenes.find((s) => s.id === viewingId);
+
+  async function create() {
+    const name = prompt('Nombre de la escena', `Escena ${scenes.length + 1}`);
+    if (!name) return;
+    const { scene } = await api.post<{ scene: Scene }>(`/campaigns/${campaignId}/scenes`, { name });
+    onView(scene.id);
+  }
+
+  async function remove(scene: Scene) {
+    if (!confirm(`¿Borrar la escena "${scene.name}" y todo lo que contiene?`)) return;
+    await api.delete(`/scenes/${scene.id}`);
+  }
+
+  return (
+    <div className="panel">
+      <div className="row spread">
+        <h3>Escenas</h3>
+        <button className="ghost small" onClick={() => void create()}>
+          + Nueva
+        </button>
+      </div>
+      <ul className="scene-list">
+        {scenes.map((s) => (
+          <li key={s.id} className={s.id === viewingId ? 'viewing' : ''}>
+            <button className="ghost scene-name" onClick={() => onView(s.id)} title="Abrir (solo tú)">
+              {s.name}
+            </button>
+            {s.id === activeSceneId ? (
+              <span className="badge gm" title="Los jugadores están aquí">
+                Jugadores
+              </span>
+            ) : (
+              <button
+                className="ghost small"
+                title="Llevar a los jugadores a esta escena"
+                onClick={() => void api.put(`/campaigns/${campaignId}/active-scene`, { sceneId: s.id })}
+              >
+                Llevar aquí
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
+      {viewing && (
+        <>
+          <button className="ghost small" onClick={() => setEditing((e) => !e)}>
+            {editing ? 'Ocultar ajustes' : 'Ajustes de la escena'}
+          </button>
+          {editing && <SceneSettings key={viewing.id} scene={viewing} onDelete={() => void remove(viewing)} />}
+        </>
+      )}
+    </div>
+  );
+}
+
+function SceneSettings({ scene, onDelete }: { scene: Scene; onDelete: () => void }) {
+  const [form, setForm] = useState(scene);
+  const save = (patch: UpdateSceneInput) => void api.patch(`/scenes/${scene.id}`, patch);
+  const num = (key: 'widthCells' | 'heightCells' | 'gridSize') => ({
+    type: 'number',
+    value: form[key],
+    onChange: (e: { target: { value: string } }) => setForm({ ...form, [key]: Number(e.target.value) }),
+    onBlur: () => form[key] !== scene[key] && form[key] > 0 && save({ [key]: form[key] }),
+  });
+
+  return (
+    <div className="scene-settings">
+      <label>
+        Nombre
+        <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} onBlur={() => form.name && form.name !== scene.name && save({ name: form.name })} />
+      </label>
+      <div className="field-row">
+        <label>
+          Ancho (casillas)
+          <input min={1} max={200} {...num('widthCells')} />
+        </label>
+        <label>
+          Alto (casillas)
+          <input min={1} max={200} {...num('heightCells')} />
+        </label>
+      </div>
+      <div className="field-row">
+        <label>
+          Tamaño casilla (px)
+          <input min={10} max={300} {...num('gridSize')} />
+        </label>
+        <label>
+          Fondo
+          <input type="color" value={form.backgroundColor} onChange={(e) => setForm({ ...form, backgroundColor: e.target.value })} onBlur={() => save({ backgroundColor: form.backgroundColor })} />
+        </label>
+      </div>
+      <label className="switch">
+        <input
+          type="checkbox"
+          checked={form.gridVisible}
+          onChange={(e) => {
+            setForm({ ...form, gridVisible: e.target.checked });
+            save({ gridVisible: e.target.checked });
+          }}
+        />
+        Mostrar cuadrícula
+      </label>
+      <button className="ghost small danger" onClick={onDelete}>
+        Borrar escena
+      </button>
+    </div>
+  );
+}

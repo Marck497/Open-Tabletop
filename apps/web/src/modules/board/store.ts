@@ -1,0 +1,71 @@
+import { create } from 'zustand';
+import type { BoardItem, BoardLayer, Fog, Scene, SceneState } from '@vtt/shared';
+
+export type Tool = 'select' | 'fog-reveal' | 'fog-hide';
+
+interface BoardState {
+  scene: Scene | null;
+  items: Record<string, BoardItem>;
+  selectedId: string | null;
+  tool: Tool;
+  /** Capa en la que trabaja el DM (los elementos de otras capas no se pueden seleccionar). */
+  activeLayer: BoardLayer;
+  /** Posiciones temporales mientras alguien arrastra un token. */
+  moving: Record<string, { x: number; y: number }>;
+  /** Centro de la vista actual en coordenadas de escena (para colocar elementos nuevos). */
+  viewCenter: { x: number; y: number };
+
+  load: (state: SceneState) => void;
+  clear: () => void;
+  setScene: (scene: Scene) => void;
+  setFog: (fog: Fog) => void;
+  upsert: (item: BoardItem) => void;
+  remove: (id: string) => void;
+  setMoving: (id: string, pos: { x: number; y: number } | null) => void;
+  select: (id: string | null) => void;
+  setTool: (tool: Tool) => void;
+  setActiveLayer: (layer: BoardLayer) => void;
+  setViewCenter: (c: { x: number; y: number }) => void;
+}
+
+export const useBoard = create<BoardState>((set) => ({
+  scene: null,
+  items: {},
+  selectedId: null,
+  tool: 'select',
+  activeLayer: 'token',
+  moving: {},
+  viewCenter: { x: 0, y: 0 },
+
+  load: ({ scene, items }) =>
+    set((s) => ({
+      scene,
+      items: Object.fromEntries(items.map((i) => [i.id, i])),
+      moving: {},
+      selectedId: items.some((i) => i.id === s.selectedId) ? s.selectedId : null,
+    })),
+  clear: () => set({ scene: null, items: {}, selectedId: null, moving: {} }),
+  setScene: (scene) => set((s) => (s.scene?.id === scene.id ? { scene } : {})),
+  setFog: (fog) => set((s) => (s.scene ? { scene: { ...s.scene, fog } } : {})),
+  upsert: (item) =>
+    set((s) => {
+      const { [item.id]: _, ...moving } = s.moving;
+      return { items: { ...s.items, [item.id]: item }, moving };
+    }),
+  remove: (id) =>
+    set((s) => {
+      const { [id]: _, ...items } = s.items;
+      return { items, selectedId: s.selectedId === id ? null : s.selectedId };
+    }),
+  setMoving: (id, pos) =>
+    set((s) => {
+      const { [id]: _, ...rest } = s.moving;
+      return { moving: pos ? { ...rest, [id]: pos } : rest };
+    }),
+  select: (selectedId) => set({ selectedId }),
+  setTool: (tool) => set({ tool, selectedId: null }),
+  setActiveLayer: (activeLayer) => set({ activeLayer, selectedId: null }),
+  setViewCenter: (viewCenter) => set({ viewCenter }),
+}));
+
+export const LAYER_LABELS: Record<BoardLayer, string> = { map: 'Mapa', token: 'Tokens', gm: 'DM (oculta)' };

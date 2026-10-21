@@ -32,6 +32,8 @@ export interface CampaignMember extends PublicUser {
 
 export interface CampaignDetail extends CampaignSummary {
   ownerId: string;
+  /** Escena en la que están los jugadores (la que ven al entrar). */
+  activeSceneId: string | null;
   /** Solo se envía al DM. */
   inviteCode?: string;
   members: CampaignMember[];

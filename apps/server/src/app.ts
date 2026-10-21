@@ -7,6 +7,7 @@ import fastifyStatic from '@fastify/static';
 import { ZodError } from 'zod';
 import type { AppConfig } from './config.js';
 import { AppError } from './core/errors.js';
+import { EventBus } from './core/events.js';
 import type { AppContext } from './core/module.js';
 import { openDatabase } from './db/client.js';
 import { modules } from './modules/index.js';
@@ -20,7 +21,8 @@ export interface BuiltApp {
 
 export async function buildApp(config: AppConfig, opts: { logger?: boolean } = {}): Promise<BuiltApp> {
   const { db, close } = openDatabase(config.databasePath);
-  const ctx: AppContext = { config, db, io: null };
+  const ctx: AppContext = { config, db, events: new EventBus(), io: null };
+  for (const mod of modules) mod.init?.(ctx);
   const auth = createAuthService(ctx);
 
   const app = Fastify({ logger: opts.logger ?? false, trustProxy: true });

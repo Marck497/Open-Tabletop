@@ -1,10 +1,14 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import type { AddressInfo } from 'node:net';
 import { buildApp } from '../src/app.js';
 import { loadConfig, type AppConfig } from '../src/config.js';
 import { attachRealtime } from '../src/realtime/index.js';
 
 export async function makeApp(overrides: Partial<AppConfig> = {}) {
-  const config = { ...loadConfig({}), databasePath: ':memory:', webDistDir: null, ...overrides };
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vtt-test-'));
+  const config = { ...loadConfig({}), dataDir, databasePath: ':memory:', webDistDir: null, ...overrides };
   const built = await buildApp(config);
   return built;
 }
