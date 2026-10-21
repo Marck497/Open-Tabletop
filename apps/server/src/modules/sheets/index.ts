@@ -9,7 +9,7 @@ const campaignParams = z.object({ id: z.string() });
 const characterParams = z.object({ characterId: z.string() });
 
 /** Envía un cambio de personaje a cada socket de la partida según si puede verlo. */
-async function broadcastCharacter(ctx: AppContext, before: Character | null, after: Character | null) {
+export async function broadcastCharacter(ctx: AppContext, before: Character | null, after: Character | null) {
   const c = (after ?? before)!;
   if (!ctx.io) return;
   const campaigns = createCampaignService(ctx);

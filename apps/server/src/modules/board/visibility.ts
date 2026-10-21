@@ -13,5 +13,10 @@ export function canSeeItem(item: BoardItem, scene: Scene, role: CampaignRole, us
   return true;
 }
 
+/** Lo que se envía de un elemento: la IA de los enemigos solo la ve el DM. */
+export function forViewer(item: BoardItem, role: CampaignRole): BoardItem {
+  return role === 'gm' || !item.ai ? item : { ...item, ai: null };
+}
+
 /** Campos que un jugador puede cambiar en un token suyo. */
 export const PLAYER_EDITABLE_FIELDS = new Set(['x', 'y', 'rotation']);

@@ -22,7 +22,7 @@ import type { AppContext } from '../../core/module.js';
 import { badRequest, forbidden, notFound } from '../../core/errors.js';
 import { assets, boardItems, campaigns, characters, scenes } from '../../db/schema.js';
 import { createCampaignService } from '../campaigns/service.js';
-import { canSeeItem, PLAYER_EDITABLE_FIELDS } from './visibility.js';
+import { canSeeItem, forViewer, PLAYER_EDITABLE_FIELDS } from './visibility.js';
 
 type SceneRow = typeof scenes.$inferSelect;
 type ItemRow = typeof boardItems.$inferSelect;
@@ -120,7 +120,12 @@ export function createBoardService(ctx: AppContext) {
   }
 
   function stateFor(scene: Scene, viewer: Viewer): SceneState {
-    return { scene, items: allItems(scene.id).filter((i) => canSeeItem(i, scene, viewer.role, viewer.userId)) };
+    return {
+      scene,
+      items: allItems(scene.id)
+        .filter((i) => canSeeItem(i, scene, viewer.role, viewer.userId))
+        .map((i) => forViewer(i, viewer.role)),
+    };
   }
 
   function view(sceneId: string, userId: string): SceneState & { viewer: Viewer } {
@@ -174,6 +179,20 @@ export function createBoardService(ctx: AppContext) {
     checkCharacter(data.characterId, scene.campaignId);
     if (Object.keys(data).length) db.update(boardItems).set(data).where(eq(boardItems.id, itemId)).run();
     return { scene, before, after: toItem(itemRow(sceneId, itemId)) };
+  }
+
+  /** Cambio hecho por el propio servidor (p. ej. la IA moviendo un enemigo), sin comprobar permisos. */
+  function systemUpdate(sceneId: string, itemId: string, patch: UpdateItemInput): { scene: Scene; before: BoardItem; after: BoardItem } {
+    const scene = toScene(sceneRow(sceneId));
+    const data = updateItemSchema.parse(patch);
+    const before = toItem(itemRow(sceneId, itemId));
+    if (Object.keys(data).length) db.update(boardItems).set(data).where(eq(boardItems.id, itemId)).run();
+    return { scene, before, after: toItem(itemRow(sceneId, itemId)) };
+  }
+
+  /** Elementos de una escena, sin filtrar (uso interno del servidor). */
+  function itemsOf(sceneId: string): { scene: Scene; items: BoardItem[] } {
+    return { scene: toScene(sceneRow(sceneId)), items: allItems(sceneId) };
   }
 
   function assertPlayerCanEdit(item: BoardItem, scene: Scene, viewer: Viewer, keys: string[]) {
@@ -234,6 +253,8 @@ export function createBoardService(ctx: AppContext) {
     stateFor,
     createItem,
     updateItem,
+    systemUpdate,
+    itemsOf,
     canMove,
     deleteItem,
     setFog,

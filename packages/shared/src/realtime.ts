@@ -4,6 +4,7 @@
  */
 import type { BoardItem, CreateItemInput, Fog, Scene, SceneState, UpdateItemInput } from './schemas/board.js';
 import type { Measure } from './schemas/measure.js';
+import type { AiSettings } from './schemas/ai.js';
 import type { Character } from './schemas/character.js';
 import type { ChatMessage, InitiativeEntry, InitiativeState } from './schemas/chat.js';
 
@@ -15,6 +16,18 @@ export interface PresenceUser {
 /** Respuesta estándar de los eventos con acknowledgement. */
 export type AckResult<T = undefined> = { ok: true; data: T } | { ok: false; error: string };
 export type Ack<T = undefined> = (res: AckResult<T>) => void;
+
+/** Resumen del turno de un enemigo con IA. */
+export interface AiTurnResult {
+  itemId: string;
+  name: string;
+  summary: string;
+  /** Casillas que se ha movido. */
+  moved: number;
+  attacked: boolean;
+  hit: boolean | null;
+  damage: number | null;
+}
 
 /** Quién hizo una medición o un ping. */
 export interface PointerAuthor {
@@ -87,6 +100,8 @@ export interface ClientToServerEvents {
   'initiative:get': (payload: { campaignId: string }, ack: Ack<InitiativeState>) => void;
   /** Acciones sobre el orden de iniciativa (las de gestión, solo el DM). */
   'initiative:action': (payload: { campaignId: string } & InitiativeAction, ack: Ack<InitiativeState>) => void;
+  /** Solo DM: el token del turno actual (o `itemId`) juega su turno con la IA. */
+  'ai:act': (payload: { campaignId: string; itemId?: string | null }, ack: Ack<AiTurnResult>) => void;
 }
 
 export type InitiativeAction =
@@ -98,7 +113,8 @@ export type InitiativeAction =
   | { type: 'prev' }
   | { type: 'start' }
   | { type: 'end' }
-  | { type: 'clear' };
+  | { type: 'clear' }
+  | { type: 'aiSettings'; settings: Partial<AiSettings> };
 
 /** Nombre de la sala de Socket.IO de una partida. */
 export const campaignRoom = (campaignId: string) => `campaign:${campaignId}`;

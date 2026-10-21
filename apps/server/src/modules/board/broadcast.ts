@@ -1,7 +1,7 @@
 import { campaignRoom, sceneRoom, type BoardItem, type CampaignRole, type Scene, type ServerToClientEvents } from '@vtt/shared';
 import type { AppContext, IoSocket } from '../../core/module.js';
 import { createCampaignService } from '../campaigns/service.js';
-import { canSeeItem } from './visibility.js';
+import { canSeeItem, forViewer } from './visibility.js';
 import type { BoardService } from './service.js';
 
 /**
@@ -27,15 +27,15 @@ export function createBoardBroadcaster(ctx: AppContext, board: BoardService) {
     for (const { socket, userId, role } of await socketsWithRole(scene)) {
       const seesAfter = after && canSeeItem(after, scene, role, userId);
       const seesBefore = before && canSeeItem(before, scene, role, userId);
-      if (seesAfter) socket.emit('item:upserted', { sceneId: scene.id, item: after });
+      if (seesAfter) socket.emit('item:upserted', { sceneId: scene.id, item: forViewer(after, role) });
       else if (seesBefore) socket.emit('item:removed', { sceneId: scene.id, id: before.id });
     }
   }
 
-  async function itemMoving(scene: Scene, item: BoardItem, x: number, y: number, from: IoSocket) {
+  async function itemMoving(scene: Scene, item: BoardItem, x: number, y: number, from: IoSocket | null) {
     const moved = { ...item, x, y };
     for (const { socket, userId, role } of await socketsWithRole(scene)) {
-      if (socket.id === from.id) continue;
+      if (socket.id === from?.id) continue;
       // Si el token entra o sale de la niebla durante el arrastre, se resuelve al soltarlo.
       if (canSeeItem(moved, scene, role, userId)) socket.emit('item:moving', { sceneId: scene.id, id: item.id, x, y });
     }

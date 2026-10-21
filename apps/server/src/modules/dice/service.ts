@@ -7,7 +7,7 @@ import { createCampaignService } from '../campaigns/service.js';
 import { canEditCharacter, createSheetService } from '../sheets/service.js';
 
 /** Aleatoriedad criptográfica: nadie puede predecir las tiradas. */
-const secureRng = () => randomInt(0, 2 ** 32) / 2 ** 32;
+export const secureRng = () => randomInt(0, 2 ** 32) / 2 ** 32;
 
 export const rollRequestSchema = z.object({
   campaignId: z.string(),

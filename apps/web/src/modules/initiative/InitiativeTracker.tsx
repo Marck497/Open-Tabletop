@@ -16,7 +16,15 @@ export function InitiativeTracker({ campaignId, isGm, meId }: Props) {
   const state = useInitiative((s) => s.state);
   const characters = useSheets((s) => s.characters);
   const [collapsed, setCollapsed] = useState(false);
+  const items = useBoard((s) => s.items);
+  const [acting, setActing] = useState(false);
   const act = (action: InitiativeAction) => emitAck('initiative:action', { campaignId, ...action }).catch((e: Error) => alert(e.message));
+  const aiAct = () => {
+    setActing(true);
+    emitAck('ai:act', { campaignId })
+      .catch((e: Error) => alert(e.message))
+      .finally(() => setActing(false));
+  };
 
   if (!state || (!isGm && state.entries.length === 0)) return null;
   const current = state.entries[state.turn];
@@ -53,6 +61,11 @@ export function InitiativeTracker({ campaignId, isGm, meId }: Props) {
               Empezar
             </button>
           )}
+          {isGm && state.active && current?.itemId && items[current.itemId] && (
+            <button className="small" disabled={acting} onClick={aiAct} title="Este token juega su turno con la IA: se mueve, ataca y lo anota en el chat">
+              {acting ? '🤖 …' : '🤖 Actuar'}
+            </button>
+          )}
           {isGm && state.active && (
             <>
               <button className="ghost small" onClick={() => void act({ type: 'prev' })} title="Turno anterior">
@@ -74,7 +87,7 @@ export function InitiativeTracker({ campaignId, isGm, meId }: Props) {
         <>
           <ol className="initiative-list">
             {state.entries.map((e, i) => (
-              <Entry key={e.id} entry={e} active={state.active && i === state.turn} isGm={isGm} act={act} />
+              <Entry key={e.id} entry={e} active={state.active && i === state.turn} isGm={isGm} act={act} ai={isGm && !!(e.itemId && items[e.itemId]?.ai?.enabled)} />
             ))}
             {state.active && state.turn === -1 && <li className="muted">Turno de alguien oculto…</li>}
           </ol>
@@ -99,6 +112,18 @@ export function InitiativeTracker({ campaignId, isGm, meId }: Props) {
               </button>
             </div>
           )}
+          {isGm && (
+            <div className="row ai-settings">
+              <label className="switch" title="Los enemigos con IA juegan su turno solos y pasan al siguiente">
+                <input type="checkbox" checked={state.ai.auto} onChange={(e) => void act({ type: 'aiSettings', settings: { auto: e.target.checked } })} />
+                🤖 IA automática
+              </label>
+              <label className="switch" title="Resta el daño de los ataques de la IA a la vida del objetivo">
+                <input type="checkbox" checked={state.ai.applyDamage} onChange={(e) => void act({ type: 'aiSettings', settings: { applyDamage: e.target.checked } })} />
+                Aplicar daño
+              </label>
+            </div>
+          )}
           {!isGm && <p className="muted hint">Tira iniciativa desde tu hoja para entrar.</p>}
         </>
       )}
@@ -106,7 +131,7 @@ export function InitiativeTracker({ campaignId, isGm, meId }: Props) {
   );
 }
 
-function Entry({ entry, active, isGm, act }: { entry: InitiativeEntry; active: boolean; isGm: boolean; act: (a: InitiativeAction) => unknown }) {
+function Entry({ entry, active, isGm, act, ai }: { entry: InitiativeEntry; active: boolean; isGm: boolean; act: (a: InitiativeAction) => unknown; ai: boolean }) {
   return (
     <li
       className={`${active ? 'active' : ''} ${entry.hidden ? 'hidden-entry' : ''}`}
@@ -125,7 +150,10 @@ function Entry({ entry, active, isGm, act }: { entry: InitiativeEntry; active: b
           entry.value
         )}
       </span>
-      <span className="init-name">{entry.name}</span>
+      <span className="init-name">
+        {entry.name}
+        {ai && <span title="Tiene IA"> 🤖</span>}
+      </span>
       {isGm && (
         <span className="row end" onClick={(e) => e.stopPropagation()}>
           <button className="ghost small" title={entry.hidden ? 'Mostrar a los jugadores' : 'Ocultar a los jugadores'} onClick={() => act({ type: 'update', id: entry.id, patch: { hidden: !entry.hidden } })}>

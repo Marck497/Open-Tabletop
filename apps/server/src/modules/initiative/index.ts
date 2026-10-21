@@ -5,7 +5,7 @@ import { handleAck } from '../../core/socket-utils.js';
 import { createCampaignService } from '../campaigns/service.js';
 import { createInitiativeService, viewFor } from './service.js';
 
-async function broadcastInitiative(ctx: AppContext, state: InitiativeState) {
+export async function broadcastInitiative(ctx: AppContext, state: InitiativeState) {
   if (!ctx.io) return;
   const campaigns = createCampaignService(ctx);
   for (const s of await ctx.io.in(campaignRoom(state.campaignId)).fetchSockets()) {
@@ -39,6 +39,9 @@ export const initiativeModule: ServerModule = {
         const { campaignId, ...action } = payload;
         const state = svc.apply(z.string().parse(campaignId), socket.data.user.id, action as never);
         await broadcastInitiative(ctx, state);
+        if (['next', 'prev', 'start'].includes(action.type) && state.active) {
+          ctx.events.emit('initiative:turnStarted', { campaignId, userId: socket.data.user.id, state });
+        }
         const role = createCampaignService(ctx).getRole(campaignId, socket.data.user.id)!;
         return viewFor(state, role);
       }),

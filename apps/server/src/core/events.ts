@@ -1,4 +1,5 @@
 import { EventEmitter } from 'node:events';
+import type { InitiativeState } from '@vtt/shared';
 
 /**
  * Eventos internos entre módulos del servidor. Permiten que un módulo reaccione
@@ -11,6 +12,8 @@ export interface DomainEvents {
   /** Una tirada marcada como de iniciativa (la recoge el módulo de iniciativa). */
   'initiative:rolled': [{ campaignId: string; userId: string; characterId: string | null; name: string; value: number }];
   'campaign:memberRemoved': [{ campaignId: string; userId: string }];
+  /** Ha empezado el turno de alguien (al empezar el combate o al pasar turno). */
+  'initiative:turnStarted': [{ campaignId: string; userId: string; state: InitiativeState }];
 }
 
 export class EventBus extends EventEmitter<DomainEvents> {}

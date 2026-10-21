@@ -240,8 +240,8 @@ textarea { resize: vertical; }
 
 /* Iniciativa */
 .initiative { position: absolute; top: 10px; left: 10px; z-index: 15; width: min(340px, calc(100% - 20px)); padding: 8px 10px; max-height: calc(100% - 20px); overflow-y: auto; }
-.initiative-head { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
-.initiative-head .row.end { flex-wrap: nowrap; }
+.initiative-head { display: flex; align-items: center; gap: 6px 8px; white-space: nowrap; flex-wrap: wrap; }
+.initiative-head .row.end { flex-wrap: wrap; margin-left: auto; gap: 4px; }
 .initiative-list { list-style: none; padding: 0; margin: 8px 0; display: flex; flex-direction: column; gap: 3px; }
 .initiative-list li { display: flex; align-items: center; gap: 8px; padding: 4px 6px; border-radius: 6px; cursor: pointer; }
 .initiative-list li.active { background: rgba(214, 168, 74, 0.18); outline: 1px solid var(--gold); }
@@ -249,3 +249,10 @@ textarea { resize: vertical; }
 .init-value { width: 3.2em; text-align: center; font-weight: 700; }
 .init-value input { padding: 2px 4px; text-align: center; }
 .init-name { flex: 1; }
+
+/* IA de enemigos */
+.ai-panel select { width: 100%; }
+.ai-settings { margin-top: 6px; gap: 12px; }
+.ai-settings .switch { margin: 0; font-size: 0.85rem; }
+.chat-msg.emote.secret { border: 1px dashed var(--gold); border-radius: 6px; padding: 2px 6px; }
+.chat-msg.emote.secret::after { content: ' · solo DM'; font-size: 0.75rem; color: var(--muted); }

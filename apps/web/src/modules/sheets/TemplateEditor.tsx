@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import {
   BUILTIN_TEMPLATES,
+  combatOf,
+  type CombatMapping,
   checkSyntax,
   FIELD_TYPE_LABELS,
   FIELD_TYPES,
@@ -157,6 +159,7 @@ export function TemplateEditor({ campaignId, template, onClose }: Props) {
                 <input value={draft.name} onChange={(e) => update((t) => void (t.name = e.target.value))} />
               </label>
               <BarsEditor template={draft} update={update} />
+              <CombatEditor template={draft} update={update} />
             </div>
             <div className="template-layout">
               <nav className="template-sections">
@@ -252,6 +255,81 @@ function BarsEditor({ template, update }: { template: SheetTemplate; update: (fn
         )}
       </span>
     </label>
+  );
+}
+
+/** Qué campos usa la IA de enemigos (CA, vida, velocidad y la tabla de ataques). */
+function CombatEditor({ template, update }: { template: SheetTemplate; update: (fn: (t: SheetTemplate) => void) => void }) {
+  const combat: CombatMapping = template.combat ?? combatOf(template) ?? { ac: '', hp: '', hpMax: '', speed: '', attacks: null };
+  const fields = template.sections.flatMap((s) => s.fields);
+  const numeric = fields.filter((f) => f.type === 'number' || f.type === 'computed');
+  const lists = fields.filter((f) => f.type === 'list');
+  const set = (patch: Partial<CombatMapping>) => update((t) => void (t.combat = { ...combat, ...patch }));
+  const pick = (key: 'ac' | 'hp' | 'hpMax' | 'speed', label: string, options = numeric) => (
+    <label>
+      {label}
+      <select value={combat[key]} onChange={(e) => set({ [key]: e.target.value })}>
+        <option value="">—</option>
+        {options.map((f) => (
+          <option key={f.key} value={f.key}>
+            {f.label} ({f.key})
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+  const list = lists.find((l) => l.key === combat.attacks?.list);
+  const cols = list?.columns ?? [];
+  const col = (key: 'name' | 'attack' | 'damage', label: string) => (
+    <label>
+      {label}
+      <select value={combat.attacks?.[key] ?? ''} onChange={(e) => set({ attacks: { ...combat.attacks!, [key]: e.target.value } })}>
+        {cols.map((c) => (
+          <option key={c.key} value={c.key}>
+            {c.label} ({c.key})
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+  return (
+    <details className="help">
+      <summary>Combate e IA de enemigos</summary>
+      <p className="muted hint">Qué campos usan los enemigos con IA para atacar y para saber a quién le queda poca vida.</p>
+      <div className="field-row">
+        {pick('ac', 'Defensa (CA)')}
+        {pick('speed', 'Velocidad')}
+      </div>
+      <div className="field-row">
+        {pick('hp', 'Vida actual (se le resta el daño)', fields.filter((f) => f.type === 'number'))}
+        {pick('hpMax', 'Vida máxima')}
+      </div>
+      <label>
+        Tabla de ataques
+        <select
+          value={combat.attacks?.list ?? ''}
+          onChange={(e) => {
+            const l = lists.find((x) => x.key === e.target.value);
+            const first = l?.columns?.[0]?.key ?? '';
+            set({ attacks: l ? { list: l.key, name: first, attack: first, damage: first } : null });
+          }}
+        >
+          <option value="">Ninguna</option>
+          {lists.map((f) => (
+            <option key={f.key} value={f.key}>
+              {f.label} ({f.key})
+            </option>
+          ))}
+        </select>
+      </label>
+      {combat.attacks && list && (
+        <div className="field-row three">
+          {col('name', 'Nombre')}
+          {col('attack', 'Tirada de ataque')}
+          {col('damage', 'Daño')}
+        </div>
+      )}
+    </details>
   );
 }
 
