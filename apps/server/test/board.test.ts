@@ -49,6 +49,28 @@ async function setup() {
 }
 
 describe('tablero', () => {
+  it('dibujos: los jugadores dibujan en la capa de tokens y solo borran o editan los suyos', async () => {
+    const { pl, sceneId, gmC, plC, token } = await setup();
+    const drawing = { type: 'path', points: [0, 0, 10, 10, 20, 0], stroke: '#ff0000' };
+    // Aunque pida la capa del DM y otros dueños, se fuerza la de tokens y él como dueño.
+    const mine = ok(
+      await call<BoardItem>(plC, 'item:create', { sceneId, item: { layer: 'gm', x: 0, y: 0, width: 20, height: 10, ownerIds: [], drawing } }),
+    );
+    expect(mine).toMatchObject({ layer: 'token', ownerIds: [pl.user.id], drawing: { type: 'path', strokeWidth: 4 } });
+    // No puede crear tokens.
+    expect((await call(plC, 'item:create', { sceneId, item: { layer: 'token', x: 0, y: 0, width: 70, height: 70 } })).ok).toBe(false);
+    // Puede redimensionar su dibujo.
+    expect((await call(plC, 'item:update', { sceneId, id: mine.id, patch: { width: 40, height: 20, drawing: { ...drawing, points: [0, 0, 20, 20, 40, 0] } } })).ok).toBe(true);
+    // No puede borrar ni dibujos del DM ni tokens.
+    const gmDrawing = await token('token', { drawing: { type: 'text', text: 'Aquí' } });
+    const tok = await token('token');
+    expect((await call(plC, 'item:delete', { sceneId, id: gmDrawing.id })).ok).toBe(false);
+    expect((await call(plC, 'item:delete', { sceneId, id: tok.id })).ok).toBe(false);
+    const removed = next(gmC, 'item:removed');
+    expect((await call(plC, 'item:delete', { sceneId, id: mine.id })).ok).toBe(true);
+    expect((await removed).id).toBe(mine.id);
+  });
+
   it('estados: el jugador marca los de su token, no los de otros', async () => {
     const { pl, sceneId, plC, token } = await setup();
     const mine = await token('token', { ownerIds: [pl.user.id] });

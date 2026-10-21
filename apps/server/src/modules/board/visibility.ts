@@ -20,3 +20,5 @@ export function forViewer(item: BoardItem, role: CampaignRole): BoardItem {
 
 /** Campos que un jugador puede cambiar en un token suyo. */
 export const PLAYER_EDITABLE_FIELDS = new Set(['x', 'y', 'rotation', 'statuses']);
+/** En sus propios dibujos, además, puede cambiar el tamaño y el trazo. */
+export const PLAYER_DRAWING_FIELDS = new Set(['x', 'y', 'rotation', 'width', 'height', 'drawing']);

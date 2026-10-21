@@ -1,7 +1,15 @@
 import { create } from 'zustand';
-import type { BoardItem, BoardLayer, Fog, Measure, MeasureShape, PointerAuthor, Scene, SceneState } from '@vtt/shared';
+import type { BoardItem, BoardLayer, DrawingType, Fog, Measure, MeasureShape, PointerAuthor, Scene, SceneState } from '@vtt/shared';
 
-export type Tool = 'select' | 'measure' | 'ping' | 'fog-reveal' | 'fog-hide';
+export type Tool = 'select' | 'measure' | 'ping' | 'draw' | 'fog-reveal' | 'fog-hide';
+
+export interface DrawStyle {
+  type: DrawingType;
+  stroke: string;
+  strokeWidth: number;
+  /** Rellenar rectángulos y elipses con el mismo color, semitransparente. */
+  filled: boolean;
+}
 
 export interface RemoteMeasure extends PointerAuthor {
   measure: Measure;
@@ -31,6 +39,7 @@ interface BoardState {
   /** Mediciones de los demás, por usuario. */
   remoteMeasures: Record<string, RemoteMeasure>;
   pings: Ping[];
+  draw: DrawStyle;
   /** Petición del DM de centrar la vista en un punto. */
   focus: { x: number; y: number; n: number } | null;
 
@@ -46,6 +55,7 @@ interface BoardState {
   setActiveLayer: (layer: BoardLayer) => void;
   setViewCenter: (c: { x: number; y: number }) => void;
   setMeasureShape: (shape: MeasureShape) => void;
+  setDraw: (patch: Partial<DrawStyle>) => void;
   setMyMeasure: (m: Measure | null) => void;
   setRemoteMeasure: (author: PointerAuthor, m: Measure | null) => void;
   addPing: (ping: Omit<Ping, 'id'>, focus?: boolean) => void;
@@ -66,6 +76,7 @@ export const useBoard = create<BoardState>((set) => ({
   myMeasure: null,
   remoteMeasures: {},
   pings: [],
+  draw: { type: 'path', stroke: '#e8b25a', strokeWidth: 4, filled: false },
   focus: null,
 
   load: ({ scene, items }) =>
@@ -100,6 +111,7 @@ export const useBoard = create<BoardState>((set) => ({
   setViewCenter: (viewCenter) => set({ viewCenter }),
   setMeasureShape: (measureShape) => set({ measureShape, tool: 'measure', selectedId: null }),
   setMyMeasure: (myMeasure) => set({ myMeasure }),
+  setDraw: (patch) => set((s) => ({ draw: { ...s.draw, ...patch }, tool: 'draw', selectedId: null })),
   setRemoteMeasure: (author, measure) =>
     set((s) => {
       const { [author.userId]: _, ...rest } = s.remoteMeasures;

@@ -9,6 +9,7 @@ import { useActiveItemId } from '../initiative/store';
 import { emitAck, getSocket } from '../../core/socket';
 import { clearMeasure, sendPing, setMeasure, snapPoint, snapTemplateEnd } from './measure';
 import { MeasuresLayer } from './Measures';
+import { DrawingShape, fillOf, textBox } from './Drawing';
 import { useBoard } from './store';
 
 interface Props {
@@ -41,6 +42,8 @@ export function Board({ isGm, meId }: Props) {
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [view, setView] = useState<Viewport>({ x: 0, y: 0, scale: 1 });
   const [fogDraft, setFogDraft] = useState<{ x0: number; y0: number; x1: number; y1: number } | null>(null);
+  /** Dibujo en curso (coordenadas de escena). */
+  const [drawDraft, setDrawDraft] = useState<number[] | null>(null);
   /** Midiendo ahora mismo (botón pulsado). */
   const measuring = useRef(false);
   /** Distancia que recorre el token que estoy arrastrando (solo la veo yo). */
@@ -87,7 +90,7 @@ export function Board({ isGm, meId }: Props) {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if ((e.target as HTMLElement).closest('input, textarea, select')) return;
-      const { selectedId, scene, myMeasure } = useBoard.getState();
+      const { selectedId, scene, myMeasure, items } = useBoard.getState();
       if (e.key === 'Escape') {
         select(null);
         clearMeasure(isGm);
@@ -98,13 +101,15 @@ export function Board({ isGm, meId }: Props) {
         const last = myMeasure.points[myMeasure.points.length - 1]!;
         setMeasure({ ...myMeasure, points: [...myMeasure.points, last] }, isGm);
       }
-      if (isGm && selectedId && scene && (e.key === 'Delete' || e.key === 'Backspace')) {
+      const sel = selectedId ? items[selectedId] : undefined;
+      const canDelete = isGm || (sel?.drawing && sel.ownerIds.includes(meId));
+      if (canDelete && selectedId && scene && (e.key === 'Delete' || e.key === 'Backspace')) {
         void emitAck('item:delete', { sceneId: scene.id, id: selectedId });
       }
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [isGm, select]);
+  }, [isGm, meId, select]);
 
   const items = useMemo(() => {
     const list = Object.values(itemsById).map((i) => (moving[i.id] ? { ...i, ...moving[i.id] } : i));
@@ -131,7 +136,8 @@ export function Board({ isGm, meId }: Props) {
   const fogTool = isGm && tool.startsWith('fog-') && scene.fog.enabled;
   const measureTool = tool === 'measure';
   const pingTool = tool === 'ping';
-  const freeTool = !fogTool && !measureTool && !pingTool;
+  const drawTool = tool === 'draw';
+  const freeTool = !fogTool && !measureTool && !pingTool && !drawTool;
 
   function pointerInScene(stage: Konva.Stage) {
     return stage.getRelativePointerPosition()!;
@@ -155,6 +161,17 @@ export function Board({ isGm, meId }: Props) {
       sendPing(pointerInScene(stage), isGm && e.evt.shiftKey);
       return;
     }
+    if (drawTool) {
+      const p = pointerInScene(stage);
+      const { draw } = useBoard.getState();
+      if (draw.type === 'text') {
+        const text = prompt('Texto');
+        if (text?.trim()) void createDrawing([p.x, p.y], text.trim());
+        return;
+      }
+      setDrawDraft([p.x, p.y, p.x, p.y]);
+      return;
+    }
     if (fogTool) {
       const p = pointerInScene(stage);
       setFogDraft({ x0: p.x, y0: p.y, x1: p.x, y1: p.y });
@@ -174,12 +191,27 @@ export function Board({ isGm, meId }: Props) {
       if (p.x !== last.x || p.y !== last.y) setMeasure({ ...mine, points: [...mine.points.slice(0, -1), p] }, isGm);
       return;
     }
+    if (drawDraft) {
+      const p = pointerInScene(e.target.getStage()!);
+      if (useBoard.getState().draw.type === 'path') {
+        // Mano alzada: se añade un punto cuando el ratón se ha movido algo (en píxeles de pantalla).
+        const [lx, ly] = drawDraft.slice(-2) as [number, number];
+        if (Math.hypot(p.x - lx, p.y - ly) * view.scale >= 4 && drawDraft.length < 3990) setDrawDraft([...drawDraft, p.x, p.y]);
+      } else setDrawDraft([drawDraft[0]!, drawDraft[1]!, p.x, p.y]);
+      return;
+    }
     if (!fogDraft) return;
     const p = pointerInScene(e.target.getStage()!);
     setFogDraft({ ...fogDraft, x1: p.x, y1: p.y });
   }
 
   function onStageMouseUp() {
+    if (drawDraft) {
+      const pts = drawDraft;
+      setDrawDraft(null);
+      void createDrawing(pts);
+      return;
+    }
     if (measuring.current) {
       // La medición se queda a la vista hasta pulsar Esc, empezar otra o cambiar de herramienta.
       measuring.current = false;
@@ -196,6 +228,46 @@ export function Board({ isGm, meId }: Props) {
     void emitAck('fog:add', { sceneId: scene.id, op: { mode: tool === 'fog-hide' ? 'hide' : 'reveal', ...rect } });
   }
 
+  /** Crea el dibujo: su caja es la de los puntos, y los puntos quedan relativos a ella. */
+  function createDrawing(abs: number[], text?: string) {
+    const { draw, activeLayer } = useBoard.getState();
+    const layer = isGm ? activeLayer : 'token';
+    if (text !== undefined) {
+      const fontSize = Math.round(scene!.gridSize * 0.4);
+      const box = textBox(text, fontSize);
+      return emitAck('item:create', {
+        sceneId: scene!.id,
+        item: { layer, x: abs[0]!, y: abs[1]!, ...{ width: box.width, height: box.height }, drawing: { type: 'text', text, fontSize, stroke: draw.stroke } },
+      });
+    }
+    const xs = abs.filter((_, i) => i % 2 === 0);
+    const ys = abs.filter((_, i) => i % 2 === 1);
+    const x = Math.min(...xs);
+    const y = Math.min(...ys);
+    const width = Math.max(...xs) - x;
+    const height = Math.max(...ys) - y;
+    if (width * view.scale < 3 && height * view.scale < 3) return; // un clic sin arrastrar
+    const pad = draw.strokeWidth / 2;
+    const points = abs.map((v, i) => v - (i % 2 === 0 ? x : y) + pad);
+    return emitAck('item:create', {
+      sceneId: scene!.id,
+      item: {
+        layer,
+        x: x - pad,
+        y: y - pad,
+        width: Math.max(1, width + pad * 2),
+        height: Math.max(1, height + pad * 2),
+        drawing: {
+          type: draw.type,
+          points: draw.type === 'path' || draw.type === 'line' ? points : [],
+          stroke: draw.stroke,
+          strokeWidth: draw.strokeWidth,
+          fill: draw.filled ? fillOf(draw.stroke) : '',
+        },
+      },
+    });
+  }
+
   const itemProps = (item: BoardItem) => ({
     key: item.id,
     item,
@@ -203,7 +275,7 @@ export function Board({ isGm, meId }: Props) {
     selected: item.id === selectedId,
     interactive: freeTool && (isGm ? item.layer === activeLayer : item.layer === 'token' && item.ownerIds.includes(meId)),
     ghost: item.layer === 'gm',
-    transformable: isGm,
+    transformable: isGm || (!!item.drawing && item.ownerIds.includes(meId)),
     turn: item.id === activeItemId,
     onSelect: () => select(item.id),
     onDragPath: setDragMeasure,
@@ -276,10 +348,25 @@ export function Board({ isGm, meId }: Props) {
               listening={false}
             />
           )}
+          {drawDraft && <DraftShape pts={drawDraft} />}
           <MeasuresLayer scene={scene} scale={view.scale} dragMeasure={dragMeasure} />
         </Layer>
       </Stage>
     </div>
+  );
+}
+
+/** Vista previa del dibujo mientras se arrastra. */
+function DraftShape({ pts }: { pts: number[] }) {
+  const draw = useBoard((s) => s.draw);
+  const [x0, y0] = [pts[0]!, pts[1]!];
+  const [x1, y1] = pts.slice(-2) as [number, number];
+  const box = { width: Math.abs(x1 - x0), height: Math.abs(y1 - y0) };
+  const drawing = { type: draw.type, points: draw.type === 'path' || draw.type === 'line' ? pts : [], stroke: draw.stroke, strokeWidth: draw.strokeWidth, fill: draw.filled ? fillOf(draw.stroke) : '', text: '', fontSize: 0 };
+  return (
+    <Group x={draw.type === 'path' || draw.type === 'line' ? 0 : Math.min(x0, x1)} y={draw.type === 'path' || draw.type === 'line' ? 0 : Math.min(y0, y1)} listening={false} opacity={0.8}>
+      <DrawingShape drawing={drawing} {...box} />
+    </Group>
   );
 }
 
@@ -384,7 +471,7 @@ function ItemNode({ item, scene, selected, interactive, ghost, transformable, tu
   function onDragMove(e: Konva.KonvaEventObject<DragEvent>) {
     const origin = { x: item.x + w / 2, y: item.y + h / 2 };
     const to = e.evt.altKey ? { x: e.target.x(), y: e.target.y() } : { x: snap(e.target.x() - w / 2, false) + w / 2, y: snap(e.target.y() - h / 2, false) + h / 2 };
-    onDragPath({ shape: 'ruler', points: [origin, to] });
+    if (!item.drawing) onDragPath({ shape: 'ruler', points: [origin, to] });
     const now = performance.now();
     if (now - lastEmit.current < MOVE_THROTTLE_MS) return;
     lastEmit.current = now;
@@ -394,7 +481,8 @@ function ItemNode({ item, scene, selected, interactive, ghost, transformable, tu
   function onDragEnd(e: Konva.KonvaEventObject<DragEvent>) {
     e.cancelBubble = true;
     onDragPath(null);
-    const free = e.evt.altKey;
+    // Los dibujos no se ajustan a la cuadrícula.
+    const free = e.evt.altKey || !!item.drawing;
     const x = snap(e.target.x() - w / 2, free);
     const y = snap(e.target.y() - h / 2, free);
     e.target.position({ x: x + w / 2, y: y + h / 2 });
@@ -406,13 +494,22 @@ function ItemNode({ item, scene, selected, interactive, ghost, transformable, tu
 
   function onTransformEnd() {
     const node = groupRef.current!;
-    const nw = Math.max(5, w * node.scaleX());
-    const nh = Math.max(5, h * node.scaleY());
+    const sx = node.scaleX();
+    const sy = node.scaleY();
+    const nw = Math.max(5, w * sx);
+    const nh = Math.max(5, h * sy);
     node.scale({ x: 1, y: 1 });
+    // Los dibujos se reescalan de verdad (puntos y tamaño de letra), no solo su caja.
+    const d = item.drawing;
+    const drawing = d && {
+      ...d,
+      points: d.points.map((v, i) => v * (i % 2 === 0 ? nw / w : nh / h)),
+      fontSize: d.type === 'text' ? Math.max(6, Math.min(400, d.fontSize * (nh / h))) : d.fontSize,
+    };
     void emitAck('item:update', {
       sceneId: scene.id,
       id: item.id,
-      patch: { width: nw, height: nh, x: node.x() - nw / 2, y: node.y() - nh / 2, rotation: node.rotation() },
+      patch: { width: nw, height: nh, x: node.x() - nw / 2, y: node.y() - nh / 2, rotation: node.rotation(), ...(drawing ? { drawing } : {}) },
     });
   }
 
@@ -453,7 +550,13 @@ function ItemNode({ item, scene, selected, interactive, ghost, transformable, tu
         onDragEnd={onDragEnd}
         onTransformEnd={onTransformEnd}
       >
-        {image ? (
+        {item.drawing ? (
+          <>
+            {/* Caja invisible para poder agarrar el dibujo por dentro. */}
+            {item.drawing.type !== 'path' && item.drawing.type !== 'line' && <Rect width={w} height={h} fill="rgba(0,0,0,0.001)" />}
+            <DrawingShape drawing={item.drawing} width={w} height={h} />
+          </>
+        ) : image ? (
           <KImage image={image} width={w} height={h} />
         ) : (
           <>

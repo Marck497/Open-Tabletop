@@ -280,3 +280,4 @@ textarea { resize: vertical; }
 .rich-text h1, .rich-text h2, .rich-text h3 { margin: 14px 0 6px; }
 .rich-text p { margin: 8px 0; }
 .tabs button { white-space: nowrap; padding: 10px 2px; font-size: 0.8rem; }
+.draw-color { width: 34px !important; height: 28px; padding: 1px; }

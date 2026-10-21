@@ -7,7 +7,7 @@ import { useBoard } from './store';
 export function StatusBar({ isGm, meId }: { isGm: boolean; meId: string }) {
   const item = useBoard((s) => (s.selectedId ? s.items[s.selectedId] : undefined));
   const template = useSheets((s) => s.template);
-  if (!item || item.layer === 'map' || !(isGm || item.ownerIds.includes(meId))) return null;
+  if (!item || item.layer === 'map' || item.drawing || !(isGm || item.ownerIds.includes(meId))) return null;
   const defs = statusesOf(template);
   const toggle = (id: string) =>
     void updateSelected({ statuses: item.statuses.includes(id) ? item.statuses.filter((s) => s !== id) : [...item.statuses, id] });

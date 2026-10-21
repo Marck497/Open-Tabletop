@@ -79,6 +79,24 @@ export interface Scene {
   fog: Fog;
 }
 
+/** Dibujos sobre el tablero: trazos a mano alzada, líneas, rectángulos, elipses y textos. */
+export const DRAWING_TYPES = ['path', 'line', 'rect', 'ellipse', 'text'] as const;
+export type DrawingType = (typeof DRAWING_TYPES)[number];
+
+export const drawingSchema = z.object({
+  type: z.enum(DRAWING_TYPES),
+  /** Trazo y línea: pares x, y relativos a la esquina del elemento. */
+  points: z.array(z.number().finite()).max(4000).default([]),
+  stroke: z.string().max(32).default('#e8b25a'),
+  /** Relleno de rectángulos y elipses ('' = sin relleno). */
+  fill: z.string().max(32).default(''),
+  strokeWidth: z.number().min(1).max(50).default(4),
+  text: z.string().max(500).default(''),
+  fontSize: z.number().min(6).max(400).default(28),
+});
+export type Drawing = z.infer<typeof drawingSchema>;
+export type DrawingInput = z.input<typeof drawingSchema>;
+
 export const boardItemFields = {
   layer: z.enum(BOARD_LAYERS),
   x: z.number(),
@@ -96,6 +114,8 @@ export const boardItemFields = {
   ownerIds: z.array(z.string()).max(50),
   /** Personaje vinculado (su hoja da nombre, imagen y barras al token). */
   characterId: z.string().nullable(),
+  /** Si es un dibujo en vez de un token o una imagen. */
+  drawing: drawingSchema.nullable(),
   /** Estados marcados (ids de los estados de la plantilla). */
   statuses: z.array(z.string().max(40)).max(30),
   /** IA del enemigo (solo la ve el DM). */
@@ -114,6 +134,7 @@ export const createItemSchema = z.object({
   characterId: boardItemFields.characterId.default(null),
   ai: boardItemFields.ai.default(null),
   statuses: boardItemFields.statuses.default([]),
+  drawing: boardItemFields.drawing.default(null),
 });
 export const updateItemSchema = z.object(boardItemFields).partial();
 export type CreateItemInput = z.input<typeof createItemSchema>;
@@ -137,6 +158,7 @@ export interface BoardItem {
   characterId: string | null;
   ai: TokenAi | null;
   statuses: string[];
+  drawing: Drawing | null;
 }
 
 /** Lo que recibe un cliente al abrir una escena (ya filtrado según su rol). */
