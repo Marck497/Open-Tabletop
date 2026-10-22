@@ -7,3 +7,6 @@ data/
 .DS_Store
 coverage/
 backups/
+
+# graphify
+graphify-out/

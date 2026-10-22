@@ -22,6 +22,7 @@ import { AssetPicker } from './AssetPicker';
 import { LAYER_LABELS, useBoard } from './store';
 import { useSheets } from '../sheets/store';
 import { AiPanel } from '../ai/AiPanel';
+import { DamagePanel } from '../damage/DamagePanel';
 
 /** Propiedades del elemento seleccionado (solo DM). */
 export function ItemPanel({ campaignId, members }: { campaignId: string; members: CampaignMember[] }) {
@@ -112,6 +113,8 @@ export function ItemPanel({ campaignId, members }: { campaignId: string; members
       )}
 
       {item.characterId && !item.drawing && <StatsVisibility />}
+
+      {item.layer !== 'map' && !item.drawing && <DamagePanel campaignId={campaignId} />}
 
       <GmNotes item={item} />
 

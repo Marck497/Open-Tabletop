@@ -131,6 +131,16 @@ Los tokens vinculados a una hoja muestran encima su **barra de vida**: verde, am
 - **Estados**: los bufos (Bendecido, Acelerado, Inspiración bárdica, Escudo de fe, Furia, Heroísmo, Resistencia) llevan un aro verde y los perjuicios un aro rojo.
 - **Plantilla**: en *Combate, barras de vida e IA de enemigos* se elige qué campo son los PG temporales.
 
+### Daño y curación a mano
+
+El DM puede quitar o dar vida sin usar una creación: selecciona un token (o coloca una plantilla de área encima de varios) y, en el panel del elemento, apartado **❤ Daño y curación**:
+
+- Escribe la **cantidad**: un número (`8`) o una tirada (`2d6 + 3`), que se tira en el servidor. Intro aplica el daño.
+- Si es daño, elige el **tipo** (fuego, cortante…) para que cuenten las **resistencias, inmunidades y vulnerabilidades**; déjalo vacío para daño sin tipo.
+- **🩸 Daño** resta primero los **PG temporales** y luego los PG, sin bajar de 0. **💚 Curar** suma PG sin pasar del máximo.
+- Si el objetivo se está **concentrando**, se tira su salvación igual que con cualquier otro daño.
+- El resumen sale en el chat; si algún token está en la capa del DM, solo lo ve el DM.
+
 ## Chat, tiradas e iniciativa
 
 - **Chat** (pestaña por defecto): escribe normal o usa comandos: `/r 1d20+5 Ataque`, `/gr 1d20` (secreta para el DM), `/w Ana texto` (susurro), `/em se esconde`. Con ↑ recuperas lo último que enviaste, y el selector permite hablar como tu personaje.
