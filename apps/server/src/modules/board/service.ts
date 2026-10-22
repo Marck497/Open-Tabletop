@@ -14,6 +14,7 @@ import {
   wallsSchema,
   terrainSchema,
   resizeTerrain,
+  exploreFrom,
   type BoardItem,
   type CampaignRole,
   type CreateItemInput,
@@ -115,7 +116,9 @@ export function createBoardService(ctx: AppContext) {
     const h = data.heightCells ?? before.heightCells;
     // Si cambia el tamaño, el suelo pintado se recorta o se amplía con vacío.
     const terrain = before.terrain && (w !== before.widthCells || h !== before.heightCells) ? { terrain: resizeTerrain(before.terrain, before.widthCells, before.heightCells, w, h) } : {};
-    if (Object.keys(data).length) db.update(scenes).set({ ...data, ...terrain }).where(eq(scenes.id, sceneId)).run();
+    // Lo explorado va por subcasillas: si cambia la cuadrícula, se empieza de cero.
+    const resized = w !== before.widthCells || h !== before.heightCells || (data.gridSize ?? before.gridSize) !== before.gridSize;
+    if (Object.keys(data).length) db.update(scenes).set({ ...data, ...terrain, ...(resized ? { explored: '' } : {}) }).where(eq(scenes.id, sceneId)).run();
     return toScene(sceneRow(sceneId));
   }
 
@@ -309,6 +312,29 @@ export function createBoardService(ctx: AppContext) {
     return setFog(sceneId, userId, { ...scene.fog, ops });
   }
 
+  // ---------- Zonas exploradas ----------
+
+  /**
+   * Suma a lo explorado lo que ven ahora los tokens de los jugadores.
+   * Devuelve la escena si ha cambiado algo (null si no).
+   */
+  function explore(sceneId: string): Scene | null {
+    const { scene, items } = itemsOf(sceneId);
+    if (!scene.vision || !scene.exploration) return null;
+    const eyes = items.filter((i) => isEye(i) && i.ownerIds.length > 0).map((i) => ({ x: i.x + i.width / 2, y: i.y + i.height / 2 }));
+    const explored = exploreFrom(scene, scene.explored, eyes);
+    if (explored === null) return null;
+    db.update(scenes).set({ explored }).where(eq(scenes.id, sceneId)).run();
+    return { ...scene, explored };
+  }
+
+  /** El DM olvida lo explorado; se vuelve a marcar lo que ven ahora los tokens. */
+  function resetExplored(sceneId: string, userId: string): Scene {
+    requireGmScene(sceneId, userId);
+    db.update(scenes).set({ explored: '' }).where(eq(scenes.id, sceneId)).run();
+    return explore(sceneId) ?? toScene(sceneRow(sceneId));
+  }
+
   // ---------- Paredes y puertas ----------
 
   function setWalls(sceneId: string, userId: string, input: WallInput[]): Scene {
@@ -376,6 +402,8 @@ export function createBoardService(ctx: AppContext) {
     deleteItem,
     setFog,
     addFogOp,
+    explore,
+    resetExplored,
     setWalls,
     setTerrain,
     toggleDoor,

@@ -64,6 +64,7 @@ interface BoardState {
   clear: () => void;
   setScene: (scene: Scene) => void;
   setFog: (fog: Fog) => void;
+  setExplored: (explored: string) => void;
   upsert: (item: BoardItem) => void;
   remove: (id: string) => void;
   setMoving: (id: string, pos: { x: number; y: number } | null) => void;
@@ -122,6 +123,7 @@ export const useBoard = create<BoardState>((set) => ({
   clear: () => set({ scene: null, items: {}, selectedId: null, targets: [], moving: {}, remoteMeasures: {}, myMeasure: null, pings: [] }),
   setScene: (scene) => set((s) => (s.scene?.id === scene.id ? { scene } : {})),
   setFog: (fog) => set((s) => (s.scene ? { scene: { ...s.scene, fog } } : {})),
+  setExplored: (explored) => set((s) => (s.scene ? { scene: { ...s.scene, explored } } : {})),
   upsert: (item) =>
     set((s) => {
       const { [item.id]: _, ...moving } = s.moving;

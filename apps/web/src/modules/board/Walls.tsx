@@ -1,7 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo } from 'react';
 import { Circle, Group, Line, Shape, Text } from 'react-konva';
 import {
+  decodeExplored,
+  exploredGrid,
   hasLineOfSight,
+  isExplored,
   isDoor,
   visibilityPolygon,
   WALL_COLORS,
@@ -151,56 +154,71 @@ export function DoorButtons({ scene, scale, isGm, eyes }: { scene: Scene; scale:
   );
 }
 
-/** Zonas ya exploradas por escena (en memoria mientras la pestaña siga abierta). */
-const explored = new Map<string, Point[][]>();
-const MAX_EXPLORED = 300;
+/** Pinta lo explorado en un lienzo pequeño (una celda por subcasilla) que luego se estira sobre la escena. */
+function useExploredCanvas(scene: Scene): HTMLCanvasElement | null {
+  const { explored, exploration, widthCells, heightCells, gridSize } = scene;
+  return useMemo(() => {
+    if (!exploration || !explored) return null;
+    const g = exploredGrid({ widthCells, heightCells, gridSize });
+    const bits = decodeExplored(explored, g);
+    const canvas = document.createElement('canvas');
+    canvas.width = g.cols;
+    canvas.height = g.rows;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    const img = ctx.createImageData(g.cols, g.rows);
+    for (let r = 0; r < g.rows; r++) {
+      for (let c = 0; c < g.cols; c++) {
+        if (!isExplored(bits, g, c, r)) continue;
+        const i = (r * g.cols + c) * 4;
+        // Gris azulado: al ponerlo encima, apaga los colores de lo que ya no se ve.
+        img.data[i] = 34;
+        img.data[i + 1] = 34;
+        img.data[i + 2] = 42;
+        img.data[i + 3] = 255;
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+    return canvas;
+  }, [explored, exploration, widthCells, heightCells, gridSize]);
+}
 
 /**
- * Oscuridad de la visión dinámica: negro donde no llega la vista, penumbra en lo ya
- * explorado y despejado lo que ven ahora los tokens.
+ * Oscuridad de la visión dinámica: negro donde no llega la vista, gris en lo ya
+ * explorado (lo guarda el servidor por escena) y despejado lo que ven ahora los tokens.
  */
 export function VisionMask({ scene, eyes }: { scene: Scene; eyes: Point[] }) {
   const w = scene.widthCells * scene.gridSize;
   const h = scene.heightCells * scene.gridSize;
   const range = scene.visionRange * scene.gridSize;
   const polygons = useMemo(() => eyes.map((e) => visibilityPolygon(e, scene.walls, w, h, range)), [eyes, scene.walls, w, h, range]);
-  const [, setTick] = useState(0);
-  const lastKey = useRef('');
+  const explored = useExploredCanvas(scene);
 
-  useEffect(() => {
-    const key = `${scene.id}|${eyes.map((e) => `${Math.round(e.x)},${Math.round(e.y)}`).join(';')}|${scene.walls.length}`;
-    if (key === lastKey.current || !polygons.length) return;
-    lastKey.current = key;
-    const list = explored.get(scene.id) ?? [];
-    list.push(...polygons);
-    explored.set(scene.id, list.slice(-MAX_EXPLORED));
-    setTick((t) => t + 1);
-  }, [polygons, eyes, scene.id, scene.walls.length]);
-
-  const past = explored.get(scene.id) ?? [];
   return (
     <Shape
       listening={false}
       sceneFunc={(kctx) => {
         const ctx = kctx._context;
-        const path = (polys: Point[][]) => {
-          ctx.beginPath();
-          for (const poly of polys) {
-            if (poly.length < 3) continue;
-            ctx.moveTo(poly[0]!.x, poly[0]!.y);
-            for (let i = 1; i < poly.length; i++) ctx.lineTo(poly[i]!.x, poly[i]!.y);
-            ctx.closePath();
-          }
-        };
         ctx.save();
         ctx.fillStyle = '#000';
         ctx.fillRect(0, 0, w, h);
+        if (explored) {
+          ctx.imageSmoothingEnabled = true;
+          ctx.globalCompositeOperation = 'destination-out';
+          ctx.drawImage(explored, 0, 0, w, h);
+          ctx.globalCompositeOperation = 'source-over';
+          ctx.globalAlpha = 0.62;
+          ctx.drawImage(explored, 0, 0, w, h);
+          ctx.globalAlpha = 1;
+        }
         ctx.globalCompositeOperation = 'destination-out';
-        ctx.fillStyle = 'rgba(0,0,0,0.45)';
-        path(past);
-        ctx.fill();
-        ctx.fillStyle = '#000';
-        path(polygons);
+        ctx.beginPath();
+        for (const poly of polygons) {
+          if (poly.length < 3) continue;
+          ctx.moveTo(poly[0]!.x, poly[0]!.y);
+          for (let i = 1; i < poly.length; i++) ctx.lineTo(poly[i]!.x, poly[i]!.y);
+          ctx.closePath();
+        }
         ctx.fill();
         ctx.restore();
       }}

@@ -211,6 +211,22 @@ export function Toolbar({ campaignId, isGm }: { campaignId: string; isGm: boolea
                 }}
               />
             </label>
+            <label className="switch" title="Lo que ya han visto los tokens de los jugadores se queda a la vista en gris (sin mostrar quién está ahí ahora)">
+              <input type="checkbox" checked={scene.exploration} onChange={(e) => saveScene({ exploration: e.target.checked })} />
+              Recordar lo explorado
+            </label>
+            {scene.exploration && scene.explored && (
+              <button
+                className="ghost small"
+                title="Olvida lo explorado en esta escena (se queda solo lo que ven ahora)"
+                onClick={() =>
+                  confirm('¿Olvidar todo lo explorado en esta escena?') &&
+                  void emitAck('explored:reset', { sceneId: scene.id }).catch((e: Error) => useBoard.getState().showNotice(e.message))
+                }
+              >
+                Olvidar
+              </button>
+            )}
             <label className="switch" title="Oscurece el tablero como lo ven los jugadores (con todos sus tokens)">
               <input type="checkbox" checked={previewVision} onChange={(e) => setPreviewVision(e.target.checked)} />
               Ver como jugadores

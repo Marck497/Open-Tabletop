@@ -101,6 +101,8 @@ export const scenes = sqliteTable(
     terrain: text('terrain').notNull().default(''),
     vision: integer('vision', { mode: 'boolean' }).notNull().default(false),
     visionRange: integer('vision_range').notNull().default(0),
+    exploration: integer('exploration', { mode: 'boolean' }).notNull().default(true),
+    explored: text('explored').notNull().default(''),
     ...timestamps,
   },
   (t) => [index('scenes_campaign_idx').on(t.campaignId)],
