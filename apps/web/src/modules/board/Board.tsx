@@ -12,6 +12,10 @@ import { MeasuresLayer } from './Measures';
 import { DrawingShape, fillOf, textBox } from './Drawing';
 import { useBoard } from './store';
 import { DoorButtons, newWallId, saveWalls, snapWallPoint, useEyes, VisionMask, WallLines } from './Walls';
+import { MapEditorPanel } from '../mapeditor/MapEditorPanel';
+import { TerrainLayer } from '../mapeditor/TerrainLayer';
+import { useMapEditor } from '../mapeditor/store';
+import { useMapPointer } from '../mapeditor/useMapPointer';
 
 interface Props {
   isGm: boolean;
@@ -54,6 +58,27 @@ export function Board({ isGm, meId }: Props) {
   const [wallDraft, setWallDraft] = useState<{ a: Point; b: Point } | null>(null);
   const previewVision = useBoard((s) => s.previewVision);
   const notice = useBoard((s) => s.notice);
+  /** Desplazar la vista con el botón central o derecho (en las herramientas que usan el izquierdo). */
+  const pan = useRef<{ sx: number; sy: number; vx: number; vy: number } | null>(null);
+  const terrainDraft = useMapEditor((s) => s.draft);
+  const mapPointer = useMapPointer(scene, view.scale);
+  const mapPointerRef = useRef(mapPointer);
+  mapPointerRef.current = mapPointer;
+  const mapTool = isGm && tool === 'map';
+
+  // Al soltar el ratón (aunque sea fuera del tablero) se guarda lo pintado.
+  useEffect(() => {
+    const up = () => {
+      pan.current = null;
+      if (mapTool) mapPointerRef.current.onUp();
+    };
+    window.addEventListener('mouseup', up);
+    window.addEventListener('touchend', up);
+    return () => {
+      window.removeEventListener('mouseup', up);
+      window.removeEventListener('touchend', up);
+    };
+  }, [mapTool]);
 
   // Tamaño del lienzo = tamaño del contenedor.
   useLayoutEffect(() => {
@@ -144,7 +169,8 @@ export function Board({ isGm, meId }: Props) {
   const pingTool = tool === 'ping';
   const drawTool = tool === 'draw';
   const wallTool = isGm && tool === 'walls';
-  const freeTool = !fogTool && !measureTool && !pingTool && !drawTool && !wallTool;
+  const freeTool = !fogTool && !measureTool && !pingTool && !drawTool && !wallTool && !mapTool;
+  const terrain = terrainDraft ?? scene.terrain;
 
   function pointerInScene(stage: Konva.Stage) {
     return stage.getRelativePointerPosition()!;
@@ -157,6 +183,14 @@ export function Board({ isGm, meId }: Props) {
 
   function onStageMouseDown(e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) {
     const stage = e.target.getStage()!;
+    if (!freeTool && 'button' in e.evt && e.evt.button !== 0) {
+      pan.current = { sx: e.evt.clientX, sy: e.evt.clientY, vx: view.x, vy: view.y };
+      return;
+    }
+    if (mapTool) {
+      mapPointer.onDown(pointerInScene(stage));
+      return;
+    }
     if (measureTool) {
       const shape = useBoard.getState().measureShape;
       const p = measurePoint(stage, e.evt, shape);
@@ -195,6 +229,16 @@ export function Board({ isGm, meId }: Props) {
   }
 
   function onStageMouseMove(e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) {
+    const p0 = pan.current;
+    if (p0 && 'clientX' in e.evt) {
+      const evt = e.evt;
+      setView((v) => ({ ...v, x: p0.vx + evt.clientX - p0.sx, y: p0.vy + evt.clientY - p0.sy }));
+      return;
+    }
+    if (mapTool) {
+      mapPointer.onMove(pointerInScene(e.target.getStage()!));
+      return;
+    }
     const mine = useBoard.getState().myMeasure;
     if (measuring.current && mine) {
       const stage = e.target.getStage()!;
@@ -313,6 +357,7 @@ export function Board({ isGm, meId }: Props) {
     <div
       ref={containerRef}
       className={`board-container ${freeTool ? '' : 'crosshair'}`}
+      onContextMenu={(e) => !freeTool && e.preventDefault()}
       onDragOver={(e) => isGm && e.dataTransfer.types.includes('application/x-vtt-character') && e.preventDefault()}
       onDrop={(e) => {
         // Soltar un personaje de la lista sobre el tablero crea su token ahí.
@@ -344,6 +389,7 @@ export function Board({ isGm, meId }: Props) {
         onTouchMove={onStageMouseMove}
         onMouseUp={onStageMouseUp}
         onTouchEnd={onStageMouseUp}
+        onMouseLeave={mapPointer.onLeave}
         onDblClick={(e) => {
           // Doble clic en el fondo: ping (con Mayús, el DM centra la vista de todos).
           if (freeTool && (e.target === e.target.getStage() || e.target.name() === 'background')) sendPing(pointerInScene(e.target.getStage()!), isGm && e.evt.shiftKey);
@@ -351,6 +397,7 @@ export function Board({ isGm, meId }: Props) {
       >
         <Layer>
           <Rect name="background" width={sceneW} height={sceneH} fill={scene.backgroundColor} />
+          {terrain && <TerrainLayer scene={scene} terrain={terrain} />}
           {byLayer('map').map((i) => (
             <ItemNode {...itemProps(i)} />
           ))}
@@ -393,11 +440,13 @@ export function Board({ isGm, meId }: Props) {
             />
           )}
           {drawDraft && <DraftShape pts={drawDraft} />}
+          {mapTool && mapPointer.overlay}
           <MeasuresLayer scene={scene} scale={view.scale} dragMeasure={dragMeasure} />
         </Layer>
       </Stage>
       {eyes && !eyes.length && !isGm && <div className="board-notice">Visión activada: no tienes ningún token en esta escena, así que no ves nada.</div>}
       {notice && <div className="board-notice">{notice}</div>}
+      {mapTool && <MapEditorPanel scene={scene} />}
     </div>
   );
 }

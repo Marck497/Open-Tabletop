@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { io as connect, type Socket } from 'socket.io-client';
 import type { AckResult, BoardItem, ClientToServerEvents, SceneState, ServerToClientEvents } from '@vtt/shared';
+import { paintRect, withAutoWalls } from '@vtt/shared';
 import { listenWithRealtime, registerUser } from './helpers.js';
 
 type Client = Socket<ServerToClientEvents, ClientToServerEvents>;
@@ -331,3 +332,30 @@ describe('paredes y visión', () => {
     expect((await sync).items.map((i) => i.id)).toEqual([map.id]);
   });
 });
+
+describe('editor de mapas', () => {
+  it('el DM pinta el suelo con sus paredes; los jugadores lo reciben y no pueden pintar', async () => {
+    const { app, gm, sceneId, gmC, plC } = await setup();
+    const t = paintRect('', 30, 20, 1, 1, 4, 3, 'p');
+    const walls = withAutoWalls([], t, 30, 20, 70);
+    expect((await call(plC, 'terrain:set', { sceneId, terrain: t })).ok).toBe(false);
+    expect((await call(gmC, 'terrain:set', { sceneId, terrain: 'pp' })).ok).toBe(false); // tamaño que no encaja
+    expect((await call(gmC, 'terrain:set', { sceneId, terrain: t.replace('p', '?') })).ok).toBe(false);
+
+    const sync = next(plC, 'scene:sync');
+    const updated = next(gmC, 'scene:updated');
+    ok(await call(gmC, 'terrain:set', { sceneId, terrain: t, walls }));
+    expect((await updated).scene).toMatchObject({ terrain: t, walls: expect.arrayContaining([expect.objectContaining({ auto: true })]) });
+    expect((await sync).scene.terrain).toBe(t);
+
+    // Al agrandar la escena el suelo se conserva arriba a la izquierda; sin nada pintado se guarda vacío.
+    const res = await app.inject({ method: 'PATCH', url: `/api/scenes/${sceneId}`, headers: { cookie: gm.cookie }, payload: { widthCells: 31 } });
+    const { scene } = res.json();
+    expect(scene.terrain).toHaveLength(31 * 20);
+    expect(scene.terrain.slice(31, 36)).toBe('.pppp');
+    ok(await call(gmC, 'terrain:set', { sceneId, terrain: '.'.repeat(31 * 20) }));
+    const after = (await app.inject({ url: `/api/campaigns/${scene.campaignId}/scenes`, headers: { cookie: gm.cookie } })).json();
+    expect(after.scenes[0].terrain).toBe('');
+  });
+});
+

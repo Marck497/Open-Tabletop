@@ -171,6 +171,14 @@ export const boardModule: ServerModule = {
       }),
     );
 
+    socket.on('terrain:set', (payload, ack) =>
+      handleAck(ack, async () => {
+        const { sceneId, terrain, walls } = z.object({ sceneId: z.string(), terrain: z.string(), walls: z.array(z.unknown()).optional() }).parse(payload);
+        await broadcast.sceneUpdated(board.setTerrain(sceneId, userId(), terrain, walls as never), false);
+        return undefined;
+      }),
+    );
+
     socket.on('door:toggle', (payload, ack) =>
       handleAck(ack, async () => {
         const { sceneId, wallId, ...patch } = z

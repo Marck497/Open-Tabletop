@@ -105,6 +105,8 @@ export interface ClientToServerEvents {
   'item:moving': (payload: { sceneId: string; id: string; x: number; y: number }) => void;
   /** El DM sustituye todas las paredes de la escena. */
   'walls:set': (payload: { sceneId: string; walls: WallInput[] }, ack: Ack) => void;
+  /** Suelo pintado (y, si cambian con él, las paredes) de una vez. */
+  'terrain:set': (payload: { sceneId: string; terrain: string; walls?: WallInput[] }, ack: Ack) => void;
   /** Abrir/cerrar una puerta (los jugadores, las suyas sin llave; el DM, cualquiera y la llave). */
   'door:toggle': (payload: { sceneId: string; wallId: string; open?: boolean; locked?: boolean }, ack: Ack) => void;
   'fog:set': (payload: { sceneId: string; fog: Fog }, ack: Ack) => void;

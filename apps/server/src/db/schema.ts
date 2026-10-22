@@ -94,6 +94,7 @@ export const scenes = sqliteTable(
     sortOrder: integer('sort_order').notNull().default(0),
     fog: text('fog', { mode: 'json' }).$type<Fog>().notNull().default({ enabled: false, ops: [] }),
     walls: text('walls', { mode: 'json' }).$type<Wall[]>().notNull().default([]),
+    terrain: text('terrain').notNull().default(''),
     vision: integer('vision', { mode: 'boolean' }).notNull().default(false),
     visionRange: integer('vision_range').notNull().default(0),
     ...timestamps,

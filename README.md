@@ -63,6 +63,21 @@ Abre `http://IP-DE-LA-PI:3000` desde cualquier equipo de tu red. La primera comp
 - Los tokens se ajustan a la cuadrícula al soltarlos (mantén **Alt** para moverlos libremente).
 - **Supr** borra el elemento seleccionado (DM) y **Esc** quita la selección.
 
+## Editor de mapas
+
+Botón **🗺️ Editor de mapas** (solo el DM). Abre una paleta a la derecha del tablero para construir el mapa sin necesitar imágenes:
+
+- **Suelos** con textura: losas, adoquines, madera, baldosas, mármol, alfombra, cueva, hierba, tierra, arena, nieve, bosque, agua, pantano, hielo, lava, abismo, roca y ladrillo (estos dos hacen de pared).
+- **Herramientas**: 🖌️ pincel (B, tamaño con `[` y `]`), ▭ rectángulo (R), 🪣 rellenar (G), 🧽 borrar (E), 💧 cuentagotas (I).
+- **🏠 Habitación** (H): arrastra un rectángulo y aparece la sala con sus paredes. Si dos salas se tocan, se unen.
+- **🚪 Puerta** (P): clic en el borde de una casilla para poner o quitar una puerta.
+- **Paredes automáticas**: se ponen solas donde el suelo toca el vacío o un muro y se rehacen al pintar; las que pongas a mano se respetan.
+- **🌲 Objetos** (O): árboles, rocas, muebles, cofres, calaveras, señales… de 1 a 4 casillas. Se colocan en la capa *Mapa* y se mueven o giran con ✋.
+- **Generar al azar**: una mazmorra (salas, pasillos y puertas) o una cueva, del tamaño de la escena.
+- **Deshacer y rehacer** con Ctrl+Z / Ctrl+Y.
+
+Con el editor abierto, el zoom va con la rueda y el mapa se desplaza con el botón central o el derecho.
+
 ## Hojas de personaje
 
 - **Personajes** (panel derecho): el DM crea PJ y PNJ y elige qué jugadores los controlan. Un jugador también puede crear el suyo.
