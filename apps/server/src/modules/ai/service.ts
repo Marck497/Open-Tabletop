@@ -2,6 +2,11 @@ import { and, eq } from 'drizzle-orm';
 import {
   fxForHomebrew,
   fxForRow,
+  applyDefenses,
+  damageTypesIn,
+  defensesOf,
+  DAMAGE_TYPE_SUGGESTIONS,
+  type DamagePiece,
   allFields,
   combatOf,
   createResolver,
@@ -57,7 +62,13 @@ interface Attack {
   resolve?: (name: string) => unknown;
   /** Creación enlazada (para su animación). */
   entry?: HomebrewEntry | null;
+  /** Tipo del daño y del daño extra (para resistencias); '' si no se sabe. */
+  damageType?: string;
+  extraType?: string;
 }
+
+/** Primer tipo de daño conocido que aparece en el texto. */
+const typeIn = (text: unknown) => damageTypesIn(String(text ?? ''), DAMAGE_TYPE_SUGGESTIONS)[0] ?? '';
 
 /** Turno de un enemigo con IA: moverse por la cuadrícula, atacar y anotarlo en el chat. */
 export function createAiService(ctx: AppContext) {
@@ -137,7 +148,7 @@ export function createAiService(ctx: AppContext) {
 
   /** Ataque que usará: el de la configuración de IA o una fila de la tabla de ataques de su hoja. */
   function attackOf(template: SheetTemplate, character: Character | null, ai: TokenAi): Attack | null {
-    if (ai.attack) return { name: ai.attackName || 'Ataque', attack: ai.attack, damage: ai.damage };
+    if (ai.attack) return { name: ai.attackName || 'Ataque', attack: ai.attack, damage: ai.damage, damageType: typeIn(`${ai.attackName} ${ai.damage}`) };
     const combat = combatOf(template);
     if (!character || !combat?.attacks) return null;
     const { list, name, attack, damage, extra, crit } = combat.attacks;
@@ -148,8 +159,11 @@ export function createAiService(ctx: AppContext) {
     const entry = typeof row._ref === 'string' ? homebrew.find(character.campaignId, row._ref) : null;
     const d = entry?.data;
     if (entry && d && d.attack !== 'none' && d.attackBonus.trim()) {
-      const dice = d.damage.map((p) => p.dice.trim()).filter(Boolean);
+      const parts = d.damage.filter((p) => p.dice.trim());
+      const dice = parts.map((p) => p.dice.trim());
       return {
+        damageType: parts[0]?.type ?? '',
+        extraType: parts[1]?.type ?? '',
         name: entry.name,
         attack: `1d20 + (${d.attackBonus})`,
         damage: dice[0] ?? '0',
@@ -166,6 +180,8 @@ export function createAiService(ctx: AppContext) {
       attack: rollOf(attack),
       damage: rollOf(damage),
       extra: extra && row[extra] ? splitRoll(String(row[extra])).expression || undefined : undefined,
+      damageType: typeIn(`${row[damage] ?? ''} ${row.tipo ?? ''}`),
+      extraType: extra ? typeIn(row[extra]) : '',
       critFrom: crit ? Math.min(20, Math.max(2, Number(row[crit]) || 20)) : 20,
       resolve: createResolver(template, character.values, row),
     };
@@ -323,18 +339,28 @@ export function createAiService(ctx: AppContext) {
     // Daño: en un crítico se tiran el doble de dados.
     let total = 0;
     let rolls: DiceRoll[] = [];
-    for (const expr of [attack.damage, attack.extra]) {
+    const typed: DamagePiece[] = [];
+    for (const [expr, type] of [
+      [attack.damage, attack.damageType],
+      [attack.extra, attack.extraType],
+    ] as const) {
       if (!expr) continue;
       const dmg = roll(expr, attack.resolve);
-      total += dmg.value;
+      let amount = dmg.value;
       rolls = [...rolls, ...dmg.rolls];
       if (crit) {
         const again = roll(expr, attack.resolve);
-        total += keptSum(again.rolls);
+        amount += keptSum(again.rolls);
         rolls = [...rolls, ...again.rolls];
       }
+      total += amount;
+      typed.push({ type: type ?? '', amount: Math.max(0, Math.round(amount)) });
     }
     total = Math.max(0, Math.round(total));
+    // Resistencias, inmunidades y vulnerabilidades del objetivo (de su hoja y sus estados).
+    const defended = applyDefenses(typed, defensesOf(template, target.character?.values ?? null, target.item.statuses));
+    const why = defended.notes.length ? ` (${defended.notes.join(', ')}: ${defended.total})` : '';
+    if (defended.notes.length) total = defended.total;
     result.damage = total;
 
     let applied = '';
@@ -350,7 +376,7 @@ export function createAiService(ctx: AppContext) {
       await broadcastCharacter(ctx, before, sheets.row(before.id));
       applied = hp === 0 ? ` (${target.name} cae a 0)` : ` (${target.hp} → ${hp})`;
     }
-    await say(base, 'roll', '', { label: `Daño a ${target.name}${crit ? ' (crítico)' : ''}${applied}`, expression: [attack.damage, attack.extra].filter(Boolean).join(' + '), total, rolls });
+    await say(base, 'roll', '', { label: `Daño a ${target.name}${crit ? ' (crítico)' : ''}${why}${applied}`, expression: [attack.damage, attack.extra].filter(Boolean).join(' + '), total: typed.reduce((s, p) => s + p.amount, 0), rolls });
     return result;
   }
 

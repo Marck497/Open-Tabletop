@@ -1,6 +1,8 @@
 import { and, eq, inArray } from 'drizzle-orm';
 import {
   ActionError,
+  applyDefenses,
+  defensesOf,
   actionsOf,
   allFields,
   combatOf,
@@ -120,6 +122,7 @@ export function createHomebrewEffects(ctx: AppContext) {
         save: d.save ? { ability: d.save, label: save?.label ?? d.save, dc: r.dc ?? 10, half: d.saveHalf } : null,
         damage: r.damage,
         damageTypes: r.damageTypes,
+        damageParts: r.damageParts,
         heal: r.heal,
         conditions: d.conditions.filter((c) => statusesOf(template).some((s) => s.id === c)),
         area: d.area.shape !== 'none' && d.area.size > 0 ? { shape: d.area.shape, size: d.area.size } : null,
@@ -249,7 +252,14 @@ export function createHomebrewEffects(ctx: AppContext) {
         parts.push({ label: `${name}: salvación de ${effect.save.label} (CD ${effect.save.dc}) ${saved ? '✔ salva' : '✘ falla'}`, expression, total, rolls });
       }
 
-      const damage = !hit ? 0 : saved ? (effect.save?.half ? Math.floor(effect.damage / 2) : 0) : effect.damage;
+      // Daño por tipos (los mensajes antiguos solo traen el total) con la salvación y luego las defensas.
+      const typed = (effect.damageParts ?? [{ type: effect.damageTypes[0] ?? '', amount: effect.damage }]).map((p) => ({
+        ...p,
+        amount: !hit ? 0 : saved ? (effect.save?.half ? Math.floor(p.amount / 2) : 0) : p.amount,
+      }));
+      const defended = applyDefenses(typed, defensesOf(template, character?.values ?? null, item.statuses));
+      const damage = defended.total;
+      const why = defended.notes.length ? ` (${defended.notes.join(', ')})` : '';
       const isPc = !!character?.controlledBy.length;
       if (damage > 0) {
         const p = character ? damagePatch(template, character.values, damage) : null;
@@ -257,9 +267,9 @@ export function createHomebrewEffects(ctx: AppContext) {
           const after = sheets.update(character.id, user.id, { values: p.patch }).after;
           await broadcastCharacter(ctx, character, after);
           character = after;
-          pieces.push(`${damage} de daño${isPc ? ` (${p.before} → ${p.after})` : p.after === 0 ? ' (cae a 0)' : ''}`);
-        } else pieces.push(`${damage} de daño (sin hoja)`);
-      } else if (effect.damage > 0 && hit) pieces.push('sin daño');
+          pieces.push(`${damage} de daño${why}${isPc ? ` (${p.before} → ${p.after})` : p.after === 0 ? ' (cae a 0)' : ''}`);
+        } else pieces.push(`${damage} de daño${why} (sin hoja)`);
+      } else if (effect.damage > 0 && hit) pieces.push(`sin daño${why}`);
       if (effect.heal > 0 && hit) {
         const p = character ? healPatch(template, character.values, effect.heal) : null;
         if (character && p) {

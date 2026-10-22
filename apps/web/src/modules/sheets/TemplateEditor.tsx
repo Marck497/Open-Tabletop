@@ -418,6 +418,36 @@ function CombatEditor({ template, update }: { template: SheetTemplate; update: (
           <input value={combat.spellDc ?? ''} placeholder="conj_cd" onChange={(e) => set({ spellDc: e.target.value || undefined })} />
         </label>
       </div>
+      <p className="muted hint">Para 🎯 Aplicar y la IA: campos de texto con los tipos de daño, separados por comas, que el personaje resiste (mitad), anula (inmune) o recibe doble (vulnerable).</p>
+      <div className="field-row">
+        {(
+          [
+            ['resist', 'Resistencias'],
+            ['immune', 'Inmunidades'],
+            ['vulnerable', 'Vulnerabilidades'],
+          ] as const
+        ).map(([k, label]) => (
+          <label key={k}>
+            {label}
+            <select
+              value={combat.defenses?.[k] ?? ''}
+              onChange={(e) => {
+                const next = { resist: '', immune: '', vulnerable: '', ...combat.defenses, [k]: e.target.value };
+                set({ defenses: next.resist || next.immune || next.vulnerable ? next : null });
+              }}
+            >
+              <option value="">—</option>
+              {fields
+                .filter((f) => f.type === 'text' || f.type === 'textarea')
+                .map((f) => (
+                  <option key={f.key} value={f.key}>
+                    {f.label} ({f.key})
+                  </option>
+                ))}
+            </select>
+          </label>
+        ))}
+      </div>
     </details>
   );
 }

@@ -123,6 +123,8 @@ export const combatMappingSchema = z.object({
   spellDc: z.string().max(200).optional(),
   /** Modificador de lanzamiento (lo que suman las curaciones del SRD). */
   spellMod: z.string().max(200).optional(),
+  /** Campos de texto con los tipos de daño (separados por comas) a los que es resistente, inmune o vulnerable. */
+  defenses: z.object({ resist: z.string().max(64), immune: z.string().max(64), vulnerable: z.string().max(64) }).nullable().optional(),
 });
 export type CombatMapping = z.infer<typeof combatMappingSchema>;
 
@@ -136,6 +138,8 @@ export const statusDefSchema = z.object({
   incapacitated: z.boolean().default(false),
   /** Bufo (verde) o perjuicio (rojo); sin marcar, neutro. */
   kind: z.enum(['buff', 'debuff']).optional(),
+  /** Tipos de daño a los que da resistencia mientras se tiene (separados por comas; «todo» = cualquiera). */
+  resist: z.string().max(200).optional(),
 });
 export type StatusDef = z.infer<typeof statusDefSchema>;
 

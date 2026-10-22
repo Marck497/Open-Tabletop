@@ -64,7 +64,7 @@ const skillFields: SheetField[] = SKILLS.flatMap(([k, label, ab]) => [
 ]);
 
 /** Versión de la plantilla de serie. Las partidas con una anterior reciben lo nuevo con `upgradeDnd5e`. */
-export const DND5E_VERSION = 2;
+export const DND5E_VERSION = 3;
 
 /** Columnas de daño extra y crítico de la tabla de ataques (versión 2). */
 const ATTACK_EXTRA_COLUMNS: SheetField[] = [
@@ -98,6 +98,14 @@ const RESOURCES_SECTION: SheetSection = {
   ],
 };
 
+/** Resistencias, inmunidades y vulnerabilidades al daño (versión 3): las usa 🎯 Aplicar. */
+const DEFENSE_FIELDS: SheetField[] = [
+  { key: 'resistencias', label: 'Resistencias al daño', type: 'text', span: 4, hint: 'Tipos separados por comas, p. ej. "fuego, veneno" ("todo" = cualquiera)' },
+  { key: 'inmunidades', label: 'Inmunidades al daño', type: 'text', span: 4, hint: 'Tipos separados por comas' },
+  { key: 'vulnerabilidades', label: 'Vulnerabilidades al daño', type: 'text', span: 4, hint: 'Tipos separados por comas' },
+];
+const DEFENSES_MAPPING = { resist: 'resistencias', immune: 'inmunidades', vulnerable: 'vulnerabilidades' };
+
 const PACT_FIELD: SheetField = { key: 'espacios_pacto', label: 'Espacios de pacto (vuelven con descanso corto)', type: 'checkbox', span: 2 };
 
 export const dnd5eTemplate: SheetTemplateInput = {
@@ -120,6 +128,7 @@ export const dnd5eTemplate: SheetTemplateInput = {
     spellAttack: 'conj_ataque',
     spellDc: 'conj_cd',
     spellMod: 'conj_mod',
+    defenses: DEFENSES_MAPPING,
   },
   sections: [
     {
@@ -160,6 +169,7 @@ export const dnd5eTemplate: SheetTemplateInput = {
         { key: 'dados_golpe', label: 'Dados de golpe', type: 'text', default: '1d8', roll: '@{dados_golpe} + @{con_mod}', rollLabel: 'Dado de golpe' },
         { key: 'exitos_muerte', label: 'Éxitos vs muerte', type: 'number', default: 0, roll: '1d20', rollLabel: 'Salvación contra muerte' },
         { key: 'fallos_muerte', label: 'Fallos vs muerte', type: 'number', default: 0 },
+        ...DEFENSE_FIELDS,
       ],
     },
     {
@@ -302,11 +312,14 @@ export function upgradeDnd5e(template: SheetTemplate): SheetTemplate {
   }
   const spells = t.sections.find((s) => s.fields.some((f) => f.key === 'conjuros'));
   if (spells && !keys.has(PACT_FIELD.key)) spells.fields.splice(spells.fields.findIndex((f) => f.key === 'conjuros'), 0, structuredClone(PACT_FIELD));
+  const combatSection = t.sections.find((s) => s.fields.some((f) => f.key === 'pg_actuales'));
+  if (combatSection) for (const f of DEFENSE_FIELDS) if (!keys.has(f.key)) combatSection.fields.push(structuredClone(f));
   if (t.combat) {
     const has = (k: string) => t.sections.some((s) => s.fields.some((f) => f.key === k));
     if (t.combat.attacks?.list === 'ataques') t.combat.attacks = { ...t.combat.attacks, extra: t.combat.attacks.extra ?? 'extra', crit: t.combat.attacks.crit ?? 'critico' };
     if (t.combat.spells === undefined && has('conjuros')) t.combat.spells = { list: 'conjuros', name: 'nombre', level: 'nivel', effect: 'efecto' };
     if (t.combat.slots === undefined && has('espacios_1_max')) t.combat.slots = { max: 'espacios_{n}_max', used: 'espacios_{n}_usados', pact: 'espacios_pacto' };
+    if (t.combat.defenses === undefined && has('resistencias')) t.combat.defenses = { ...DEFENSES_MAPPING };
     if (t.combat.resources === undefined && has('recursos')) t.combat.resources = { list: 'recursos', name: 'nombre', uses: 'usos', max: 'max', recharge: 'recarga' };
   }
   t.version = DND5E_VERSION;
