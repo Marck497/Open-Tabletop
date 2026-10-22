@@ -132,6 +132,28 @@ Cuando alguien saca un **20 natural** en un d20, toda la mesa ve un destello dor
 - Cada documento tiene **notas del DM**, que los jugadores nunca reciben, y se comparte con todos o con jugadores concretos.
 - **👁 Enseñar a la mesa** lo abre en la pantalla de quienes pueden verlo. Después lo pueden releer cuando quieran desde su pestaña Diario.
 
+## Crear personajes y reglas del SRD
+
+- **✨ Crear personaje 5e** (pestaña *Personajes*, para el DM y los jugadores) te guía por la creación en siete pasos y crea la hoja ya rellena:
+  1. **Especie** y subespecie, con sus bonos.
+  2. **Clase**, nivel (1-20) y subclase, con las habilidades de clase y las opciones de rasgos (estilo de combate, linaje dracónico…).
+  3. **Características**: serie estándar, compra por puntos (27), 4d6 quitando el más bajo o a mano.
+  4. **Trasfondo**, alineamiento e idiomas.
+  5. **Equipo inicial**: las elecciones de la clase y del trasfondo. Los paquetes de equipo se abren en el inventario.
+  6. **Conjuros**: los trucos y conjuros de la lista de la clase, limitados a los que tocan por nivel.
+  7. **Resumen**: el nombre, y la hoja se crea con PG, CA, salvaciones, habilidades, ataques con sus bonos, conjuros, espacios de conjuro, inventario, competencias y rasgos.
+
+  Los avisos (falta elegir algo, te pasas de puntos…) no bloquean, y todo se puede retocar después en la hoja.
+- **📚 Reglas** es un compendio para consultar con buscador:
+  - **Conjuros**: los 319, con filtro por clase y nivel.
+  - **Objetos**: armas, armaduras, equipo, herramientas y objetos mágicos.
+  - **Clases**: rasgos por nivel, también los de subclase.
+  - **Especies**: con sus rasgos.
+
+  **+ Hoja** añade un conjuro o un objeto a la hoja que elijas; si es un arma, también a sus ataques.
+- **Idioma**: los nombres están en español, pero las descripciones largas siguen en el inglés original del SRD.
+- **Licencia**: contenido del *System Reference Document 5.1* de D&D, © Wizards of the Coast, bajo licencia [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/). Los datos salen de [5e-bits/5e-database](https://github.com/5e-bits/5e-database) (MIT). Se regeneran con `node scripts/srd/build.mjs`, y las traducciones están en `scripts/srd/es-*.mjs`.
+
 ## Compendio de monstruos
 
 - En *Personajes*, el DM tiene **📖 Compendio**: 45 monstruos del SRD 5.1 (goblins, orcos, esqueletos, ogros, trols, un dragón rojo joven…). Busca por nombre en español o en inglés, o filtra por VD.
