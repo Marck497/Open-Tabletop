@@ -22,7 +22,7 @@ import type { AppContext } from '../../core/module.js';
 import { badRequest, forbidden, notFound } from '../../core/errors.js';
 import { assets, boardItems, campaigns, characters, scenes } from '../../db/schema.js';
 import { createCampaignService } from '../campaigns/service.js';
-import { canSeeItem, forViewer, PLAYER_EDITABLE_FIELDS } from './visibility.js';
+import { canSeeItem, forViewer, PLAYER_DRAWING_FIELDS, PLAYER_EDITABLE_FIELDS } from './visibility.js';
 
 type SceneRow = typeof scenes.$inferSelect;
 type ItemRow = typeof boardItems.$inferSelect;
@@ -154,8 +154,13 @@ export function createBoardService(ctx: AppContext) {
   }
 
   function createItem(sceneId: string, userId: string, input: CreateItemInput): { scene: Scene; item: BoardItem } {
-    const scene = requireGmScene(sceneId, userId);
-    const data = createItemSchema.parse(input);
+    const { scene, viewer } = access(sceneId, userId);
+    let data = createItemSchema.parse(input);
+    if (viewer.role !== 'gm') {
+      // Los jugadores solo pueden dibujar, y siempre en la capa de tokens y como dueños de su dibujo.
+      if (!data.drawing) throw forbidden('Solo el DM puede añadir elementos');
+      data = { ...data, layer: 'token', ownerIds: [userId], characterId: null, assetId: null, ai: null, statuses: [] };
+    }
     checkAsset(data.assetId, scene.campaignId);
     checkCharacter(data.characterId, scene.campaignId);
     const z = data.z ?? (db.select({ m: max(boardItems.z) }).from(boardItems).where(eq(boardItems.sceneId, sceneId)).get()?.m ?? 0) + 1;
@@ -199,7 +204,8 @@ export function createBoardService(ctx: AppContext) {
     if (!item.ownerIds.includes(viewer.userId) || !canSeeItem(item, scene, viewer.role, viewer.userId)) {
       throw forbidden('Este token no es tuyo');
     }
-    if (keys.some((k) => !PLAYER_EDITABLE_FIELDS.has(k))) throw forbidden('Solo puedes mover tus tokens');
+    const allowed = item.drawing ? PLAYER_DRAWING_FIELDS : PLAYER_EDITABLE_FIELDS;
+    if (keys.some((k) => !allowed.has(k))) throw forbidden('Solo puedes mover tus tokens');
   }
 
   /** Comprueba que puede arrastrar el token (para el movimiento en vivo, que no se guarda). */
@@ -215,8 +221,10 @@ export function createBoardService(ctx: AppContext) {
   }
 
   function deleteItem(sceneId: string, itemId: string, userId: string): { scene: Scene; before: BoardItem } {
-    const scene = requireGmScene(sceneId, userId);
+    const { scene, viewer } = access(sceneId, userId);
     const before = toItem(itemRow(sceneId, itemId));
+    // Un jugador puede borrar sus propios dibujos.
+    if (viewer.role !== 'gm' && !(before.drawing && before.ownerIds.includes(userId))) throw forbidden('Solo el DM puede hacer esto');
     db.delete(boardItems).where(eq(boardItems.id, itemId)).run();
     return { scene, before };
   }

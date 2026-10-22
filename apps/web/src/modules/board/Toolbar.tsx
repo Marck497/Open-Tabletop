@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BOARD_LAYERS, MEASURE_LABELS, MEASURE_SHAPES, type MeasureShape } from '@vtt/shared';
+import { BOARD_LAYERS, MEASURE_LABELS, MEASURE_SHAPES, type DrawingType, type MeasureShape } from '@vtt/shared';
 import { emitAck } from '../../core/socket';
 import { addImageItem, addItem } from './actions';
 import { AssetPicker } from './AssetPicker';
@@ -14,6 +14,14 @@ const MEASURE_HINTS: Record<MeasureShape, string> = {
   square: 'Arrastra desde una esquina: cubo.',
 };
 
+const DRAW_TYPES: { id: DrawingType; label: string; title: string }[] = [
+  { id: 'path', label: '〰', title: 'A mano alzada' },
+  { id: 'line', label: '╱', title: 'Línea recta' },
+  { id: 'rect', label: '▭', title: 'Rectángulo' },
+  { id: 'ellipse', label: '⬭', title: 'Elipse' },
+  { id: 'text', label: 'T', title: 'Texto (clic donde quieras escribir)' },
+];
+
 const FOG_TOOLS: { id: Tool; label: string; title: string }[] = [
   { id: 'fog-reveal', label: '☀ Revelar', title: 'Arrastra para revelar una zona de la niebla' },
   { id: 'fog-hide', label: '☁ Ocultar', title: 'Arrastra para volver a ocultar una zona' },
@@ -25,7 +33,8 @@ export function Toolbar({ campaignId, isGm }: { campaignId: string; isGm: boolea
   const tool = useBoard((s) => s.tool);
   const activeLayer = useBoard((s) => s.activeLayer);
   const measureShape = useBoard((s) => s.measureShape);
-  const { setTool, setActiveLayer, setMeasureShape } = useBoard.getState();
+  const draw = useBoard((s) => s.draw);
+  const { setTool, setActiveLayer, setMeasureShape, setDraw } = useBoard.getState();
   const [picker, setPicker] = useState(false);
 
   if (!scene) return null;
@@ -50,6 +59,9 @@ export function Toolbar({ campaignId, isGm }: { campaignId: string; isGm: boolea
           {MEASURE_ICONS[m]}
         </button>
       ))}
+      <button className={`small ${tool === 'draw' ? 'active' : ''}`} title="Dibujar" aria-label="Dibujar" onClick={() => setTool('draw')}>
+        ✏️
+      </button>
       <button
         className={`small ${tool === 'ping' ? 'active' : ''}`}
         title={isGm ? 'Ping: clic para señalar un punto. Con Mayús, centra la vista de todos ahí.' : 'Ping: clic para señalar un punto a la mesa.'}
@@ -60,11 +72,43 @@ export function Toolbar({ campaignId, isGm }: { campaignId: string; isGm: boolea
     </div>
   );
 
-  if (!isGm) return <div className="toolbar">{tools}</div>;
+  const drawTools = tool === 'draw' && (
+    <div className="tool-group" role="group" aria-label="Dibujo">
+      {DRAW_TYPES.map((t) => (
+        <button key={t.id} className={`small ${draw.type === t.id ? 'active' : ''}`} title={t.title} aria-label={t.title} onClick={() => setDraw({ type: t.id })}>
+          {t.label}
+        </button>
+      ))}
+      <input type="color" className="draw-color" value={draw.stroke} title="Color" onChange={(e) => setDraw({ stroke: e.target.value })} />
+      <select value={draw.strokeWidth} title="Grosor" onChange={(e) => setDraw({ strokeWidth: Number(e.target.value) })}>
+        {[2, 4, 8, 14].map((w) => (
+          <option key={w} value={w}>
+            {w} px
+          </option>
+        ))}
+      </select>
+      {(draw.type === 'rect' || draw.type === 'ellipse') && (
+        <label className="switch">
+          <input type="checkbox" checked={draw.filled} onChange={(e) => setDraw({ filled: e.target.checked })} />
+          Relleno
+        </label>
+      )}
+      {isGm && <span className="tool-label">en la capa {LAYER_LABELS[activeLayer]}</span>}
+    </div>
+  );
+
+  if (!isGm)
+    return (
+      <div className="toolbar">
+        {tools}
+        {drawTools}
+      </div>
+    );
 
   return (
     <div className="toolbar">
       {tools}
+      {drawTools}
       <div className="tool-group" role="group" aria-label="Capa">
         <span className="tool-label">Capa</span>
         {BOARD_LAYERS.map((l) => (

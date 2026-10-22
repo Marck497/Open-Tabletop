@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm';
 import { index, integer, primaryKey, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
-import type { AiSettings, BoardLayer, ChatRoll, TokenAi, Fog, InitiativeEntry, SheetTemplate, SheetValues } from '@vtt/shared';
+import type { AiSettings, BoardLayer, Drawing, ChatRoll, TokenAi, Fog, InitiativeEntry, SheetTemplate, SheetValues } from '@vtt/shared';
 
 const timestamps = {
   createdAt: text('created_at').notNull().default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ','now'))`),
@@ -120,6 +120,7 @@ export const boardItems = sqliteTable(
     characterId: text('character_id').references(() => characters.id, { onDelete: 'set null' }),
     ai: text('ai', { mode: 'json' }).$type<TokenAi>(),
     statuses: text('statuses', { mode: 'json' }).$type<string[]>().notNull().default([]),
+    drawing: text('drawing', { mode: 'json' }).$type<Drawing>(),
     ...timestamps,
   },
   (t) => [index('board_items_scene_idx').on(t.sceneId)],

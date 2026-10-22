@@ -216,7 +216,8 @@ export function createAiService(ctx: AppContext) {
     const targets: (PlanCreature & { item: BoardItem; character: Character | null; ac: number | null })[] = [];
     const others: { cell: { col: number; row: number }; size: number }[] = [];
     for (const other of items) {
-      if (other.id === item.id || other.layer === 'map') continue;
+      // Los dibujos no son criaturas: ni objetivos ni obstáculos.
+      if (other.id === item.id || other.layer === 'map' || other.drawing) continue;
       const ch = characterOf(other);
       const isPlayer = other.layer === 'token' && (other.ownerIds.length > 0 || (ch?.controlledBy.length ?? 0) > 0);
       const st = stats(template, ch);

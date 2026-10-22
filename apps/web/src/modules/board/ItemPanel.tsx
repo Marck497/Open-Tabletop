@@ -27,7 +27,7 @@ export function ItemPanel({ campaignId, members }: { campaignId: string; members
 
   return (
     <div className="panel">
-      <h3>Elemento seleccionado</h3>
+      <h3>{item.drawing ? 'Dibujo seleccionado' : 'Elemento seleccionado'}</h3>
       <label>
         Nombre
         <input value={name} maxLength={80} onChange={(e) => setName(e.target.value)} onBlur={() => name !== item.name && updateSelected({ name })} />
@@ -67,33 +67,35 @@ export function ItemPanel({ campaignId, members }: { campaignId: string; members
         )}
       </div>
 
-      <label>
-        Personaje vinculado
-        <select
-          value={item.characterId ?? ''}
-          onChange={(e) => {
-            const c = e.target.value ? characters[e.target.value] : undefined;
-            // Al vincular, lo pueden mover quienes controlan al personaje.
-            void updateSelected(c ? { characterId: c.id, ownerIds: c.controlledBy } : { characterId: null });
-          }}
-        >
-          <option value="">Ninguno</option>
-          {Object.values(characters)
-            .sort((a, b) => a.name.localeCompare(b.name))
-            .map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-        </select>
-      </label>
+      {!item.drawing && (
+        <label>
+          Personaje vinculado
+          <select
+            value={item.characterId ?? ''}
+            onChange={(e) => {
+              const c = e.target.value ? characters[e.target.value] : undefined;
+              // Al vincular, lo pueden mover quienes controlan al personaje.
+              void updateSelected(c ? { characterId: c.id, ownerIds: c.controlledBy } : { characterId: null });
+            }}
+          >
+            <option value="">Ninguno</option>
+            {Object.values(characters)
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+          </select>
+        </label>
+      )}
       {item.characterId && characters[item.characterId] && (
         <button className="ghost small" onClick={() => useSheets.getState().openSheet(item.characterId!)}>
           Abrir hoja
         </button>
       )}
 
-      {item.layer !== 'map' && <AiPanel item={item} hasSheet={!!item.characterId} />}
+      {item.layer !== 'map' && !item.drawing && <AiPanel item={item} hasSheet={!!item.characterId} />}
 
       {players.length > 0 && (
         <fieldset className="owners">
