@@ -1,4 +1,4 @@
-import { sheetTemplateSchema, type CombatMapping, type SheetTemplate, type StatusDef } from '../schemas/sheet.js';
+import { allFields, createResolver, sheetTemplateSchema, type CombatMapping, type SheetField, type SheetTemplate, type SheetValues, type StatusDef } from '../schemas/sheet.js';
 import { dnd5eTemplate } from './dnd5e.js';
 import { DND5E_STATUSES } from './statuses.js';
 import { genericTemplate } from './generic.js';
@@ -28,6 +28,23 @@ export function combatOf(template: SheetTemplate): CombatMapping | null {
 /** Estados de los tokens de una plantilla (las guardadas antes de existir la opción usan los de 5e). */
 export function statusesOf(template: SheetTemplate | null): StatusDef[] {
   return template?.statuses ?? DND5E_STATUSES;
+}
+
+/** Campo de iniciativa de la plantilla (el marcado "iniciativa"). */
+export function initiativeFieldOf(template: SheetTemplate): SheetField | undefined {
+  return allFields(template).find((f) => f.initiative);
+}
+
+/**
+ * Cómo se tira la iniciativa de una hoja: la tirada del campo de iniciativa (o 1d20 + su valor)
+ * y su bono, que sirve para desempatar. Sin hoja o sin campo, 1d20 a secas.
+ */
+export function initiativeRollOf(template: SheetTemplate | null, values: SheetValues | null): { expression: string; bonus: number; resolve?: (name: string) => unknown } {
+  const field = template && initiativeFieldOf(template);
+  if (!template || !values || !field) return { expression: '1d20', bonus: 0 };
+  const resolve = createResolver(template, values);
+  const bonus = Number(resolve(field.key));
+  return { expression: field.roll || `1d20 + @{${field.key}}`, bonus: Number.isFinite(bonus) ? bonus : 0, resolve };
 }
 
 export { DND5E_STATUSES, GENERIC_STATUSES } from './statuses.js';

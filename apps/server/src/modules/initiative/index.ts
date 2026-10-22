@@ -1,8 +1,9 @@
-import { campaignRoom, type InitiativeState } from '@vtt/shared';
+import { campaignRoom, INITIATIVE_SCOPES, type InitiativeState } from '@vtt/shared';
 import { z } from 'zod';
 import type { AppContext, ServerModule } from '../../core/module.js';
 import { handleAck } from '../../core/socket-utils.js';
 import { createCampaignService } from '../campaigns/service.js';
+import { broadcastMessage } from '../chat/index.js';
 import { createInitiativeService, viewFor } from './service.js';
 
 export async function broadcastInitiative(ctx: AppContext, state: InitiativeState) {
@@ -37,8 +38,19 @@ export const initiativeModule: ServerModule = {
     socket.on('initiative:action', (payload, ack) =>
       handleAck(ack, async () => {
         const { campaignId, ...action } = payload;
-        const state = svc.apply(z.string().parse(campaignId), socket.data.user.id, action as never);
-        await broadcastInitiative(ctx, state);
+        let state: InitiativeState;
+        if (action.type === 'rollAll' || action.type === 'rollMine') {
+          const scope = action.type === 'rollMine' ? 'mine' : z.enum(INITIATIVE_SCOPES).parse(action.scope);
+          const res = svc.rollAuto(z.string().parse(campaignId), socket.data.user.id, scope);
+          state = res.state;
+          for (const m of res.messages) await broadcastMessage(ctx, m);
+          await broadcastInitiative(ctx, state);
+          // Todos ven el orden en pantalla.
+          ctx.io?.to(campaignRoom(campaignId)).emit('initiative:announce', { campaignId });
+        } else {
+          state = svc.apply(z.string().parse(campaignId), socket.data.user.id, action as never);
+          await broadcastInitiative(ctx, state);
+        }
         if (['next', 'prev', 'start'].includes(action.type) && state.active) {
           ctx.events.emit('initiative:turnStarted', { campaignId, userId: socket.data.user.id, state });
         }

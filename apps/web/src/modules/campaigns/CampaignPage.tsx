@@ -11,7 +11,7 @@ import { useBoard } from '../board/store';
 import { useSceneSync } from '../board/useSceneSync';
 import { ChatPanel } from '../chat/ChatPanel';
 import { RollToasts } from '../dice/RollToasts';
-import { InitiativeTracker } from '../initiative/InitiativeTracker';
+import { InitiativeAnnounce, InitiativeTracker, TurnBanner } from '../initiative/InitiativeTracker';
 import { useInitiativeSync } from '../initiative/useInitiativeSync';
 import { HandoutWindow } from '../journal/HandoutWindow';
 import { JournalPanel } from '../journal/JournalPanel';
@@ -133,6 +133,8 @@ export function CampaignPage() {
           </div>
         )}
         <InitiativeTracker campaignId={campaign.id} isGm={isGm} meId={me.id} />
+        <TurnBanner meId={me.id} />
+        <InitiativeAnnounce meId={me.id} />
         {template &&
           openSheets.map((cid, i) =>
             characters[cid] ? (

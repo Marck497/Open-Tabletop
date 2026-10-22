@@ -37,7 +37,19 @@ export interface InitiativeEntry {
   characterId: string | null;
   /** Oculto a los jugadores (monstruos que aún no han aparecido). */
   hidden: boolean;
+  /** Bono de iniciativa de su hoja (desempata) y dado natural, si se tiró automáticamente. */
+  bonus?: number | null;
+  die?: number | null;
 }
+
+/** Orden de iniciativa: mayor total primero; a igualdad, mayor bono (en 5e, la Destreza). */
+export function compareInitiative(a: InitiativeEntry, b: InitiativeEntry): number {
+  return b.value - a.value || (b.bonus ?? -Infinity) - (a.bonus ?? -Infinity);
+}
+
+/** A quién se le tira la iniciativa automáticamente: todos, solo enemigos/PNJ o solo personajes de jugadores. */
+export const INITIATIVE_SCOPES = ['all', 'npcs', 'players', 'missing'] as const;
+export type InitiativeScope = (typeof INITIATIVE_SCOPES)[number];
 
 export interface InitiativeState {
   campaignId: string;
