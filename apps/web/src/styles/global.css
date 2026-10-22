@@ -311,3 +311,4 @@ textarea { resize: vertical; }
 .monster-details { padding: 4px 12px 10px; font-size: 0.9rem; }
 .monster-details ul { margin: 6px 0; padding-left: 18px; }
 .ability-row { display: flex; flex-wrap: wrap; gap: 12px; }
+.restore-card { margin-top: 16px; }

@@ -18,6 +18,7 @@ import { JournalPanel } from '../journal/JournalPanel';
 import { useJournalSync } from '../journal/useJournalSync';
 import { MacroBar } from '../macros/MacroBar';
 import { JukeboxPanel } from '../jukebox/JukeboxPanel';
+import { BackupPanel } from '../backup/BackupPanel';
 import { JukeboxPlayer } from '../jukebox/JukeboxPlayer';
 import { CharacterSheet } from '../sheets/CharacterSheet';
 import { CharactersPanel } from '../sheets/CharactersPanel';
@@ -163,6 +164,7 @@ export function CampaignPage() {
               <MembersPanel campaign={campaign} online={online} meId={me.id} />
               <JukeboxPanel campaignId={campaign.id} isGm={isGm} />
               {isGm && campaign.inviteCode && <InvitePanel campaignId={campaign.id} inviteCode={campaign.inviteCode} />}
+              {isGm && <BackupPanel campaignId={campaign.id} />}
             </>
           )}
         </div>
