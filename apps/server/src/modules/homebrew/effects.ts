@@ -1,17 +1,13 @@
 import { and, eq, inArray } from 'drizzle-orm';
 import {
   ActionError,
-  applyDefenses,
-  defensesOf,
   actionsOf,
   allFields,
   combatOf,
   createResolver,
-  damagePatch,
   evaluate,
   ExprError,
   formulaValue,
-  healPatch,
   rollHomebrew,
   saveOptions,
   slotsOf,
@@ -37,8 +33,8 @@ import { createBoardBroadcaster } from '../board/broadcast.js';
 import { createBoardService } from '../board/service.js';
 import { createCampaignService } from '../campaigns/service.js';
 import { createChatService } from '../chat/service.js';
+import { createDamageService } from '../damage/service.js';
 import { secureRng } from '../dice/service.js';
-import { broadcastCharacter } from '../sheets/index.js';
 import { createSheetService } from '../sheets/service.js';
 
 const num = (v: unknown) => (typeof v === 'number' ? v : Number(v) || 0);
@@ -63,6 +59,7 @@ export function createHomebrewEffects(ctx: AppContext) {
   const board = createBoardService(ctx);
   const broadcaster = createBoardBroadcaster(ctx, board);
   const campaigns = createCampaignService(ctx);
+  const damage = createDamageService(ctx);
 
   /** Usa la creación con la hoja de `character` (los permisos ya están comprobados). */
   function use(
@@ -156,20 +153,6 @@ export function createHomebrewEffects(ctx: AppContext) {
     }
   }
 
-  /** Tokens de las escenas de la partida (los que existan de esa lista). */
-  function itemsOf(campaignId: string, ids: string[]): BoardItem[] {
-    const scenes = board.sceneIdsOf(campaignId);
-    if (!ids.length || !scenes.length) return [];
-    const found = db
-      .select({ id: boardItems.id, sceneId: boardItems.sceneId })
-      .from(boardItems)
-      .where(and(inArray(boardItems.id, ids), inArray(boardItems.sceneId, scenes)))
-      .all();
-    // En el orden pedido (el del resumen del chat), no en el de la base de datos.
-    found.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
-    return found.map((f) => board.itemsOf(f.sceneId).items.find((i) => i.id === f.id)!).filter(Boolean);
-  }
-
   async function addStatuses(stale: BoardItem, add: string[]) {
     // Se relee: otro módulo (p. ej. la concentración) puede haberle cambiado los estados entretanto.
     const item = board.itemsOf(stale.sceneId).items.find((i) => i.id === stale.id) ?? stale;
@@ -191,7 +174,7 @@ export function createHomebrewEffects(ctx: AppContext) {
       .where(and(eq(boardItems.characterId, characterId), inArray(boardItems.sceneId, scenes)))
       .all()
       .map((r) => r.id);
-    for (const item of itemsOf(campaignId, ids)) await addStatuses(item, [status]);
+    for (const item of damage.itemsOf(campaignId, ids)) await addStatuses(item, [status]);
   }
 
   /**
@@ -204,7 +187,7 @@ export function createHomebrewEffects(ctx: AppContext) {
     campaigns.requireGm(m.campaignId, user.id);
     const effect = m.roll?.effect;
     if (!effect) throw badRequest('Ese mensaje no tiene nada que aplicar');
-    const items = itemsOf(m.campaignId, [...new Set(itemIds)].slice(0, MAX_TARGETS));
+    const items = damage.itemsOf(m.campaignId, [...new Set(itemIds)].slice(0, MAX_TARGETS));
     if (!items.length) throw badRequest('Elige los tokens: selecciona uno o coloca la plantilla de área encima');
 
     const template = sheets.getTemplate(m.campaignId);
@@ -217,14 +200,7 @@ export function createHomebrewEffects(ctx: AppContext) {
     let hidden = false;
 
     for (const item of items) {
-      let character: Character | null = null;
-      if (item.characterId) {
-        try {
-          character = sheets.row(item.characterId);
-        } catch {
-          character = null;
-        }
-      }
+      let character = damage.characterOf(item);
       const name = item.name || character?.name || 'Token';
       if (item.layer === 'gm') hidden = true;
       const resolve = character ? createResolver(template, character.values) : undefined;
@@ -259,27 +235,13 @@ export function createHomebrewEffects(ctx: AppContext) {
         ...p,
         amount: !hit ? 0 : saved ? (effect.save?.half ? Math.floor(p.amount / 2) : 0) : p.amount,
       }));
-      const defended = applyDefenses(typed, defensesOf(template, character?.values ?? null, item.statuses));
-      const damage = defended.total;
-      const why = defended.notes.length ? ` (${defended.notes.join(', ')})` : '';
-      const isPc = !!character?.controlledBy.length;
-      if (damage > 0) {
-        const p = character ? damagePatch(template, character.values, damage) : null;
-        if (character && p) {
-          const after = sheets.update(character.id, user.id, { values: p.patch }).after;
-          await broadcastCharacter(ctx, character, after);
-          character = after;
-          pieces.push(`${damage} de daño${why}${isPc ? ` (${p.before} → ${p.after})` : p.after === 0 ? ' (cae a 0)' : ''}`);
-        } else pieces.push(`${damage} de daño${why} (sin hoja)`);
-      } else if (effect.damage > 0 && hit) pieces.push(`sin daño${why}`);
+      const hurt = await damage.hurt(user, m.campaignId, item, character, typed);
+      character = hurt.character;
+      if (hurt.damage > 0 || (effect.damage > 0 && hit)) pieces.push(hurt.text);
       if (effect.heal > 0 && hit) {
-        const p = character ? healPatch(template, character.values, effect.heal) : null;
-        if (character && p) {
-          const after = sheets.update(character.id, user.id, { values: p.patch }).after;
-          await broadcastCharacter(ctx, character, after);
-          character = after;
-          pieces.push(`recupera ${p.after - p.before} PG${isPc ? ` (${p.before} → ${p.after})` : ''}`);
-        } else pieces.push(`cura ${effect.heal} (sin hoja)`);
+        const healed = await damage.heal(user, m.campaignId, item, character, effect.heal);
+        character = healed.character;
+        pieces.push(healed.text);
       }
       const conditions = hit && !saved ? effect.conditions.filter((c) => statusDefs.some((s) => s.id === c)) : [];
       if (conditions.length) {

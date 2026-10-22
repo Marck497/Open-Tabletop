@@ -28,4 +28,5 @@ export * from './homebrew/index.js';
 export * from './fx.js';
 export * from './systems/defenses.js';
 export * from './systems/loot.js';
+export * from './schemas/damage.js';
 export * from './performance.js';

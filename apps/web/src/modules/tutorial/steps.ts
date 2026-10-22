@@ -94,6 +94,11 @@ export const GM_TOUR: TourStep[] = [
     body: 'Añade los tokens, tira la iniciativa y pulsa Empezar. Siguiente ▶ pasa el turno, y 🤖 Actuar hace que un enemigo juegue su turno solo.',
   },
   {
+    target: 'damage',
+    title: 'Daño y curación',
+    body: 'Selecciona un token (o coloca una plantilla de área encima de varios) y, en su panel, escribe una cantidad o una tirada como 2d6 + 3 y pulsa 🩸 Daño o 💚 Curar. Se tienen en cuenta el tipo de daño, las resistencias, los PG temporales y la concentración.',
+  },
+  {
     target: 'journal',
     tab: 'journal',
     title: 'Diario',
