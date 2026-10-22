@@ -108,6 +108,7 @@ button.danger { color: var(--danger); }
 button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 .board-container { position: absolute; inset: 0; touch-action: none; }
 .board-container.crosshair { cursor: crosshair; }
+.board-notice { position: absolute; left: 50%; top: 56px; transform: translateX(-50%); background: rgba(20,18,26,0.92); border: 1px solid var(--accent, #d6a84a); border-radius: 8px; padding: 6px 14px; font-size: 0.9rem; pointer-events: none; z-index: 5; max-width: 80%; text-align: center; }
 .board-error { position: absolute; top: 12px; left: 12px; background: var(--bg-elev); padding: 6px 10px; border-radius: 8px; margin: 0; }
 .scene-title { font-size: 0.9rem; }
 .badge.warn { color: #e8b25a; border-color: #e8b25a; }
@@ -298,3 +299,4 @@ textarea { resize: vertical; }
 .track-list li.playing { background: rgba(214, 168, 74, 0.15); }
 .track-name { flex: 2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.9rem; }
 .sound-unlock { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); z-index: 60; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5); }
+.toolbar input.tiny-number { width: 4.5em; padding: 2px 4px; }

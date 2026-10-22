@@ -256,4 +256,78 @@ describe('archivos', () => {
     const res = await app.inject({ method: 'POST', url: `/api/campaigns/${campaign.id}/assets`, payload: bad.payload, headers: { ...bad.headers, cookie: gm.cookie } });
     expect(res.statusCode).toBe(400);
   });
+
+});
+
+describe('paredes y visión', () => {
+  it('el jugador solo ve lo que ve su token, no atraviesa paredes y abre puertas sin llave', async () => {
+    const { app, gm, pl, sceneId, gmC, plC, token } = await setup();
+    const hero = await token('token', { x: 0, y: 140, ownerIds: [pl.user.id] });
+    const orc = await token('token', { x: 280, y: 140 });
+    const wall = (id: string, kind: string, extra: object = {}) => ({ id, x1: 210, y1: 0, x2: 210, y2: 1400, kind, ...extra });
+    // Solo el DM pone paredes.
+    expect((await call(plC, 'walls:set', { sceneId, walls: [wall('w1', 'wall')] })).ok).toBe(false);
+
+    // Activar la visión: al jugador le llega la escena refiltrada (sin paredes aún, ve al orco).
+    let sync = next(plC, 'scene:sync');
+    const gmSaw = next(gmC, 'scene:updated');
+    await app.inject({ method: 'PATCH', url: `/api/scenes/${sceneId}`, headers: { cookie: gm.cookie }, payload: { vision: true } });
+    expect((await sync).items.map((i) => i.id)).toContain(orc.id);
+    expect((await gmSaw).scene.vision).toBe(true);
+
+    // Una puerta secreta en medio: deja de ver al orco y la ve como pared.
+    sync = next(plC, 'scene:sync');
+    const updated = next(gmC, 'scene:updated');
+    ok(await call(gmC, 'walls:set', { sceneId, walls: [wall('s1', 'secret')] }));
+    let state = await sync;
+    expect(state.items.map((i) => i.id)).toEqual([hero.id]);
+    expect(state.scene.walls[0]).toMatchObject({ id: 's1', kind: 'wall' });
+    expect((await updated).scene.walls[0]).toMatchObject({ kind: 'secret' });
+    // No la puede abrir ni atravesar.
+    expect((await call(plC, 'door:toggle', { sceneId, wallId: 's1', open: true })).ok).toBe(false);
+    const blocked = await call(plC, 'item:update', { sceneId, id: hero.id, patch: { x: 420, y: 140 } });
+    expect(blocked.ok).toBe(false);
+    expect(!blocked.ok && blocked.error).toMatch(/pared/);
+    // Lo que se mueve al otro lado no le llega.
+    let got = false;
+    plC.once('item:upserted', () => (got = true));
+    ok(await call(gmC, 'item:update', { sceneId, id: orc.id, patch: { x: 350 } }));
+    await tick();
+    expect(got).toBe(false);
+
+    // Puerta normal con llave: no la abre; sin llave, sí, y entonces ve al orco.
+    sync = next(plC, 'scene:sync');
+    ok(await call(gmC, 'walls:set', { sceneId, walls: [wall('d1', 'door', { locked: true })] }));
+    await sync;
+    expect((await call(plC, 'door:toggle', { sceneId, wallId: 'd1', open: true })).ok).toBe(false);
+    expect((await call(plC, 'door:toggle', { sceneId, wallId: 'd1', locked: false })).ok).toBe(false);
+    sync = next(plC, 'scene:sync');
+    ok(await call(gmC, 'door:toggle', { sceneId, wallId: 'd1', locked: false }));
+    await sync;
+    sync = next(plC, 'scene:sync');
+    ok(await call(plC, 'door:toggle', { sceneId, wallId: 'd1', open: true }));
+    state = await sync;
+    expect(state.items.map((i) => i.id)).toContain(orc.id);
+    // Con la puerta abierta ya puede pasar; al moverse le llega la escena entera otra vez.
+    sync = next(plC, 'scene:sync');
+    ok(await call(plC, 'item:update', { sceneId, id: hero.id, patch: { x: 280, y: 210 } }));
+    expect((await sync).items.length).toBe(2);
+
+    // Alcance de visión: a 1 casilla ya no ve al orco (está a más de 70 px).
+    sync = next(plC, 'scene:sync');
+    ok(await call(plC, 'item:update', { sceneId, id: hero.id, patch: { x: 0, y: 140 } }));
+    await sync;
+    sync = next(plC, 'scene:sync');
+    await app.inject({ method: 'PATCH', url: `/api/scenes/${sceneId}`, headers: { cookie: gm.cookie }, payload: { visionRange: 1 } });
+    expect((await sync).items.map((i) => i.id)).toEqual([hero.id]);
+  });
+
+  it('visión sin tokens propios: el jugador no ve los tokens ajenos', async () => {
+    const { app, gm, sceneId, plC, token } = await setup();
+    await token('token', { x: 280, y: 140 });
+    const map = await token('map');
+    const sync = next(plC, 'scene:sync');
+    await app.inject({ method: 'PATCH', url: `/api/scenes/${sceneId}`, headers: { cookie: gm.cookie }, payload: { vision: true } });
+    expect((await sync).items.map((i) => i.id)).toEqual([map.id]);
+  });
 });

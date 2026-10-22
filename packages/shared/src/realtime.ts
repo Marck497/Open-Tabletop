@@ -4,6 +4,7 @@
  */
 import type { BoardItem, CreateItemInput, Fog, Scene, SceneState, UpdateItemInput } from './schemas/board.js';
 import type { Measure } from './schemas/measure.js';
+import type { WallInput } from './schemas/walls.js';
 import type { AiSettings } from './schemas/ai.js';
 import type { Character } from './schemas/character.js';
 import type { Handout } from './schemas/journal.js';
@@ -100,6 +101,10 @@ export interface ClientToServerEvents {
   'item:update': (payload: { sceneId: string; id: string; patch: UpdateItemInput }, ack: Ack<BoardItem>) => void;
   'item:delete': (payload: { sceneId: string; id: string }, ack: Ack) => void;
   'item:moving': (payload: { sceneId: string; id: string; x: number; y: number }) => void;
+  /** El DM sustituye todas las paredes de la escena. */
+  'walls:set': (payload: { sceneId: string; walls: WallInput[] }, ack: Ack) => void;
+  /** Abrir/cerrar una puerta (los jugadores, las suyas sin llave; el DM, cualquiera y la llave). */
+  'door:toggle': (payload: { sceneId: string; wallId: string; open?: boolean; locked?: boolean }, ack: Ack) => void;
   'fog:set': (payload: { sceneId: string; fog: Fog }, ack: Ack) => void;
   'fog:add': (payload: { sceneId: string; op: Fog['ops'][number] }, ack: Ack) => void;
   /** Comparte la medición en curso (null = quitarla). `gmOnly`: solo la ven los DM. */

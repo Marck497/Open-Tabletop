@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-import type { BoardItem, BoardLayer, DrawingType, Fog, Measure, MeasureShape, PointerAuthor, Scene, SceneState } from '@vtt/shared';
+import type { BoardItem, BoardLayer, DrawingType, Fog, Measure, MeasureShape, PointerAuthor, Scene, SceneState, Wall, WallKind } from '@vtt/shared';
 
-export type Tool = 'select' | 'measure' | 'ping' | 'draw' | 'fog-reveal' | 'fog-hide';
+export type Tool = 'select' | 'measure' | 'ping' | 'draw' | 'walls' | 'fog-reveal' | 'fog-hide';
 
 export interface DrawStyle {
   type: DrawingType;
@@ -42,6 +42,12 @@ interface BoardState {
   draw: DrawStyle;
   /** Petición del DM de centrar la vista en un punto. */
   focus: { x: number; y: number; n: number } | null;
+  /** Herramienta de paredes: qué tipo se dibuja (o borrar). */
+  wallMode: WallKind | 'erase';
+  /** El DM ve la oscuridad como la ven los jugadores. */
+  previewVision: boolean;
+  /** Aviso breve sobre el tablero (p. ej. "Está cerrada con llave"). */
+  notice: string | null;
 
   load: (state: SceneState) => void;
   clear: () => void;
@@ -59,7 +65,13 @@ interface BoardState {
   setMyMeasure: (m: Measure | null) => void;
   setRemoteMeasure: (author: PointerAuthor, m: Measure | null) => void;
   addPing: (ping: Omit<Ping, 'id'>, focus?: boolean) => void;
+  setWalls: (walls: Wall[]) => void;
+  setWallMode: (mode: WallKind | 'erase') => void;
+  setPreviewVision: (on: boolean) => void;
+  showNotice: (text: string) => void;
 }
+
+let noticeTimer: ReturnType<typeof setTimeout> | undefined;
 
 let pingSeq = 0;
 const PING_MS = 2000;
@@ -78,6 +90,9 @@ export const useBoard = create<BoardState>((set) => ({
   pings: [],
   draw: { type: 'path', stroke: '#e8b25a', strokeWidth: 4, filled: false },
   focus: null,
+  wallMode: 'wall',
+  previewVision: false,
+  notice: null,
 
   load: ({ scene, items }) =>
     set((s) => ({
@@ -121,6 +136,14 @@ export const useBoard = create<BoardState>((set) => ({
     const id = ++pingSeq;
     set((s) => ({ pings: [...s.pings, { ...ping, id }], ...(focus ? { focus: { x: ping.x, y: ping.y, n: id } } : {}) }));
     setTimeout(() => set((s) => ({ pings: s.pings.filter((p) => p.id !== id) })), PING_MS);
+  },
+  setWalls: (walls) => set((s) => (s.scene ? { scene: { ...s.scene, walls } } : {})),
+  setWallMode: (wallMode) => set({ wallMode, tool: 'walls', selectedId: null }),
+  setPreviewVision: (previewVision) => set({ previewVision }),
+  showNotice: (notice) => {
+    clearTimeout(noticeTimer);
+    set({ notice });
+    noticeTimer = setTimeout(() => set({ notice: null }), 2500);
   },
 }));
 

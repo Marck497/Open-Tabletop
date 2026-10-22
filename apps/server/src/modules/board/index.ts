@@ -61,7 +61,7 @@ export const boardModule: ServerModule = {
     app.patch('/scenes/:sceneId', async (req) => {
       const { sceneId } = sceneParams.parse(req.params);
       const scene = board.updateScene(sceneId, requireUser(req).id, req.body as never);
-      broadcast.sceneUpdated(scene);
+      await broadcast.sceneUpdated(scene);
       return { scene };
     });
 
@@ -162,6 +162,24 @@ export const boardModule: ServerModule = {
         // Sin acceso: se ignora.
       }
     });
+
+    socket.on('walls:set', (payload, ack) =>
+      handleAck(ack, async () => {
+        const { sceneId, walls } = z.object({ sceneId: z.string(), walls: z.array(z.unknown()) }).parse(payload);
+        await broadcast.sceneUpdated(board.setWalls(sceneId, userId(), walls as never), false);
+        return undefined;
+      }),
+    );
+
+    socket.on('door:toggle', (payload, ack) =>
+      handleAck(ack, async () => {
+        const { sceneId, wallId, ...patch } = z
+          .object({ sceneId: z.string(), wallId: z.string(), open: z.boolean().optional(), locked: z.boolean().optional() })
+          .parse(payload);
+        await broadcast.sceneUpdated(board.toggleDoor(sceneId, userId(), wallId, patch), false);
+        return undefined;
+      }),
+    );
 
     socket.on('fog:set', (payload, ack) =>
       handleAck(ack, async () => {

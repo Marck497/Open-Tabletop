@@ -1,7 +1,7 @@
 import { campaignRoom, sceneRoom, type BoardItem, type CampaignRole, type Scene, type ServerToClientEvents } from '@vtt/shared';
 import type { AppContext, IoSocket } from '../../core/module.js';
 import { createCampaignService } from '../campaigns/service.js';
-import { canSeeItem, forViewer } from './visibility.js';
+import { canSeeItem, eyesOf, forViewer, isEye } from './visibility.js';
 import type { BoardService } from './service.js';
 
 /**
@@ -23,10 +23,28 @@ export function createBoardBroadcaster(ctx: AppContext, board: BoardService) {
     });
   }
 
+  /** Con visión dinámica, desde dónde ve cada jugador (se calcula una vez por cambio). */
+  function eyesFor(scene: Scene) {
+    if (!scene.vision) return () => undefined;
+    const items = board.itemsOf(scene.id).items;
+    const cache = new Map<string, ReturnType<typeof eyesOf>>();
+    return (userId: string) => {
+      if (!cache.has(userId)) cache.set(userId, eyesOf(items, userId));
+      return cache.get(userId);
+    };
+  }
+
   async function itemChanged(scene: Scene, before: BoardItem | null, after: BoardItem | null) {
+    const eyes = eyesFor(scene);
+    const movesEye = (i: BoardItem | null, userId: string) => !!i && isEye(i) && i.ownerIds.includes(userId);
     for (const { socket, userId, role } of await socketsWithRole(scene)) {
-      const seesAfter = after && canSeeItem(after, scene, role, userId);
-      const seesBefore = before && canSeeItem(before, scene, role, userId);
+      // Si se mueve (o aparece, o se va) uno de sus tokens, cambia todo lo que ve: se le manda la escena entera.
+      if (scene.vision && role !== 'gm' && (movesEye(before, userId) || movesEye(after, userId))) {
+        socket.emit('scene:sync', board.stateFor(scene, { userId, role }));
+        continue;
+      }
+      const seesAfter = after && canSeeItem(after, scene, role, userId, eyes(userId));
+      const seesBefore = before && canSeeItem(before, scene, role, userId, eyes(userId));
       if (seesAfter) socket.emit('item:upserted', { sceneId: scene.id, item: forViewer(after, role) });
       else if (seesBefore) socket.emit('item:removed', { sceneId: scene.id, id: before.id });
     }
@@ -34,10 +52,11 @@ export function createBoardBroadcaster(ctx: AppContext, board: BoardService) {
 
   async function itemMoving(scene: Scene, item: BoardItem, x: number, y: number, from: IoSocket | null) {
     const moved = { ...item, x, y };
+    const eyes = eyesFor(scene);
     for (const { socket, userId, role } of await socketsWithRole(scene)) {
       if (socket.id === from?.id) continue;
       // Si el token entra o sale de la niebla durante el arrastre, se resuelve al soltarlo.
-      if (canSeeItem(moved, scene, role, userId)) socket.emit('item:moving', { sceneId: scene.id, id: item.id, x, y });
+      if (canSeeItem(moved, scene, role, userId, eyes(userId))) socket.emit('item:moving', { sceneId: scene.id, id: item.id, x, y });
     }
   }
 
@@ -49,9 +68,17 @@ export function createBoardBroadcaster(ctx: AppContext, board: BoardService) {
     }
   }
 
-  function sceneUpdated(scene: Scene) {
-    ctx.io?.to(sceneRoom(scene.id)).emit('scene:updated', { scene });
-    ctx.io?.to(campaignRoom(scene.campaignId)).emit('scenes:changed', { campaignId: scene.campaignId });
+  /**
+   * Tras cambiar la escena (o sus paredes): el DM recibe la escena; los jugadores, el estado
+   * completo refiltrado (las paredes y la visión cambian lo que ven). `listChanged` avisa
+   * además a toda la partida para que refresque la lista de escenas.
+   */
+  async function sceneUpdated(scene: Scene, listChanged = true) {
+    for (const { socket, userId, role } of await socketsWithRole(scene)) {
+      if (role === 'gm') socket.emit('scene:updated', { scene });
+      else socket.emit('scene:sync', board.stateFor(scene, { userId, role }));
+    }
+    if (listChanged) ctx.io?.to(campaignRoom(scene.campaignId)).emit('scenes:changed', { campaignId: scene.campaignId });
   }
 
   /** Saca de una escena a los jugadores (p. ej. cuando el DM cambia la escena activa). */

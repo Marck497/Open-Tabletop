@@ -46,6 +46,9 @@ Abre `http://IP-DE-LA-PI:3000` desde cualquier equipo de tu red. La primera comp
 - Elige la **capa** en la barra superior: *Mapa* (fondo), *Tokens* (personajes) o *DM* (solo la ves tú). Solo puedes seleccionar elementos de la capa activa.
 - **+ Imagen** sube mapas o retratos; **+ Token** crea una ficha de color. En el panel derecho cambias nombre, tamaño, capa, imagen y qué jugadores pueden moverla.
 - **Niebla**: actívala y usa *Revelar* / *Ocultar* arrastrando rectángulos. Tú la ves semitransparente; los jugadores, negra. Los tokens enemigos bajo la niebla ni siquiera se envían a los jugadores.
+- **Paredes y visión** (🧱 Paredes): arrastra para trazar paredes (se ajustan a las esquinas de la cuadrícula y a los extremos de otras paredes; con *Alt*, libres). Elige el tipo: *pared*, *puerta*, *ventana* (deja ver pero no pasar) o *puerta secreta* (para los jugadores es una pared hasta que la abres). Clic en una pared para cambiarle el tipo; con *Borrar*, para quitarla.
+- Activa **Visión** para que cada jugador vea solo lo que ven sus tokens: el resto queda a oscuras y lo ya explorado, en penumbra. Los tokens que no ven ni siquiera se les envían. *Alcance* limita hasta dónde ven (en casillas, 0 = sin límite) y *Ver como jugadores* te muestra la oscuridad. Ojo: con la visión activada, un jugador sin tokens en la escena no ve nada.
+- **Puertas**: clic en el icono 🚪 para abrirla o cerrarla. Tú, con *Mayús*+clic, le echas la llave 🔒. Los jugadores abren las puertas que ven y no tienen llave, y no pueden mover sus tokens a través de paredes ni puertas cerradas.
 - **Escenas**: puedes preparar otras escenas sin que los jugadores las vean y llevarlos con *Llevar aquí*.
 
 **Todos**
@@ -98,7 +101,7 @@ Ejemplos de fórmulas: `floor((fue - 10) / 2)`, `if(sigilo_comp, competencia, 0)
 
 - Selecciona un token (DM) y en **🤖 IA de enemigo** marca *Actúa solo en su turno*. Elige su comportamiento: *cuerpo a cuerpo*, *a distancia* (mantiene la distancia y dispara), *prudente* (huye cuando le queda poca vida) o *guardián* (espera hasta que alguien se acerca), y a quién ataca: el más cercano, el más herido o al azar.
 - Si el token está vinculado a un PNJ, usa su hoja: velocidad, vida y la tabla de ataques. Si no, escribe su ataque y su daño en el mismo panel (p. ej. `1d20 + 5` y `1d12 + 3`).
-- En su turno de iniciativa pulsa **🤖 Actuar**: el enemigo busca camino por la cuadrícula esquivando a los demás, se acerca, tira el ataque contra la CA del objetivo y, si impacta, el daño. Todo queda en el chat (en secreto si el enemigo está en la capa DM).
+- En su turno de iniciativa pulsa **🤖 Actuar**: el enemigo busca camino por la cuadrícula esquivando a los demás y rodeando las paredes (y necesita ver a su objetivo para atacarle), se acerca, tira el ataque contra la CA del objetivo y, si impacta, el daño. Todo queda en el chat (en secreto si el enemigo está en la capa DM).
 - **🤖 IA automática** (en el panel de iniciativa): los enemigos con IA juegan su turno solos y pasan al siguiente, hasta que le toca a un jugador. **Aplicar daño** resta el daño a los PG del personaje.
 - Qué campos usa (CA, PG, velocidad, tabla de ataques) se cambia en *Editar plantilla de hoja → Combate e IA de enemigos*, así que también funciona con otros sistemas.
 
