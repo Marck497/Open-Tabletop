@@ -490,6 +490,23 @@ describe('paredes y visión', () => {
   });
 });
 
+describe('notas privadas del DM', () => {
+  it('el DM las escribe en un token; a los jugadores nunca les llegan ni las pueden cambiar', async () => {
+    const { pl, sceneId, gmC, plC, token } = await setup();
+    const npc = await token('token', { x: 70, y: 70, name: 'Tabernero', ownerIds: [pl.user.id], gmNotes: 'Es un espía del duque' });
+    expect(npc.gmNotes).toBe('Es un espía del duque');
+    const seen = ok(await call<SceneState>(plC, 'scene:view', { sceneId })).items.find((i) => i.id === npc.id);
+    expect(seen?.gmNotes).toBe('');
+    const upserted = next(plC, 'item:upserted');
+    ok(await call(gmC, 'item:update', { sceneId, id: npc.id, patch: { gmNotes: 'Y lleva la llave', x: 140 } }));
+    expect((await upserted).item).toMatchObject({ x: 140, gmNotes: '' });
+    // Aunque el token sea suyo, el jugador no puede tocarlas, y su respuesta tampoco las trae.
+    expect((await call(plC, 'item:update', { sceneId, id: npc.id, patch: { gmNotes: 'hola' } })).ok).toBe(false);
+    expect(ok(await call<BoardItem>(plC, 'item:update', { sceneId, id: npc.id, patch: { x: 210 } })).gmNotes).toBe('');
+    expect(ok(await call<SceneState>(gmC, 'scene:view', { sceneId })).items.find((i) => i.id === npc.id)?.gmNotes).toBe('Y lleva la llave');
+  });
+});
+
 describe('editor de mapas', () => {
   it('el DM pinta el suelo con sus paredes; los jugadores lo reciben y no pueden pintar', async () => {
     const { app, gm, sceneId, gmC, plC } = await setup();

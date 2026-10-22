@@ -152,6 +152,7 @@ export const boardItems = sqliteTable(
     drawing: text('drawing', { mode: 'json' }).$type<Drawing>(),
     light: text('light', { mode: 'json' }).$type<Light>(),
     darkvision: real('darkvision').notNull().default(0),
+    gmNotes: text('gm_notes').notNull().default(''),
     ...timestamps,
   },
   (t) => [index('board_items_scene_idx').on(t.sceneId)],

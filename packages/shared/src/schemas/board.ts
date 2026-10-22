@@ -233,6 +233,8 @@ export const boardItemFields = {
   light: lightSchema.nullable(),
   /** Visión en la oscuridad en la unidad de la escena (0 = no tiene). */
   darkvision: z.number().min(0).max(1000),
+  /** Notas privadas del DM (PNJ, trampas, secretos): a los jugadores nunca les llegan. */
+  gmNotes: z.string().max(5000),
 };
 
 export const createItemSchema = z.object({
@@ -252,6 +254,7 @@ export const createItemSchema = z.object({
   acView: boardItemFields.acView.default(null),
   light: boardItemFields.light.default(null),
   darkvision: boardItemFields.darkvision.default(0),
+  gmNotes: boardItemFields.gmNotes.default(''),
 });
 export const updateItemSchema = z.object(boardItemFields).partial();
 export type CreateItemInput = z.input<typeof createItemSchema>;
@@ -280,6 +283,8 @@ export interface BoardItem {
   acView: AcView | null;
   light: Light | null;
   darkvision: number;
+  /** Solo lo recibe el DM ('' para los jugadores). */
+  gmNotes: string;
   /** Vida y CA de la hoja vinculada, ya filtradas para quien lo recibe (las calcula el servidor). */
   stats?: TokenStats | null;
 }
