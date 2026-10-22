@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { Point } from './measure.js';
+import { eyeSees, type Eye, type LightSource } from './lights.js';
 
 /**
  * Paredes, puertas y visión. Las paredes son segmentos en coordenadas de escena:
@@ -195,8 +196,17 @@ export function samplePoints(r: { x: number; y: number; width: number; height: n
   ];
 }
 
-/** ¿Ve alguno de los ojos el rectángulo? `range` en píxeles (0 = sin límite). */
-export function seesRect(eyes: Point[], r: { x: number; y: number; width: number; height: number }, walls: Wall[], range = 0): boolean {
+/**
+ * ¿Ve alguno de los ojos el rectángulo? `range` en píxeles (0 = sin límite).
+ * Con `lights` (escena a oscuras), el punto visto además debe estar iluminado o al alcance de la visión en la oscuridad.
+ */
+export function seesRect(
+  eyes: Eye[],
+  r: { x: number; y: number; width: number; height: number },
+  walls: Wall[],
+  range = 0,
+  lights: LightSource[] | null = null,
+): boolean {
   const pts = samplePoints(r);
-  return eyes.some((e) => pts.some((p) => (!range || Math.hypot(p.x - e.x, p.y - e.y) <= range) && hasLineOfSight(e, p, walls)));
+  return eyes.some((e) => pts.some((p) => eyeSees(e, p, walls, range, lights)));
 }

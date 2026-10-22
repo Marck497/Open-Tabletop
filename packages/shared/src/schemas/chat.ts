@@ -24,6 +24,8 @@ export interface ChatEffect {
   /** Daño total y sus tipos. */
   damage: number;
   damageTypes: string[];
+  /** Daño de cada parte con su tipo (para resistencias); los mensajes antiguos no lo traen. */
+  damageParts?: { type: string; amount: number }[];
   heal: number;
   /** Ids de los estados que pone. */
   conditions: string[];

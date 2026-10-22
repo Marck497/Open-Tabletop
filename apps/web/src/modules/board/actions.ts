@@ -1,5 +1,5 @@
-import type { Asset, BoardLayer, CreateItemInput } from '@vtt/shared';
-import { emitAck } from '../../core/socket';
+import type { Asset, BoardLayer, CreateItemInput, UpdateItemInput } from '@vtt/shared';
+import { createItem, updateItem } from './history';
 import { useBoard } from './store';
 
 /** Crea un elemento centrado en la vista actual, alineado a la cuadrícula. */
@@ -15,7 +15,7 @@ export function addItem(input: Omit<CreateItemInput, 'x' | 'y'>) {
       (i) => i.layer === input.layer && !i.drawing && i.x < px + input.width - 1 && px < i.x + i.width - 1 && i.y < y + input.height - 1 && y < i.y + i.height - 1,
     );
   for (let n = 0; n < 20 && occupied(x); n++) x += g;
-  return emitAck('item:create', { sceneId: scene.id, item: { ...input, x, y } }).then((item) => select(item.id));
+  return createItem(scene.id, { ...input, x, y }).then((item) => select(item.id));
 }
 
 /** Crea un elemento a partir de una imagen: en la capa de mapa, a tamaño real; si no, de una casilla. */
@@ -29,8 +29,8 @@ export function addImageItem(asset: Asset, layer: BoardLayer) {
   return addItem({ layer, width, height, assetId: asset.id, name: layer === 'map' ? '' : asset.name.replace(/\.[^.]+$/, '') });
 }
 
-export function updateSelected(patch: Parameters<typeof emitAck<'item:update'>>[1]['patch']) {
+export function updateSelected(patch: UpdateItemInput) {
   const { scene, selectedId } = useBoard.getState();
   if (!scene || !selectedId) return;
-  return emitAck('item:update', { sceneId: scene.id, id: selectedId, patch });
+  return updateItem(scene.id, selectedId, patch);
 }

@@ -1,5 +1,6 @@
 import type { Point } from './measure.js';
 import { visibilityPolygon, type Wall } from './walls.js';
+import type { Eye, LightSource } from './lights.js';
 
 /**
  * Zonas ya exploradas con la visión dinámica: un mapa de bits sobre la escena, con varias
@@ -53,7 +54,7 @@ export const isExplored = (bits: Uint8Array, g: ExploredGrid, col: number, row: 
  * Marca las subcasillas cuyo centro cae dentro del polígono (relleno por líneas).
  * Devuelve si ha marcado alguna nueva.
  */
-export function markPolygon(bits: Uint8Array, g: ExploredGrid, poly: Point[]): boolean {
+export function markPolygon(bits: Uint8Array, g: ExploredGrid, poly: Point[], allow?: (i: number) => boolean): boolean {
   if (poly.length < 3) return false;
   let changed = false;
   const xs: number[] = [];
@@ -73,7 +74,7 @@ export function markPolygon(bits: Uint8Array, g: ExploredGrid, poly: Point[]): b
       for (let c = c0; c <= c1; c++) {
         const i = r * g.cols + c;
         const mask = 1 << (i & 7);
-        if (!(bits[i >> 3]! & mask)) {
+        if (!(bits[i >> 3]! & mask) && (!allow || allow(i))) {
           bits[i >> 3]! |= mask;
           changed = true;
         }
@@ -84,22 +85,36 @@ export function markPolygon(bits: Uint8Array, g: ExploredGrid, poly: Point[]): b
 }
 
 /**
- * Añade a lo explorado lo que ven ahora `eyes`. Devuelve el texto nuevo, o null si no cambia nada.
+ * Añade a lo explorado lo que ven ahora `eyes`. Con `lights` (escena a oscuras), solo cuenta
+ * lo iluminado o lo que cae dentro de la visión en la oscuridad. Devuelve el texto nuevo, o null si no cambia nada.
  */
 export function exploreFrom(
   scene: { widthCells: number; heightCells: number; gridSize: number; visionRange: number; walls: Wall[] },
   explored: string,
-  eyes: Point[],
+  eyes: Eye[],
+  lights: LightSource[] | null = null,
 ): string | null {
   if (!eyes.length) return null;
   const g = exploredGrid(scene);
   const bits = decodeExplored(explored, g);
   const w = scene.widthCells * scene.gridSize;
   const h = scene.heightCells * scene.gridSize;
+  const range = scene.visionRange * scene.gridSize;
+  // Escena a oscuras: primero se marca por dónde llega la luz.
+  let lit: Uint8Array | null = null;
+  if (lights) {
+    lit = new Uint8Array(bits.length);
+    for (const l of lights) markPolygon(lit, g, visibilityPolygon(l, scene.walls, w, h, l.radius));
+  }
+  const isLitCell = (i: number) => !!lit && ((lit[i >> 3]! >> (i & 7)) & 1) === 1;
   let changed = false;
   for (const e of eyes) {
     if (e.x < 0 || e.y < 0 || e.x > w || e.y > h) continue;
-    if (markPolygon(bits, g, visibilityPolygon(e, scene.walls, w, h, scene.visionRange * scene.gridSize))) changed = true;
+    if (lit) {
+      const dv = range ? Math.min(range, e.darkvision ?? 0) : (e.darkvision ?? 0);
+      if (dv > 0 && markPolygon(bits, g, visibilityPolygon(e, scene.walls, w, h, dv))) changed = true;
+      if (markPolygon(bits, g, visibilityPolygon(e, scene.walls, w, h, range), isLitCell)) changed = true;
+    } else if (markPolygon(bits, g, visibilityPolygon(e, scene.walls, w, h, range))) changed = true;
   }
   return changed ? encodeExplored(bits) : null;
 }

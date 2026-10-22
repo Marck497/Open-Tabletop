@@ -120,6 +120,30 @@ describe('creaciones (hechizos, ataques y objetos)', () => {
     expect(after.items.find((i) => i.id === gobTok.id)?.statuses).toEqual(['derribado']);
   });
 
+  it('🎯 Aplicar respeta resistencias, inmunidades y vulnerabilidades (de la hoja y de los estados)', async () => {
+    const { gm, gmC, newCharacter, sheet, createEntry, token } = await setup();
+    const blast = await createEntry(gm.cookie, { kind: 'spell', name: 'Estallido', data: { level: 0, damage: [{ dice: '10', type: 'fuego' }, { dice: '6', type: 'cortante' }] } });
+    const caster = await newCharacter('Maga', {});
+    const m = ok(await call<ChatMessage>(gmC, 'sheet:action', { characterId: caster.id, action: { kind: 'homebrew', entryId: blast.id } }));
+    expect(m.roll?.effect?.damageParts).toEqual([
+      { type: 'fuego', amount: 10 },
+      { type: 'cortante', amount: 6 },
+    ]);
+    const imp = await newCharacter('Diablillo', { pg_max: 100, pg_actuales: 100, inmunidades: 'Fuego', resistencias: 'cortante' });
+    const ent = await newCharacter('Ent', { pg_max: 100, pg_actuales: 100, vulnerabilidades: 'fuego y relámpago' });
+    const brute = await newCharacter('Bárbaro', { pg_max: 100, pg_actuales: 100 });
+    const impTok = await token({ x: 0, y: 0, characterId: imp.id });
+    const entTok = await token({ x: G, y: 0, characterId: ent.id });
+    const bruteTok = await token({ x: 2 * G, y: 0, characterId: brute.id, statuses: ['furia'] });
+    const applied = ok(await call<ChatMessage>(gmC, 'effect:apply', { messageId: m.id, itemIds: [impTok.id, entTok.id, bruteTok.id] }));
+    expect(applied.text).toContain('Diablillo: 3 de daño (inmune fuego, resiste cortante)');
+    expect(applied.text).toContain('Ent: 26 de daño (vulnerable fuego)');
+    expect(applied.text).toContain('Bárbaro: 13 de daño (resiste cortante)');
+    expect((await sheet(imp.id)).values.pg_actuales).toBe(97);
+    expect((await sheet(ent.id)).values.pg_actuales).toBe(74);
+    expect((await sheet(brute.id)).values.pg_actuales).toBe(87);
+  });
+
   it('ataques contra la CA; consumibles y usos se gastan desde la hoja', async () => {
     const { gm, pl, plC, gmC, newCharacter, sheet, createEntry, token } = await setup();
     const sword = await createEntry(gm.cookie, { kind: 'attack', name: 'Espada flamígera', data: { attack: 'melee', attackBonus: '@{fue_mod} + 100', damage: [{ dice: '1d8 + @{fue_mod}', type: 'cortante' }, { dice: '2d6', type: 'fuego' }] } });

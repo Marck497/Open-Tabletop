@@ -1,6 +1,8 @@
 import { DEFAULT_TOKEN_AI, type AiBehavior, type TokenAi } from '../schemas/ai.js';
 import { allFields, type SheetTemplate, type SheetValues } from '../schemas/sheet.js';
 import { combatOf } from '../systems/index.js';
+import { traitDefenses } from '../systems/defenses.js';
+import { DAMAGE_TYPE_SUGGESTIONS } from '../schemas/homebrew.js';
 
 /**
  * Compendio de monstruos del SRD 5.1 de D&D (contenido bajo licencia CC-BY-4.0,
@@ -178,6 +180,14 @@ export function monsterValues(template: SheetTemplate, m: Monster): SheetValues 
   put('raza', `${m.type}, ${m.size}`);
   put('dados_golpe', m.hitDice);
   const notes = [m.speedNote ? `Velocidad: ${m.speed} pies, ${m.speedNote}.` : '', m.traits, `${m.en} — SRD 5.1 (CC-BY-4.0).`].filter(Boolean).join('\n\n');
+  // Resistencias, inmunidades y vulnerabilidades escritas en los rasgos, a los campos de la hoja.
+  const def = traitDefenses(m.traits, DAMAGE_TYPE_SUGGESTIONS);
+  const map = combat?.defenses;
+  if (map) {
+    if (def.resist.length) put(map.resist, def.resist.join(', '));
+    if (def.immune.length) put(map.immune, def.immune.join(', '));
+    if (def.vulnerable.length) put(map.vulnerable, def.vulnerable.join(', '));
+  }
   if (keys.has('rasgos')) out.rasgos = notes;
   else put('notas', notes);
   return out;

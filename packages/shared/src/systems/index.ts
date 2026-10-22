@@ -29,10 +29,15 @@ export function combatOf(template: SheetTemplate): CombatMapping | null {
 export function statusesOf(template: SheetTemplate | null): StatusDef[] {
   const list = template?.statuses ?? DND5E_STATUSES;
   // Plantillas guardadas antes de que existieran los bufos: se completa el tipo con el de las condiciones conocidas.
-  return list.map((d) => (d.kind ? d : { ...d, kind: KNOWN_KINDS.get(d.id) }));
+  // Igual con las resistencias que dan (furia, petrificado...).
+  return list.map((d) => ({
+    ...d,
+    ...(d.kind ? {} : { kind: KNOWN.get(d.id)?.kind }),
+    ...(d.resist === undefined && KNOWN.get(d.id)?.resist ? { resist: KNOWN.get(d.id)!.resist } : {}),
+  }));
 }
 
-const KNOWN_KINDS = new Map([...DND5E_STATUSES, ...GENERIC_STATUSES].filter((d) => d.kind).map((d) => [d.id, d.kind]));
+const KNOWN = new Map([...GENERIC_STATUSES, ...DND5E_STATUSES].map((d) => [d.id, d]));
 
 /** Campo de iniciativa de la plantilla (el marcado "iniciativa"). */
 export function initiativeFieldOf(template: SheetTemplate): SheetField | undefined {

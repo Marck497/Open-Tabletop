@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { DIAGONAL_RULES, type DiagonalRule } from './measure.js';
 import { tokenAiSchema, type TokenAi } from './ai.js';
 import type { Wall } from './walls.js';
+import { lightSchema, type Light, type LightSource } from './lights.js';
 
 /**
  * Capas del tablero (como en Roll20):
@@ -63,6 +64,8 @@ export const sceneInputSchema = z.object({
   visionRange: z.number().int().min(0).max(1000),
   /** Con la visión dinámica, lo ya explorado se queda a la vista, en penumbra. */
   exploration: z.boolean(),
+  /** Con la visión dinámica: la escena está a oscuras y solo se ve con luz o con visión en la oscuridad. */
+  lighting: z.boolean(),
 });
 export const createSceneSchema = sceneInputSchema.partial().extend({ name: z.string().trim().min(1).max(80), folderId: z.string().min(1).max(64).nullable().optional() });
 export const updateSceneSchema = sceneInputSchema.partial();
@@ -85,6 +88,7 @@ export interface Scene {
   vision: boolean;
   visionRange: number;
   exploration: boolean;
+  lighting: boolean;
   /** Zonas exploradas por los jugadores (ver explored.ts); '' = nada. */
   explored: string;
   sortOrder: number;
@@ -225,6 +229,10 @@ export const boardItemFields = {
   hpView: z.enum(HP_VIEWS).nullable(),
   /** Quién ve la CA (null = automático). */
   acView: z.enum(AC_VIEWS).nullable(),
+  /** Luz que da (antorcha, linterna...); null = ninguna. */
+  light: lightSchema.nullable(),
+  /** Visión en la oscuridad en la unidad de la escena (0 = no tiene). */
+  darkvision: z.number().min(0).max(1000),
 };
 
 export const createItemSchema = z.object({
@@ -242,6 +250,8 @@ export const createItemSchema = z.object({
   drawing: boardItemFields.drawing.default(null),
   hpView: boardItemFields.hpView.default(null),
   acView: boardItemFields.acView.default(null),
+  light: boardItemFields.light.default(null),
+  darkvision: boardItemFields.darkvision.default(0),
 });
 export const updateItemSchema = z.object(boardItemFields).partial();
 export type CreateItemInput = z.input<typeof createItemSchema>;
@@ -268,6 +278,8 @@ export interface BoardItem {
   drawing: Drawing | null;
   hpView: HpView | null;
   acView: AcView | null;
+  light: Light | null;
+  darkvision: number;
   /** Vida y CA de la hoja vinculada, ya filtradas para quien lo recibe (las calcula el servidor). */
   stats?: TokenStats | null;
 }
@@ -276,6 +288,8 @@ export interface BoardItem {
 export interface SceneState {
   scene: Scene;
   items: BoardItem[];
+  /** Escena a oscuras: luces que el jugador necesita para pintar lo que ve (el DM las saca de los elementos). */
+  lights?: LightSource[];
 }
 
 export interface Asset {

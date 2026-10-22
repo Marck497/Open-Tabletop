@@ -3,39 +3,62 @@ import { Circle, Group, Line, Shape, Text } from 'react-konva';
 import {
   decodeExplored,
   exploredGrid,
+  eyeOf,
+  lightsOf,
   hasLineOfSight,
   isExplored,
   isDoor,
   visibilityPolygon,
   WALL_COLORS,
   type BoardItem,
+  type Eye,
+  type LightSource,
   type Point,
   type Scene,
   type Wall,
 } from '@vtt/shared';
 import { emitAck } from '../../core/socket';
 import { useBoard } from './store';
+import { recordWalls } from './history';
 
 /** ¿Es un token que mira? (igual que en el servidor) */
 const isEye = (i: BoardItem) => i.layer === 'token' && !i.drawing;
-const centerOf = (i: BoardItem): Point => ({ x: i.x + i.width / 2, y: i.y + i.height / 2 });
 
 /**
  * Desde dónde se ve: los tokens del jugador o, en la vista previa del DM, los de todos los jugadores.
  * Devuelve null si la visión no se aplica.
  */
-export function useEyes(scene: Scene | null, items: Record<string, BoardItem>, meId: string, isGm: boolean, preview: boolean): Point[] | null {
+export function useEyes(scene: Scene | null, items: Record<string, BoardItem>, meId: string, isGm: boolean, preview: boolean): Eye[] | null {
+  const gridSize = scene?.gridSize ?? 0;
+  const cellDistance = scene?.cellDistance ?? 0;
   return useMemo(() => {
     if (!scene?.vision || (isGm && !preview)) return null;
     const mine = (i: BoardItem) => (isGm ? i.ownerIds.length > 0 : i.ownerIds.includes(meId));
     return Object.values(items)
       .filter((i) => isEye(i) && mine(i))
-      .map(centerOf);
-  }, [scene?.vision, items, meId, isGm, preview]);
+      .map((i) => eyeOf(i, { gridSize, cellDistance }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scene?.vision, items, meId, isGm, preview, gridSize, cellDistance]);
+}
+
+/**
+ * Luces de una escena a oscuras (null si no está a oscuras). El DM las saca de los elementos;
+ * el jugador usa las que le manda el servidor (solo las que alumbran algo que ve).
+ */
+export function useLights(scene: Scene | null, items: Record<string, BoardItem>, isGm: boolean): LightSource[] | null {
+  const sent = useBoard((s) => s.lights);
+  const dark = !!scene?.vision && !!scene.lighting;
+  const gridSize = scene?.gridSize ?? 0;
+  const cellDistance = scene?.cellDistance ?? 0;
+  return useMemo(() => {
+    if (!dark) return null;
+    return isGm ? lightsOf(Object.values(items), { gridSize, cellDistance }) : sent;
+  }, [dark, isGm, items, sent, gridSize, cellDistance]);
 }
 
 /** Paredes y puertas guardadas (con un id nuevo para las que se añaden). */
 export function saveWalls(scene: Scene, walls: Wall[]) {
+  recordWalls(scene.id, scene.walls, walls);
   useBoard.getState().setWalls(walls);
   return emitAck('walls:set', { sceneId: scene.id, walls });
 }
@@ -183,15 +206,37 @@ function useExploredCanvas(scene: Scene): HTMLCanvasElement | null {
   }, [explored, exploration, widthCells, heightCells, gridSize]);
 }
 
+/** Traza varios polígonos en un mismo camino (al rellenarlo se unen). */
+function tracePolygons(ctx: CanvasRenderingContext2D, polys: Point[][]) {
+  ctx.beginPath();
+  for (const poly of polys) {
+    if (poly.length < 3) continue;
+    ctx.moveTo(poly[0]!.x, poly[0]!.y);
+    for (let i = 1; i < poly.length; i++) ctx.lineTo(poly[i]!.x, poly[i]!.y);
+    ctx.closePath();
+  }
+}
+
 /**
  * Oscuridad de la visión dinámica: negro donde no llega la vista, gris en lo ya
  * explorado (lo guarda el servidor por escena) y despejado lo que ven ahora los tokens.
+ * Con `lights` (escena a oscuras), dentro de lo que se ve solo se despeja lo iluminado:
+ * del todo en la luz brillante, a medias en la tenue y en la visión en la oscuridad.
+ * Sin `eyes` (el DM sin «Ver como jugadores») solo se pintan las luces, sin recortar por la vista.
  */
-export function VisionMask({ scene, eyes }: { scene: Scene; eyes: Point[] }) {
+export function VisionMask({ scene, eyes, lights }: { scene: Scene; eyes: Eye[] | null; lights: LightSource[] | null }) {
   const w = scene.widthCells * scene.gridSize;
   const h = scene.heightCells * scene.gridSize;
   const range = scene.visionRange * scene.gridSize;
-  const polygons = useMemo(() => eyes.map((e) => visibilityPolygon(e, scene.walls, w, h, range)), [eyes, scene.walls, w, h, range]);
+  const polygons = useMemo(() => (eyes ?? []).map((e) => visibilityPolygon(e, scene.walls, w, h, range)), [eyes, scene.walls, w, h, range]);
+  const lightPolys = useMemo(() => (lights ?? []).map((l) => visibilityPolygon(l, scene.walls, w, h, l.radius)), [lights, scene.walls, w, h]);
+  const darkPolys = useMemo(
+    () =>
+      lights && eyes
+        ? eyes.filter((e) => e.darkvision).map((e) => visibilityPolygon(e, scene.walls, w, h, range ? Math.min(range, e.darkvision!) : e.darkvision!))
+        : [],
+    [lights, eyes, scene.walls, w, h, range],
+  );
   const explored = useExploredCanvas(scene);
 
   return (
@@ -202,7 +247,7 @@ export function VisionMask({ scene, eyes }: { scene: Scene; eyes: Point[] }) {
         ctx.save();
         ctx.fillStyle = '#000';
         ctx.fillRect(0, 0, w, h);
-        if (explored) {
+        if (explored && eyes) {
           ctx.imageSmoothingEnabled = true;
           ctx.globalCompositeOperation = 'destination-out';
           ctx.drawImage(explored, 0, 0, w, h);
@@ -212,14 +257,51 @@ export function VisionMask({ scene, eyes }: { scene: Scene; eyes: Point[] }) {
           ctx.globalAlpha = 1;
         }
         ctx.globalCompositeOperation = 'destination-out';
-        ctx.beginPath();
-        for (const poly of polygons) {
-          if (poly.length < 3) continue;
-          ctx.moveTo(poly[0]!.x, poly[0]!.y);
-          for (let i = 1; i < poly.length; i++) ctx.lineTo(poly[i]!.x, poly[i]!.y);
-          ctx.closePath();
+        if (!lights) {
+          tracePolygons(ctx, polygons);
+          ctx.fill();
+          ctx.restore();
+          return;
         }
+        // Lo que no está en la vista de ningún token sigue a oscuras, aunque haya luz.
+        const clipToSight = () => {
+          if (!eyes) return;
+          tracePolygons(ctx, polygons);
+          ctx.clip();
+        };
+        ctx.save();
+        clipToSight();
+        lights.forEach((l, i) => {
+          const g = ctx.createRadialGradient(l.x, l.y, 0, l.x, l.y, l.radius);
+          const b = Math.min(1, l.bright / l.radius);
+          g.addColorStop(0, 'rgba(0,0,0,1)');
+          g.addColorStop(b, 'rgba(0,0,0,1)');
+          if (b < 1) {
+            g.addColorStop(Math.min(1, b + 0.05), 'rgba(0,0,0,0.6)');
+            g.addColorStop(1, 'rgba(0,0,0,0.45)');
+          }
+          ctx.fillStyle = g;
+          tracePolygons(ctx, [lightPolys[i]!]);
+          ctx.fill();
+        });
+        ctx.restore();
+        // Visión en la oscuridad: como luz tenue (y ya va recortada por las paredes).
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        tracePolygons(ctx, darkPolys);
         ctx.fill();
+        // Un toque del color de cada luz.
+        ctx.globalCompositeOperation = 'source-over';
+        clipToSight();
+        ctx.globalAlpha = 0.18;
+        lights.forEach((l, i) => {
+          const g = ctx.createRadialGradient(l.x, l.y, 0, l.x, l.y, l.radius);
+          g.addColorStop(0, l.color);
+          g.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = g;
+          tracePolygons(ctx, [lightPolys[i]!]);
+          ctx.fill();
+        });
         ctx.restore();
       }}
     />
