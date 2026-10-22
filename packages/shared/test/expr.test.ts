@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { checkSyntax, evaluate } from '../src/expr.js';
+import { naturalOutcome } from '../src/index.js';
 
 /** Generador que devuelve siempre los mismos valores (para tests). */
 const fixed = (...vals: number[]) => {
@@ -61,5 +62,25 @@ describe('tiradas', () => {
 
   it('limita la cantidad de dados', () => {
     expect(() => evaluate('1000d6', { rng: Math.random })).toThrow();
+  });
+});
+
+describe('críticos y pifias', () => {
+  const d = (expr: string, sides: number, results: number[], kept = results.map((_, i) => i)) => ({ expr, sides, results, kept });
+  it('mira solo los d20 que cuentan', () => {
+    expect(naturalOutcome({ rolls: [d('1d20', 20, [20])] })).toBe('crit');
+    expect(naturalOutcome({ rolls: [d('1d20', 20, [1])] })).toBe('fumble');
+    expect(naturalOutcome({ rolls: [d('1d20', 20, [13])] })).toBeNull();
+    expect(naturalOutcome({ rolls: [d('1d6', 6, [1])] })).toBeNull();
+    // Ventaja: el 1 descartado no cuenta.
+    expect(naturalOutcome({ rolls: [d('2d20kh1', 20, [1, 15], [1])] })).toBeNull();
+    expect(naturalOutcome({ rolls: [d('2d20kl1', 20, [20, 4], [1])] })).toBeNull();
+    expect(naturalOutcome({ rolls: [d('2d20', 20, [1, 20])] })).toBe('crit');
+    expect(naturalOutcome(null)).toBeNull();
+  });
+  it('con una tirada de verdad', () => {
+    const r = evaluate('1d20+3', { rng: () => 0.999 });
+    expect(naturalOutcome(r)).toBe('crit');
+    expect(naturalOutcome(evaluate('1d20+3', { rng: () => 0 }))).toBe('fumble');
   });
 });
