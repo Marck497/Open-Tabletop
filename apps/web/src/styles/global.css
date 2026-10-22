@@ -500,3 +500,12 @@ body.fx-shake .table-main { animation: fx-shake 0.6s cubic-bezier(.36,.07,.19,.9
 .shortcuts-help td { padding: 5px 6px; border-bottom: 1px solid var(--border); vertical-align: top; }
 .shortcuts-help td:first-child { white-space: nowrap; width: 1%; }
 kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 5px; background: var(--bg-elev-2); font-family: inherit; font-size: 0.85rem; }
+
+/* Botín */
+.loot .loot-row { flex-wrap: nowrap; margin-bottom: 4px; }
+.loot .loot-row > input:not(.tiny-number) { flex: 1; min-width: 0; }
+.loot label.coin { display: flex; flex-direction: column; font-size: 0.85rem; width: 5.5em; }
+.modal.loot label.coin input { width: 100%; min-width: 0; }
+.loot label.switch { display: inline-flex; flex-direction: row; align-items: center; gap: 6px; width: auto; }
+.modal.loot label.switch input { width: auto; min-width: 0; flex: none; margin: 0; }
+.loot .row.wrap { gap: 6px 14px; margin-bottom: 6px; }

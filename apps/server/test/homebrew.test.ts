@@ -156,6 +156,40 @@ describe('creaciones (hechizos, ataques y objetos)', () => {
     expect((await sheet(tough.id)).values.pg_actuales).toBe(0);
   });
 
+  it('botín: el DM reparte objetos (sumando si ya los tiene) y monedas a partes iguales', async () => {
+    const { gm, gmC, plC, newCharacter, sheet, createEntry } = await setup();
+    const potion = await createEntry(gm.cookie, { kind: 'item', name: 'Poción de curación', data: { consumable: true, heal: '2d4 + 2', weight: 0.5 } });
+    const ana = await newCharacter('Ana', { po: 10, inventario: [{ _id: 'i1', objeto: 'Cuerda', cantidad: 1, peso: 5 }] });
+    const bru = await newCharacter('Bruno', {});
+    const give = (payload: object) => call<ChatMessage>(gmC, 'loot:give', { campaignId: ana.campaignId, ...payload });
+    expect((await call(plC, 'loot:give', { campaignId: ana.campaignId, characterIds: [ana.id], coins: { po: '5' } })).ok).toBe(false);
+
+    const m = ok(
+      await give({
+        characterIds: [ana.id, bru.id],
+        coins: { po: '101', pp: '1d1 * 10' },
+        items: [
+          { name: 'cuerda', qty: 2, to: ana.id },
+          { name: 'Poción de curación', qty: 3, entryId: potion.id, to: bru.id },
+        ],
+      }),
+    );
+    expect(m.text).toBe('💰 Botín\nAna: 2× cuerda, 5 pp, 51 po\nBruno: 3× Poción de curación, 5 pp, 50 po');
+    expect(m.roll?.parts?.[0]).toMatchObject({ label: 'PP (1d1 * 10)', total: 10 });
+    const a = (await sheet(ana.id)).values;
+    expect(a.po).toBe(61);
+    expect(a.inventario).toEqual([{ _id: 'i1', objeto: 'Cuerda', cantidad: 3, peso: 5 }]);
+    const b = (await sheet(bru.id)).values;
+    expect(b.inventario).toMatchObject([{ objeto: 'Poción de curación', cantidad: 3, peso: 0.5, _ref: potion.id }]);
+    // Otra vez la poción: suma a la fila enlazada.
+    ok(await give({ items: [{ name: 'Poción de curación', qty: 1, entryId: potion.id, to: bru.id }] }));
+    expect(((await sheet(bru.id)).values.inventario as unknown as { cantidad: number }[])[0]!.cantidad).toBe(4);
+    // Cada uno recibe la cantidad entera.
+    ok(await give({ characterIds: [ana.id, bru.id], coins: { po: '7' }, coinMode: 'each' }));
+    expect((await sheet(bru.id)).values.po).toBe(57);
+    expect((await give({ characterIds: [ana.id], coins: { po: '0' } })).ok).toBe(false);
+  });
+
   it('🎯 Aplicar respeta resistencias, inmunidades y vulnerabilidades (de la hoja y de los estados)', async () => {
     const { gm, gmC, newCharacter, sheet, createEntry, token } = await setup();
     const blast = await createEntry(gm.cookie, { kind: 'spell', name: 'Estallido', data: { level: 0, damage: [{ dice: '10', type: 'fuego' }, { dice: '6', type: 'cortante' }] } });

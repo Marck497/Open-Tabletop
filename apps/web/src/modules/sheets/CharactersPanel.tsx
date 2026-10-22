@@ -4,6 +4,7 @@ import { api } from '../../core/api';
 import { CompendiumWindow } from '../compendium/CompendiumWindow';
 import type { HomebrewDraft } from '../homebrew/HomebrewEditor';
 import { HomebrewWindow } from '../homebrew/HomebrewWindow';
+import { LootWindow } from '../loot/LootWindow';
 import { CharacterCreator } from '../srd/CharacterCreator';
 import { SrdBrowser } from '../srd/SrdBrowser';
 import { useSheets } from './store';
@@ -28,6 +29,7 @@ export function CharactersPanel({
   const [compendium, setCompendium] = useState(false);
   const [creator, setCreator] = useState(false);
   const [rules, setRules] = useState(false);
+  const [loot, setLoot] = useState(false);
   /** Ventana de creaciones: cerrada (null), abierta, o abierta con una copia del SRD para editar. */
   const [homebrew, setHomebrew] = useState<{ draft: HomebrewDraft | null } | null>(null);
 
@@ -47,6 +49,11 @@ export function CharactersPanel({
           {isGm && (
             <button className="ghost small" onClick={() => setCompendium(true)} title="Monstruos del SRD 5e con su hoja y su IA">
               📖 Compendio
+            </button>
+          )}
+          {isGm && (
+            <button className="ghost small" onClick={() => setLoot(true)} title="Reparte objetos y monedas a los inventarios de los personajes">
+              💰 Botín
             </button>
           )}
           <button className="ghost small" onClick={() => void create()} title="Hoja en blanco">
@@ -102,6 +109,7 @@ export function CharactersPanel({
         />
       )}
       {homebrew && <HomebrewWindow campaignId={campaignId} isGm={isGm} meId={meId} members={members} initialDraft={homebrew.draft} onClose={() => setHomebrew(null)} />}
+      {loot && <LootWindow campaignId={campaignId} onClose={() => setLoot(false)} />}
       {compendium && <CompendiumWindow campaignId={campaignId} onClose={() => setCompendium(false)} />}
     </div>
   );

@@ -123,6 +123,8 @@ export const combatMappingSchema = z.object({
   spellDc: z.string().max(200).optional(),
   /** Modificador de lanzamiento (lo que suman las curaciones del SRD). */
   spellMod: z.string().max(200).optional(),
+  /** Campos numéricos de las monedas (de menor a mayor valor), donde se suma el botín. */
+  coins: z.array(z.string().max(64)).max(10).optional(),
   /** Campos de texto con los tipos de daño (separados por comas) a los que es resistente, inmune o vulnerable. */
   defenses: z.object({ resist: z.string().max(64), immune: z.string().max(64), vulnerable: z.string().max(64) }).nullable().optional(),
 });
