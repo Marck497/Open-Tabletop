@@ -1,5 +1,5 @@
 import { DND5E_STATUSES } from './statuses.js';
-import type { SheetField, SheetTemplateInput } from '../schemas/sheet.js';
+import type { SheetField, SheetSection, SheetTemplate, SheetTemplateInput } from '../schemas/sheet.js';
 
 /** Plantilla de D&D 5e (en español). Es un punto de partida: el DM puede editarla entera. */
 
@@ -63,9 +63,46 @@ const skillFields: SheetField[] = SKILLS.flatMap(([k, label, ab]) => [
   },
 ]);
 
+/** Versión de la plantilla de serie. Las partidas con una anterior reciben lo nuevo con `upgradeDnd5e`. */
+export const DND5E_VERSION = 2;
+
+/** Columnas de daño extra y crítico de la tabla de ataques (versión 2). */
+const ATTACK_EXTRA_COLUMNS: SheetField[] = [
+  { key: 'extra', label: 'Daño extra', type: 'text', hint: 'Se suma al daño, p. ej. "1d6 fuego" o "2d6"', roll: '@{extra}', rollLabel: 'Daño extra' },
+  { key: 'critico', label: 'Crítico con', type: 'number', default: 20, hint: 'Número mínimo del d20 para crítico (19 con Crítico mejorado)' },
+];
+
+export const RECHARGE_OPTIONS = [
+  { value: 'largo', label: 'Descanso largo' },
+  { value: 'corto', label: 'Descanso corto' },
+  { value: '', label: 'A mano' },
+];
+
+/** Recursos con usos que se recargan al descansar (versión 2). */
+const RESOURCES_SECTION: SheetSection = {
+  id: 'recursos',
+  title: 'Recursos y usos',
+  columns: 1,
+  fields: [
+    {
+      key: 'recursos',
+      label: 'Rasgos y objetos con usos (furia, ki, canalizar divinidad, cargas…)',
+      type: 'list',
+      columns: [
+        { key: 'nombre', label: 'Nombre', type: 'text' },
+        { key: 'usos', label: 'Quedan', type: 'number', default: 1 },
+        { key: 'max', label: 'Máx.', type: 'number', default: 1 },
+        { key: 'recarga', label: 'Se recarga con', type: 'select', default: 'largo', options: RECHARGE_OPTIONS },
+      ],
+    },
+  ],
+};
+
+const PACT_FIELD: SheetField = { key: 'espacios_pacto', label: 'Espacios de pacto (vuelven con descanso corto)', type: 'checkbox', span: 2 };
+
 export const dnd5eTemplate: SheetTemplateInput = {
   name: 'D&D 5e',
-  version: 1,
+  version: DND5E_VERSION,
   bars: [{ value: 'pg_actuales', max: 'pg_max', color: '#c0392b' }],
   statuses: DND5E_STATUSES,
   combat: {
@@ -74,7 +111,10 @@ export const dnd5eTemplate: SheetTemplateInput = {
     hpMax: 'pg_max',
     hpTemp: 'pg_temporales',
     speed: 'velocidad',
-    attacks: { list: 'ataques', name: 'nombre', attack: 'bono', damage: 'dano' },
+    attacks: { list: 'ataques', name: 'nombre', attack: 'bono', damage: 'dano', extra: 'extra', crit: 'critico' },
+    spells: { list: 'conjuros', name: 'nombre', level: 'nivel', effect: 'efecto' },
+    slots: { max: 'espacios_{n}_max', used: 'espacios_{n}_usados', pact: 'espacios_pacto' },
+    resources: { list: 'recursos', name: 'nombre', uses: 'usos', max: 'max', recharge: 'recarga' },
   },
   sections: [
     {
@@ -146,10 +186,12 @@ export const dnd5eTemplate: SheetTemplateInput = {
             { key: 'bono', label: 'Bono ataque', type: 'text', default: '+0', roll: '1d20 + @{bono}', rollLabel: 'Ataque' },
             { key: 'dano', label: 'Daño', type: 'text', default: '1d6', roll: '@{dano}', rollLabel: 'Daño' },
             { key: 'tipo', label: 'Tipo', type: 'text' },
+            ...ATTACK_EXTRA_COLUMNS,
           ],
         },
       ],
     },
+    RESOURCES_SECTION,
     {
       id: 'conjuros',
       title: 'Conjuros',
@@ -185,6 +227,7 @@ export const dnd5eTemplate: SheetTemplateInput = {
           { key: `espacios_${i + 1}_max`, label: `Espacios nv ${i + 1}`, type: 'number', default: 0 },
           { key: `espacios_${i + 1}_usados`, label: 'Usados', type: 'number', default: 0 },
         ]).flat(),
+        PACT_FIELD,
         {
           key: 'conjuros',
           label: 'Lista de conjuros',
@@ -236,3 +279,31 @@ export const dnd5eTemplate: SheetTemplateInput = {
     },
   ],
 };
+
+/**
+ * Pone al día una plantilla de 5e guardada con una versión anterior: añade las columnas de daño
+ * extra y crítico, la sección de recursos, la casilla de espacios de pacto y lo que usan los
+ * botones de acción. Solo añade lo que falta; lo que el DM haya cambiado se respeta.
+ */
+export function upgradeDnd5e(template: SheetTemplate): SheetTemplate {
+  if (template.name !== 'D&D 5e' || template.version >= DND5E_VERSION) return template;
+  const t: SheetTemplate = structuredClone(template);
+  const keys = new Set(t.sections.flatMap((s) => s.fields.map((f) => f.key)));
+  const attacks = t.sections.flatMap((s) => s.fields).find((f) => f.key === 'ataques' && f.type === 'list');
+  if (attacks?.columns) for (const c of ATTACK_EXTRA_COLUMNS) if (!attacks.columns.some((x) => x.key === c.key)) attacks.columns.push(structuredClone(c));
+  if (!keys.has('recursos') && !t.sections.some((s) => s.id === RESOURCES_SECTION.id)) {
+    const at = t.sections.findIndex((s) => s.id === 'ataques');
+    t.sections.splice(at < 0 ? t.sections.length : at + 1, 0, structuredClone(RESOURCES_SECTION));
+  }
+  const spells = t.sections.find((s) => s.fields.some((f) => f.key === 'conjuros'));
+  if (spells && !keys.has(PACT_FIELD.key)) spells.fields.splice(spells.fields.findIndex((f) => f.key === 'conjuros'), 0, structuredClone(PACT_FIELD));
+  if (t.combat) {
+    const has = (k: string) => t.sections.some((s) => s.fields.some((f) => f.key === k));
+    if (t.combat.attacks?.list === 'ataques') t.combat.attacks = { ...t.combat.attacks, extra: t.combat.attacks.extra ?? 'extra', crit: t.combat.attacks.crit ?? 'critico' };
+    if (t.combat.spells === undefined && has('conjuros')) t.combat.spells = { list: 'conjuros', name: 'nombre', level: 'nivel', effect: 'efecto' };
+    if (t.combat.slots === undefined && has('espacios_1_max')) t.combat.slots = { max: 'espacios_{n}_max', used: 'espacios_{n}_usados', pact: 'espacios_pacto' };
+    if (t.combat.resources === undefined && has('recursos')) t.combat.resources = { list: 'recursos', name: 'nombre', uses: 'usos', max: 'max', recharge: 'recarga' };
+  }
+  t.version = DND5E_VERSION;
+  return t;
+}

@@ -3,11 +3,18 @@ import type { AiSettings } from './ai.js';
 
 export type ChatKind = 'text' | 'emote' | 'roll' | 'system';
 
-export interface ChatRoll {
+export interface ChatRollPart {
   label: string;
   expression: string;
   total: number;
   rolls: DiceRoll[];
+}
+
+export interface ChatRoll extends ChatRollPart {
+  /** Tiradas que van con la principal (el daño de un ataque, el daño extra…). */
+  parts?: ChatRollPart[];
+  /** Ataque crítico (el daño lleva el doble de dados). */
+  crit?: boolean;
 }
 
 export interface ChatMessage {

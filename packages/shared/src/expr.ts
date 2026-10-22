@@ -304,6 +304,19 @@ export function evaluate(src: string, opts: EvalOptions = {}): EvalResult {
 }
 
 /** Comprueba la sintaxis sin evaluar (para el editor de plantillas). Devuelve el error o null. */
+/**
+ * Separa "1d20+5 Ataque con espada" (o un daño "1d6 fuego") en tirada y etiqueta: la tirada
+ * es el principio más largo que es una expresión válida.
+ */
+export function splitRoll(rest: string): { expression: string; label: string } {
+  const words = rest.trim().split(/\s+/).filter(Boolean);
+  for (let n = words.length; n > 0; n--) {
+    const expression = words.slice(0, n).join(' ');
+    if (!checkSyntax(expression)) return { expression, label: words.slice(n).join(' ') };
+  }
+  return { expression: '', label: '' };
+}
+
 export function checkSyntax(src: string): string | null {
   try {
     parse(tokenize(src));

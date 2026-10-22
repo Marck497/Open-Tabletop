@@ -52,3 +52,4 @@ export function initiativeRollOf(template: SheetTemplate | null, values: SheetVa
 }
 
 export { DND5E_STATUSES, GENERIC_STATUSES } from './statuses.js';
+export { DND5E_VERSION, RECHARGE_OPTIONS, upgradeDnd5e } from './dnd5e.js';

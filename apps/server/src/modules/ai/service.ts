@@ -17,6 +17,7 @@ import {
   type Character,
   type ChatMessage,
   type ChatRoll,
+  splitRoll,
   type DiceRoll,
   type InitiativeState,
   type PlanCreature,
@@ -45,6 +46,9 @@ interface Attack {
   name: string;
   attack: string;
   damage: string;
+  /** Daño extra de la fila (p. ej. "1d6" de "1d6 fuego") y desde qué número del d20 es crítico. */
+  extra?: string;
+  critFrom?: number;
   resolve?: (name: string) => unknown;
 }
 
@@ -127,7 +131,7 @@ export function createAiService(ctx: AppContext) {
     if (ai.attack) return { name: ai.attackName || 'Ataque', attack: ai.attack, damage: ai.damage };
     const combat = combatOf(template);
     if (!character || !combat?.attacks) return null;
-    const { list, name, attack, damage } = combat.attacks;
+    const { list, name, attack, damage, extra, crit } = combat.attacks;
     const rows = character.values[list];
     if (!Array.isArray(rows) || !rows.length) return null;
     const row = (rows[ai.attackIndex] ?? rows[0]) as SheetRow;
@@ -137,6 +141,8 @@ export function createAiService(ctx: AppContext) {
       name: String(row[name] || 'Ataque'),
       attack: rollOf(attack),
       damage: rollOf(damage),
+      extra: extra && row[extra] ? splitRoll(String(row[extra])).expression || undefined : undefined,
+      critFrom: crit ? Math.min(20, Math.max(2, Number(row[crit]) || 20)) : 20,
       resolve: createResolver(template, character.values, row),
     };
   }
@@ -279,7 +285,7 @@ export function createAiService(ctx: AppContext) {
     // Ataque: un 20 natural siempre impacta (crítico) y un 1 siempre falla.
     const atk = roll(attack.attack, attack.resolve);
     const nat = natural20(atk.rolls);
-    const crit = nat === 20;
+    const crit = nat !== null && nat >= (attack.critFrom ?? 20);
     const hit = crit ? true : nat === 1 ? false : target.ac === null ? null : atk.value >= target.ac;
     const verdict = crit ? '¡crítico!' : hit === null ? '¿impacta?' : hit ? 'impacta' : nat === 1 ? 'pifia' : 'falla';
     const acText = target.ac === null ? '' : ` (CA ${target.ac})`;
@@ -289,13 +295,18 @@ export function createAiService(ctx: AppContext) {
     if (hit === false || !attack.damage) return result;
 
     // Daño: en un crítico se tiran el doble de dados.
-    const dmg = roll(attack.damage, attack.resolve);
-    let total = dmg.value;
-    let rolls = dmg.rolls;
-    if (crit) {
-      const extra = roll(attack.damage, attack.resolve);
-      total += keptSum(extra.rolls);
-      rolls = [...rolls, ...extra.rolls];
+    let total = 0;
+    let rolls: DiceRoll[] = [];
+    for (const expr of [attack.damage, attack.extra]) {
+      if (!expr) continue;
+      const dmg = roll(expr, attack.resolve);
+      total += dmg.value;
+      rolls = [...rolls, ...dmg.rolls];
+      if (crit) {
+        const again = roll(expr, attack.resolve);
+        total += keptSum(again.rolls);
+        rolls = [...rolls, ...again.rolls];
+      }
     }
     total = Math.max(0, Math.round(total));
     result.damage = total;
@@ -313,7 +324,7 @@ export function createAiService(ctx: AppContext) {
       await broadcastCharacter(ctx, before, sheets.row(before.id));
       applied = hp === 0 ? ` (${target.name} cae a 0)` : ` (${target.hp} → ${hp})`;
     }
-    await say(base, 'roll', '', { label: `Daño a ${target.name}${crit ? ' (crítico)' : ''}${applied}`, expression: attack.damage, total, rolls });
+    await say(base, 'roll', '', { label: `Daño a ${target.name}${crit ? ' (crítico)' : ''}${applied}`, expression: [attack.damage, attack.extra].filter(Boolean).join(' + '), total, rolls });
     return result;
   }
 

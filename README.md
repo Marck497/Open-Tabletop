@@ -95,6 +95,22 @@ Con el editor abierto, el zoom va con la rueda y el mapa se desplaza con el bot�
 
 Ejemplos de fórmulas: `floor((fue - 10) / 2)`, `if(sigilo_comp, competencia, 0)`. Ejemplos de tiradas: `1d20 + @{fue_mod}`, `2d20kh1 + 5` (ventaja), `@{dano}` (tira lo que haya escrito en el campo "dano").
 
+### Botones de acción y descansos
+
+Cada fila de la hoja de 5e tiene su botón:
+
+- **⚔ Atacar** (ataques y armas): tira 1d20 + el bono y el daño. Con *Daño extra* (por ejemplo `1d6 fuego` o `2d6 radiante`) sale una segunda tirada de daño en el mismo mensaje.
+  - Si el d20 llega a *Crítico con* (20 por defecto, 19 para un campeón), se tiran el doble de dados en todo el daño.
+  - Si el bono no es un número (por ejemplo "CD 13 DES"), se tira solo el daño.
+- **✨ Lanzar** (conjuros): gasta un espacio del nivel que elijas en el desplegable (por defecto, el más bajo libre) y tira la *Tirada* del conjuro, sea daño o curación. Los trucos no gastan nada. Si no quedan espacios, el botón se apaga.
+- **▶ Usar** (*Recursos y usos*): resta un uso a rasgos y objetos como furia, ki, canalizar divinidad o cargas de varita. Cada recurso dice si vuelve con **descanso corto** o **largo**.
+- **☾ Descanso corto** y **☀ Descanso largo** (cabecera de la hoja):
+  - El corto repone los recursos de descanso corto, y también los espacios si está marcado *Espacios de pacto* (brujo).
+  - El largo repone además los PG, todos los espacios y los recursos de descanso largo, y quita los PG temporales.
+  - El chat avisa de lo que se ha recuperado.
+
+Las hojas de campañas antiguas reciben estos campos solas la primera vez que se abren. En la plantilla, la sección *Combate, barras de vida e IA de enemigos* dice qué columnas son el daño extra, el crítico, los conjuros, los espacios y los recursos. La IA de enemigos también usa el daño extra y el rango de crítico.
+
 ### Vida, CA y estados en los tokens
 
 Los tokens vinculados a una hoja muestran encima su **barra de vida**: verde, amarilla o roja según lo que les queda, y con los **PG temporales** en azul al final. Abajo a la izquierda llevan un **escudo con su CA**.
