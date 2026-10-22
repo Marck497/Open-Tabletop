@@ -30,6 +30,7 @@ import type { AppContext } from '../../core/module.js';
 import { badRequest, forbidden, notFound } from '../../core/errors.js';
 import { assets, boardItems, campaigns, characters, scenes } from '../../db/schema.js';
 import { createCampaignService } from '../campaigns/service.js';
+import { createStatsDecorator } from './stats.js';
 import { canSeeItem, eyesOf, forViewer, isEye, PLAYER_DRAWING_FIELDS, PLAYER_EDITABLE_FIELDS, sceneFor } from './visibility.js';
 
 type SceneRow = typeof scenes.$inferSelect;
@@ -47,6 +48,8 @@ export interface Viewer {
 export function createBoardService(ctx: AppContext) {
   const { db } = ctx;
   const campaignsSvc = createCampaignService(ctx);
+  /** Vida y CA de los tokens vinculados, filtradas para cada usuario. */
+  const statsFor = createStatsDecorator(ctx);
 
   function sceneRow(sceneId: string): SceneRow {
     const row = db.select().from(scenes).where(eq(scenes.id, sceneId)).get();
@@ -133,10 +136,11 @@ export function createBoardService(ctx: AppContext) {
 
   function stateFor(scene: Scene, viewer: Viewer): SceneState {
     const items = allItems(scene.id);
+    const withStats = statsFor(scene.campaignId);
     const eyes = scene.vision && viewer.role !== 'gm' ? eyesOf(items, viewer.userId) : undefined;
     return {
       scene: sceneFor(scene, viewer.role),
-      items: items.filter((i) => canSeeItem(i, scene, viewer.role, viewer.userId, eyes)).map((i) => forViewer(i, viewer.role)),
+      items: items.filter((i) => canSeeItem(i, scene, viewer.role, viewer.userId, eyes)).map((i) => withStats(forViewer(i, viewer.role), viewer.role, viewer.userId)),
     };
   }
 
@@ -318,6 +322,7 @@ export function createBoardService(ctx: AppContext) {
   }
 
   return {
+    statsFor,
     sceneIdsOf,
     listScenes,
     createScene,

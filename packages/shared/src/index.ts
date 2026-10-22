@@ -16,5 +16,6 @@ export * from './schemas/sheet.js';
 export * from './schemas/character.js';
 export * from './schemas/chat.js';
 export * from './systems/index.js';
+export * from './systems/tokenStats.js';
 export * from './compendium/monsters.js';
 export * from './realtime.js';

@@ -72,6 +72,7 @@ export const dnd5eTemplate: SheetTemplateInput = {
     ac: 'ca',
     hp: 'pg_actuales',
     hpMax: 'pg_max',
+    hpTemp: 'pg_temporales',
     speed: 'velocidad',
     attacks: { list: 'ataques', name: 'nombre', attack: 'bono', damage: 'dano' },
   },

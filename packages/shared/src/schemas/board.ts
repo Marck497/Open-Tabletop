@@ -107,6 +107,24 @@ export const drawingSchema = z.object({
 export type Drawing = z.infer<typeof drawingSchema>;
 export type DrawingInput = z.input<typeof drawingSchema>;
 
+/** Vida de un token para los jugadores: oculta (solo el DM), solo la barra o la barra con números. */
+export const HP_VIEWS = ['gm', 'bar', 'numbers'] as const;
+export type HpView = (typeof HP_VIEWS)[number];
+export const HP_VIEW_LABELS: Record<HpView, string> = { gm: 'Solo el DM', bar: 'Barra sin números', numbers: 'Barra y números' };
+export const AC_VIEWS = ['gm', 'all'] as const;
+export type AcView = (typeof AC_VIEWS)[number];
+
+export interface TokenStats {
+  hp?: number | null;
+  hpMax?: number | null;
+  hpTemp?: number | null;
+  /** Vida actual / máxima (0 a 1). */
+  ratio?: number;
+  /** PG temporales / vida máxima. */
+  tempRatio?: number;
+  ac?: number;
+}
+
 export const boardItemFields = {
   layer: z.enum(BOARD_LAYERS),
   x: z.number(),
@@ -130,6 +148,10 @@ export const boardItemFields = {
   statuses: z.array(z.string().max(40)).max(30),
   /** IA del enemigo (solo la ve el DM). */
   ai: tokenAiSchema.nullable(),
+  /** Quién ve la vida de la hoja vinculada (null = automático: ver hpViewOf). */
+  hpView: z.enum(HP_VIEWS).nullable(),
+  /** Quién ve la CA (null = automático). */
+  acView: z.enum(AC_VIEWS).nullable(),
 };
 
 export const createItemSchema = z.object({
@@ -145,6 +167,8 @@ export const createItemSchema = z.object({
   ai: boardItemFields.ai.default(null),
   statuses: boardItemFields.statuses.default([]),
   drawing: boardItemFields.drawing.default(null),
+  hpView: boardItemFields.hpView.default(null),
+  acView: boardItemFields.acView.default(null),
 });
 export const updateItemSchema = z.object(boardItemFields).partial();
 export type CreateItemInput = z.input<typeof createItemSchema>;
@@ -169,6 +193,10 @@ export interface BoardItem {
   ai: TokenAi | null;
   statuses: string[];
   drawing: Drawing | null;
+  hpView: HpView | null;
+  acView: AcView | null;
+  /** Vida y CA de la hoja vinculada, ya filtradas para quien lo recibe (las calcula el servidor). */
+  stats?: TokenStats | null;
 }
 
 /** Lo que recibe un cliente al abrir una escena (ya filtrado según su rol). */

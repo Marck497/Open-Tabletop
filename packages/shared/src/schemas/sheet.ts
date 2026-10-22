@@ -93,6 +93,8 @@ export const combatMappingSchema = z.object({
   /** Campo numérico de vida actual: al recibir daño se le resta. */
   hp: z.string().max(64).default(''),
   hpMax: z.string().max(200).default(''),
+  /** Campo de puntos de golpe temporales (se dibujan en azul encima de la barra de vida). */
+  hpTemp: z.string().max(64).default(''),
   /** Fórmula o campo con la velocidad, en las unidades de la escena (pies). */
   speed: z.string().max(200).default(''),
   /** Tabla de ataques: columnas con el nombre, la tirada de ataque y la de daño. */
@@ -111,6 +113,8 @@ export const statusDefSchema = z.object({
   icon: z.string().trim().min(1).max(8),
   /** La criatura no puede actuar (la IA se salta su turno y no la ataca si además está a 0 PG). */
   incapacitated: z.boolean().default(false),
+  /** Bufo (verde) o perjuicio (rojo); sin marcar, neutro. */
+  kind: z.enum(['buff', 'debuff']).optional(),
 });
 export type StatusDef = z.infer<typeof statusDefSchema>;
 

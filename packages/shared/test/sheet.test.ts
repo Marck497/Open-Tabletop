@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { statusesOf } from '../src/index.js';
 import { BUILTIN_TEMPLATES } from '../src/systems/index.js';
 import { computeAll, createResolver, defaultValues, sheetTemplateSchema } from '../src/schemas/sheet.js';
 import { evaluate } from '../src/expr.js';
@@ -38,5 +39,16 @@ describe('plantilla D&D 5e', () => {
       sections: [{ id: 's', title: 's', fields: [{ key: 'a', label: 'A', type: 'computed', formula: 'b + 1' }, { key: 'b', label: 'B', type: 'computed', formula: 'a + 1' }] }],
     });
     expect(() => computeAll(t, {})).not.toThrow();
+  });
+});
+
+describe('bufos y perjuicios', () => {
+  it('las condiciones traen su tipo, también en plantillas guardadas sin él', () => {
+    const defs = statusesOf(null);
+    expect(defs.find((d) => d.id === 'bendecido')?.kind).toBe('buff');
+    expect(defs.find((d) => d.id === 'envenenado')?.kind).toBe('debuff');
+    expect(defs.find((d) => d.id === 'concentracion')?.kind).toBeUndefined();
+    const old = statusesOf({ ...BUILTIN_TEMPLATES.dnd5e!.template, statuses: [{ id: 'cegado', label: 'Cegado', icon: '🕶️', incapacitated: false }] });
+    expect(old[0]!.kind).toBe('debuff');
   });
 });

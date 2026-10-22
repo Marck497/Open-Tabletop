@@ -264,12 +264,12 @@ function BarsEditor({ template, update }: { template: SheetTemplate; update: (fn
 
 /** Qué campos usa la IA de enemigos (CA, vida, velocidad y la tabla de ataques). */
 function CombatEditor({ template, update }: { template: SheetTemplate; update: (fn: (t: SheetTemplate) => void) => void }) {
-  const combat: CombatMapping = template.combat ?? combatOf(template) ?? { ac: '', hp: '', hpMax: '', speed: '', attacks: null };
+  const combat: CombatMapping = template.combat ?? combatOf(template) ?? { ac: '', hp: '', hpMax: '', hpTemp: '', speed: '', attacks: null };
   const fields = template.sections.flatMap((s) => s.fields);
   const numeric = fields.filter((f) => f.type === 'number' || f.type === 'computed');
   const lists = fields.filter((f) => f.type === 'list');
   const set = (patch: Partial<CombatMapping>) => update((t) => void (t.combat = { ...combat, ...patch }));
-  const pick = (key: 'ac' | 'hp' | 'hpMax' | 'speed', label: string, options = numeric) => (
+  const pick = (key: 'ac' | 'hp' | 'hpMax' | 'hpTemp' | 'speed', label: string, options = numeric) => (
     <label>
       {label}
       <select value={combat[key]} onChange={(e) => set({ [key]: e.target.value })}>
@@ -298,7 +298,7 @@ function CombatEditor({ template, update }: { template: SheetTemplate; update: (
   );
   return (
     <details className="help">
-      <summary>Combate e IA de enemigos</summary>
+      <summary>Combate, barras de vida e IA de enemigos</summary>
       <p className="muted hint">Qué campos usan los enemigos con IA para atacar y para saber a quién le queda poca vida.</p>
       <div className="field-row">
         {pick('ac', 'Defensa (CA)')}
@@ -308,6 +308,7 @@ function CombatEditor({ template, update }: { template: SheetTemplate; update: (
         {pick('hp', 'Vida actual (se le resta el daño)', fields.filter((f) => f.type === 'number'))}
         {pick('hpMax', 'Vida máxima')}
       </div>
+      <div className="field-row">{pick('hpTemp', 'Puntos de golpe temporales', fields.filter((f) => f.type === 'number'))}</div>
       <label>
         Tabla de ataques
         <select

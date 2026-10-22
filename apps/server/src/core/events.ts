@@ -13,6 +13,8 @@ export interface DomainEvents {
   'initiative:rolled': [{ campaignId: string; userId: string; characterId: string | null; name: string; value: number }];
   'campaign:memberRemoved': [{ campaignId: string; userId: string }];
   /** Ha empezado el turno de alguien (al empezar el combate o al pasar turno). */
+  /** Ha cambiado una hoja (o la plantilla entera, con characterId null): el tablero reenvía la vida de sus tokens. */
+  'character:changed': [{ campaignId: string; characterId: string | null }];
   'initiative:turnStarted': [{ campaignId: string; userId: string; state: InitiativeState }];
 }
 

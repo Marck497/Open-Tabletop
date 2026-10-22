@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { Circle, Group, Image as KImage, Layer, Line, Rect, Shape, Stage, Text, Transformer } from 'react-konva';
 import type Konva from 'konva';
 import useImage from 'use-image';
-import { assetUrl, createResolver, statusesOf, type BoardItem, type BoardLayer, type Fog, type Measure, type Point, type Scene } from '@vtt/shared';
+import { acViewOf, assetUrl, combatOf, createResolver, hpViewOf, statusesOf, type BoardItem, type BoardLayer, type Fog, type Measure, type Point, type Scene } from '@vtt/shared';
 import { useSheets } from '../sheets/store';
 import { addCharacterToken } from '../sheets/tokens';
 import { useActiveItemId } from '../initiative/store';
@@ -343,6 +343,7 @@ export function Board({ isGm, meId }: Props) {
   const itemProps = (item: BoardItem) => ({
     key: item.id,
     item,
+    isGm,
     scene,
     selected: item.id === selectedId,
     interactive: freeTool && (isGm ? item.layer === activeLayer : item.layer === 'token' && item.ownerIds.includes(meId)),
@@ -515,6 +516,8 @@ function FogShape({ fog, width, height }: { fog: Fog; width: number; height: num
 
 interface ItemNodeProps {
   item: BoardItem;
+  /** Quien mira es el DM (ve la vida aunque esté oculta para los jugadores, marcada). */
+  isGm: boolean;
   scene: Scene;
   selected: boolean;
   interactive: boolean;
@@ -527,7 +530,7 @@ interface ItemNodeProps {
   onDragPath: (m: Measure | null) => void;
 }
 
-function ItemNode({ item, scene, selected, interactive, ghost, transformable, turn, onSelect, onDragPath }: ItemNodeProps) {
+function ItemNode({ item, isGm, scene, selected, interactive, ghost, transformable, turn, onSelect, onDragPath }: ItemNodeProps) {
   const groupRef = useRef<Konva.Group>(null);
   const trRef = useRef<Konva.Transformer>(null);
   const lastEmit = useRef(0);
@@ -536,15 +539,17 @@ function ItemNode({ item, scene, selected, interactive, ghost, transformable, tu
   const imageId = item.assetId ?? character?.avatarAssetId ?? null;
   const [image] = useImage(imageId ? assetUrl(imageId) : '');
   const name = item.name || character?.name || '';
+  // Barras extra de la plantilla (la de vida va aparte, con lo que diga el servidor que se puede ver).
   const bars = useMemo(() => {
     if (!character || !template) return [];
     const resolve = createResolver(template, character.values);
-    return template.bars.map((b) => {
+    const hpKey = combatOf(template)?.hp;
+    return template.bars.filter((b) => !item.stats || b.value !== hpKey).map((b) => {
       const value = Number(resolve(b.value)) || 0;
       const max = b.max ? Number(resolve(b.max)) || 0 : 0;
       return { value, max, color: b.color };
     });
-  }, [character, template]);
+  }, [character, template, item.stats]);
   const statusIcons = useMemo(() => {
     if (!item.statuses.length) return [];
     const defs = statusesOf(template);
@@ -664,8 +669,9 @@ function ItemNode({ item, scene, selected, interactive, ghost, transformable, tu
         {turn && (
           <Circle x={w / 2} y={h / 2} radius={Math.max(w, h) / 2 + 6} stroke="#d6a84a" strokeWidth={4} dash={[10, 6]} shadowColor="#d6a84a" shadowBlur={12} listening={false} />
         )}
+        {item.stats && <StatsOverlay item={item} gm={isGm} />}
         {bars.map((b, i) => (
-          <Group key={i} y={-8 - i * 8} listening={false}>
+          <Group key={i} y={-8 - (i + (item.stats?.ratio !== undefined ? 1 : 0)) * 8} listening={false}>
             <Rect width={w} height={6} fill="rgba(0,0,0,0.6)" cornerRadius={3} />
             <Rect width={b.max > 0 ? w * Math.max(0, Math.min(1, b.value / b.max)) : w} height={6} fill={b.color} cornerRadius={3} />
             {b.max > 0 && b.value > b.max && <Rect width={w} height={6} stroke="#fff" strokeWidth={1} cornerRadius={3} />}
@@ -677,7 +683,7 @@ function ItemNode({ item, scene, selected, interactive, ghost, transformable, tu
           const perRow = Math.max(1, Math.floor(w / s));
           return (
             <Group key={d.id} x={w - s / 2 - (i % perRow) * s} y={s / 2 + Math.floor(i / perRow) * s} listening={false}>
-              <Circle radius={s / 2} fill="rgba(20,18,26,0.8)" stroke="#d6a84a" strokeWidth={1} />
+              <Circle radius={s / 2} fill="rgba(20,18,26,0.8)" stroke={d.kind === 'buff' ? '#4cd964' : d.kind === 'debuff' ? '#ff5a4f' : '#d6a84a'} strokeWidth={d.kind ? 2 : 1} />
               <Text text={d.icon} fontSize={s * 0.62} width={s} height={s} offsetX={s / 2} offsetY={s / 2} align="center" verticalAlign="middle" />
             </Group>
           );
@@ -708,6 +714,81 @@ function ItemNode({ item, scene, selected, interactive, ghost, transformable, tu
           anchorFill="#201e26"
           anchorSize={9}
         />
+      )}
+    </>
+  );
+}
+
+/** Color de la barra según la vida que queda. */
+const hpColor = (r: number) => (r > 0.5 ? '#3fa34d' : r > 0.25 ? '#e0a030' : '#c0392b');
+
+/**
+ * Vida (con los PG temporales en azul) y CA del token. El servidor ya ha quitado lo que no se puede ver;
+ * el DM ve lo oculto para los jugadores más apagado y con un ojo tachado.
+ */
+function StatsOverlay({ item, gm }: { item: BoardItem; gm: boolean }) {
+  const st = item.stats!;
+  const { width: w, height: h } = item;
+  const hiddenHp = gm && !item.ownerIds.length && hpViewOf(item) === 'gm';
+  const hiddenAc = gm && !item.ownerIds.length && acViewOf(item) === 'gm';
+  const label = st.hp != null ? `${st.hp}${st.hpMax ? `/${st.hpMax}` : ''}${st.hpTemp ? ` +${st.hpTemp}` : ''}` : '';
+  const shield = Math.max(18, Math.min(w, h) / 2.8);
+  return (
+    <>
+      {st.ratio !== undefined && (
+        <Group y={-8} listening={false} opacity={hiddenHp ? 0.6 : 1}>
+          <Rect width={w} height={6} fill="rgba(0,0,0,0.65)" cornerRadius={3} />
+          <Rect width={w * st.ratio} height={6} fill={hpColor(st.ratio)} cornerRadius={3} />
+          {!!st.tempRatio && (
+            <Rect
+              x={Math.min(w * st.ratio, w * (1 - st.tempRatio))}
+              width={w * st.tempRatio}
+              height={6}
+              fill="#4aa3df"
+              stroke="#bfe3ff"
+              strokeWidth={0.5}
+              cornerRadius={3}
+            />
+          )}
+          {hiddenHp && <Rect width={w} height={6} stroke="#fff" strokeWidth={1} dash={[3, 2]} cornerRadius={3} />}
+          {label && (
+            <Text
+              text={(hiddenHp ? '🙈 ' : '') + label}
+              y={-13}
+              width={w}
+              align="center"
+              fontSize={11}
+              fontStyle="bold"
+              fill="#fff"
+              shadowColor="#000"
+              shadowBlur={3}
+              shadowOpacity={1}
+            />
+          )}
+        </Group>
+      )}
+      {st.ac !== undefined && (
+        <Group x={-shield * 0.25} y={h - shield * 0.85} listening={false} opacity={hiddenAc ? 0.6 : 1}>
+          <Shape
+            sceneFunc={(ctx, shape) => {
+              const s = shield;
+              ctx.beginPath();
+              ctx.moveTo(s / 2, 0);
+              ctx.lineTo(s, s * 0.14);
+              ctx.quadraticCurveTo(s, s * 0.75, s / 2, s);
+              ctx.quadraticCurveTo(0, s * 0.75, 0, s * 0.14);
+              ctx.closePath();
+              ctx.fillStrokeShape(shape);
+            }}
+            fill="#3d4c6b"
+            stroke={hiddenAc ? '#fff' : '#c9d4ea'}
+            strokeWidth={1.5}
+            dash={hiddenAc ? [3, 2] : undefined}
+            shadowColor="#000"
+            shadowBlur={3}
+          />
+          <Text text={String(st.ac)} width={shield} height={shield * 0.92} align="center" verticalAlign="middle" fontSize={shield * 0.48} fontStyle="bold" fill="#fff" />
+        </Group>
       )}
     </>
   );

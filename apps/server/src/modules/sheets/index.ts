@@ -11,6 +11,7 @@ const characterParams = z.object({ characterId: z.string() });
 /** Envía un cambio de personaje a cada socket de la partida según si puede verlo. */
 export async function broadcastCharacter(ctx: AppContext, before: Character | null, after: Character | null) {
   const c = (after ?? before)!;
+  ctx.events.emit('character:changed', { campaignId: c.campaignId, characterId: c.id });
   if (!ctx.io) return;
   const campaigns = createCampaignService(ctx);
   for (const s of await ctx.io.in(campaignRoom(c.campaignId)).fetchSockets()) {
@@ -45,6 +46,7 @@ export const sheetsModule: ServerModule = {
       const { template } = z.object({ template: z.unknown() }).parse(req.body);
       const saved = sheets.saveTemplate(id, requireUser(req).id, template);
       ctx.io?.to(campaignRoom(id)).emit('template:updated', { campaignId: id });
+      ctx.events.emit('character:changed', { campaignId: id, characterId: null });
       return { template: saved };
     });
 
@@ -53,6 +55,7 @@ export const sheetsModule: ServerModule = {
       const { builtinId } = z.object({ builtinId: z.string() }).parse(req.body);
       const saved = sheets.resetTemplate(id, requireUser(req).id, builtinId);
       ctx.io?.to(campaignRoom(id)).emit('template:updated', { campaignId: id });
+      ctx.events.emit('character:changed', { campaignId: id, characterId: null });
       return { template: saved };
     });
 

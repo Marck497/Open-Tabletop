@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { BOARD_LAYERS, type BoardLayer, type CampaignMember } from '@vtt/shared';
+import { acViewOf, AC_VIEWS, BOARD_LAYERS, hpViewOf, HP_VIEWS, HP_VIEW_LABELS, type AcView, type BoardLayer, type CampaignMember, type HpView } from '@vtt/shared';
 import { emitAck } from '../../core/socket';
 import { updateSelected } from './actions';
 import { AssetPicker } from './AssetPicker';
@@ -95,6 +95,8 @@ export function ItemPanel({ campaignId, members }: { campaignId: string; members
         </button>
       )}
 
+      {item.characterId && !item.drawing && <StatsVisibility />}
+
       {item.layer !== 'map' && !item.drawing && <AiPanel item={item} hasSheet={!!item.characterId} />}
 
       {players.length > 0 && (
@@ -149,5 +151,54 @@ export function ItemPanel({ campaignId, members }: { campaignId: string; members
         />
       )}
     </div>
+  );
+}
+
+const AC_VIEW_LABELS: Record<AcView, string> = { gm: 'Solo el DM', all: 'Todos' };
+
+/** Qué ven los jugadores de la vida y la CA del token (el DM y los dueños lo ven siempre). */
+function StatsVisibility() {
+  const item = useBoard((s) => (s.selectedId ? s.items[s.selectedId] : undefined));
+  const scene = useBoard((s) => s.scene);
+  if (!item || !scene) return null;
+  const autoHp = HP_VIEW_LABELS[hpViewOf({ ...item, hpView: null })].toLowerCase();
+  const autoAc = AC_VIEW_LABELS[acViewOf({ ...item, acView: null })].toLowerCase();
+  // Aplicar lo mismo a todos los enemigos (tokens con hoja y sin dueños) de la escena.
+  const enemies = Object.values(useBoard.getState().items).filter((i) => i.characterId && !i.drawing && !i.ownerIds.length && i.id !== item.id);
+  const applyToEnemies = () =>
+    enemies.forEach((i) => void emitAck('item:update', { sceneId: scene.id, id: i.id, patch: { hpView: item.hpView, acView: item.acView } }));
+  return (
+    <fieldset className="owners">
+      <legend>Lo que ven los jugadores</legend>
+      <div className="field-row">
+        <label>
+          Vida
+          <select value={item.hpView ?? ''} onChange={(e) => void updateSelected({ hpView: (e.target.value || null) as HpView | null })}>
+            <option value="">Automático ({autoHp})</option>
+            {HP_VIEWS.map((v) => (
+              <option key={v} value={v}>
+                {HP_VIEW_LABELS[v]}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          CA
+          <select value={item.acView ?? ''} onChange={(e) => void updateSelected({ acView: (e.target.value || null) as AcView | null })}>
+            <option value="">Automático ({autoAc})</option>
+            {AC_VIEWS.map((v) => (
+              <option key={v} value={v}>
+                {AC_VIEW_LABELS[v]}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      {!item.ownerIds.length && enemies.length > 0 && (
+        <button className="ghost small" onClick={applyToEnemies} title="Copia estas dos opciones a los demás tokens con hoja y sin dueño de esta escena">
+          Aplicar a los {enemies.length} enemigos de la escena
+        </button>
+      )}
+    </fieldset>
   );
 }
