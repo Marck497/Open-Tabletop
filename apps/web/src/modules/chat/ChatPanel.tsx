@@ -1,9 +1,10 @@
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react';
-import { CHAT_HELP, type CampaignMember, type ChatMessage } from '@vtt/shared';
+import { CHAT_HELP, parseTutorialCommand, type CampaignMember, type ChatMessage } from '@vtt/shared';
 import { api } from '../../core/api';
 import { emitAck } from '../../core/socket';
 import { RollDetail } from '../dice/RollDetail';
 import { useSheets } from '../sheets/store';
+import { useTutorial } from '../tutorial/store';
 import { useChat } from './useChat';
 
 interface Props {
@@ -39,6 +40,14 @@ export function ChatPanel({ campaignId, isGm, meId, members }: Props) {
     e.preventDefault();
     const value = text.trim();
     if (!value) return;
+    // /tutorial no es un mensaje: abre el recorrido guiado aquí mismo.
+    const tour = parseTutorialCommand(value);
+    if (tour) {
+      setText('');
+      setError(null);
+      useTutorial.getState().start(isGm && tour.role !== 'player' ? 'gm' : 'player');
+      return;
+    }
     try {
       await emitAck('chat:send', { campaignId, text: value, asCharacterId: as || null });
       history.current = [value, ...history.current.slice(0, 30)];

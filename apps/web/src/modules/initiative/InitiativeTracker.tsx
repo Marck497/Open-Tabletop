@@ -59,7 +59,7 @@ export function InitiativeTracker({ campaignId, isGm, meId }: Props) {
   }
 
   return (
-    <div className={`initiative card ${collapsed ? 'collapsed' : ''}`}>
+    <div className={`initiative card ${collapsed ? 'collapsed' : ''}`} data-tour="initiative">
       <div className="initiative-head">
         <button className="ghost small" onClick={() => setCollapsed((c) => !c)} title={collapsed ? 'Mostrar' : 'Ocultar'}>
           {collapsed ? '▸' : '▾'}

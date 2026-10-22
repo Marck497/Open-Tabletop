@@ -54,7 +54,7 @@ export function CharactersPanel({
           </button>
         </span>
       </div>
-      <div className="row">
+      <div className="row" data-tour="library">
         <button className="small" onClick={() => setCreator(true)} title="Especie, clase, características, equipo y conjuros del SRD 5e: la hoja sale rellena">
           ✨ Crear personaje 5e
         </button>

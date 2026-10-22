@@ -31,7 +31,7 @@ export function MacroBar({ campaignId, isGm, meId }: Props) {
 
   return (
     <>
-      <div className="macro-bar card" role="toolbar" aria-label="Macros">
+      <div className="macro-bar card" role="toolbar" aria-label="Macros" data-tour="macros">
         {bar.map((m) => (
           <button key={m.id} className="small" disabled={busy === m.id} title={m.command} onClick={() => void run(m)}>
             {m.shared ? '★ ' : ''}

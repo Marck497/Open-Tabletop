@@ -29,11 +29,14 @@ import { CharactersPanel } from '../sheets/CharactersPanel';
 import { useSheets } from '../sheets/store';
 import { TemplateEditor } from '../sheets/TemplateEditor';
 import { useSheetsSync } from '../sheets/useSheetsSync';
+import type { SidebarTab } from '../tutorial/steps';
+import { useTutorial } from '../tutorial/store';
+import { TutorialOverlay } from '../tutorial/TutorialOverlay';
 import { useCampaign } from './hooks';
 import { InvitePanel } from './InvitePanel';
 import { MembersPanel } from './MembersPanel';
 
-type Tab = 'chat' | 'characters' | 'journal' | 'scenes' | 'table';
+type Tab = SidebarTab;
 
 const TAB_KEY = 'vtt:sidebarTab';
 function readTab(): Tab {
@@ -89,6 +92,14 @@ export function CampaignPage() {
       /* sin almacenamiento: no pasa nada */
     }
   };
+  // El recorrido guiado abre la pestaña de la que habla cada paso y, al acabar, vuelve a la de antes.
+  const tourTab = useTutorial((s) => s.steps?.[s.index]?.tab);
+  const touring = useTutorial((s) => Boolean(s.steps));
+  useEffect(() => {
+    if (tourTab) setTabState(tourTab);
+    else if (!touring) setTabState(readTab());
+  }, [tourTab, touring]);
+  useEffect(() => () => useTutorial.getState().close(), []);
 
   useEffect(() => () => useBoard.getState().clear(), []);
 
@@ -127,7 +138,7 @@ export function CampaignPage() {
         <span className={`conn ${connected ? 'on' : 'off'}`}>{connected ? 'Conectado' : 'Reconectando…'}</span>
       </header>
       {scene && <Toolbar campaignId={campaign.id} isGm={isGm} />}
-      <section className="table-main">
+      <section className="table-main" data-tour="board">
         {viewingSceneId ? (
           <>
             <Board isGm={isGm} meId={me.id} />
@@ -162,7 +173,7 @@ export function CampaignPage() {
             </button>
           ))}
         </nav>
-        <div className="tab-body">
+        <div className="tab-body" data-tour={activeTab}>
           {activeTab === 'chat' && <ChatPanel campaignId={campaign.id} isGm={isGm} meId={me.id} members={campaign.members} />}
           {activeTab === 'characters' && (
             <CharactersPanel campaignId={campaign.id} isGm={isGm} meId={me.id} members={campaign.members} onEditTemplate={() => setEditingTemplate(true)} />
@@ -184,6 +195,7 @@ export function CampaignPage() {
       </aside>
       <JukeboxPlayer campaignId={campaign.id} />
       <HandoutWindow campaignId={campaign.id} isGm={isGm} members={campaign.members} />
+      <TutorialOverlay />
       {editingTemplate && template && <TemplateEditor campaignId={campaign.id} template={template} onClose={() => setEditingTemplate(false)} />}
     </div>
   );

@@ -99,7 +99,21 @@ export const CHAT_HELP = [
   ['/gr 1d20', 'Tirada secreta (solo la ves tú y el DM)'],
   ['/w Ana texto', 'Susurrar a alguien (por su nombre visible)'],
   ['/em se esconde', 'Acción en tercera persona'],
+  ['/tutorial', 'Recorrido guiado por el programa (el DM puede ver el de jugador con /tutorial jugador)'],
 ] as const;
+
+/**
+ * `/tutorial [dm|jugador]`: lo abre el propio cliente y no llega al servidor.
+ * Devuelve null si el texto no es ese comando; `role` es null si no se pide uno concreto (o no se entiende).
+ */
+export function parseTutorialCommand(text: string): { role: 'gm' | 'player' | null } | null {
+  const m = /^\/tutorial(?:\s+(\S+))?\s*$/i.exec(text.trim());
+  if (!m) return null;
+  const arg = m[1]?.toLowerCase() ?? '';
+  if (['dm', 'gm', 'master'].includes(arg)) return { role: 'gm' };
+  if (['jugador', 'player', 'pj'].includes(arg)) return { role: 'player' };
+  return { role: null };
+}
 
 /**
  * ¿Ha salido un crítico (20 natural) o una pifia (1 natural) en los d20 que cuentan?
