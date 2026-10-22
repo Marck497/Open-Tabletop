@@ -35,7 +35,7 @@ describe('copias de seguridad', () => {
     const gm = await registerUser(app, 'eldm');
     const pl = await registerUser(app, 'jugador');
     const other = await registerUser(app, 'otro');
-    const req = (cookie: string, method: 'GET' | 'POST' | 'PATCH', url: string, payload?: object) => app.inject({ method, url: `/api${url}`, headers: { cookie }, payload });
+    const req = (cookie: string, method: 'GET' | 'POST' | 'PATCH' | 'PUT', url: string, payload?: object) => app.inject({ method, url: `/api${url}`, headers: { cookie }, payload });
     const { campaign } = (await req(gm.cookie, 'POST', '/campaigns', { name: 'La Mina' })).json();
     await req(pl.cookie, 'POST', '/campaigns/join', { inviteCode: campaign.inviteCode });
     const sceneId: string = campaign.activeSceneId;
