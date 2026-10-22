@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { assetUrl, type Character } from '@vtt/shared';
 import { api } from '../../core/api';
+import { CompendiumWindow } from '../compendium/CompendiumWindow';
 import { useSheets } from './store';
 
 /** Lista de personajes que el usuario puede ver ("diario" en Roll20). */
@@ -7,6 +9,7 @@ export function CharactersPanel({ campaignId, isGm, meId, onEditTemplate }: { ca
   const characters = useSheets((s) => s.characters);
   const openSheet = useSheets((s) => s.openSheet);
   const list = Object.values(characters).sort((a, b) => a.name.localeCompare(b.name));
+  const [compendium, setCompendium] = useState(false);
 
   async function create() {
     const name = prompt(isGm ? 'Nombre del personaje o PNJ' : 'Nombre de tu personaje');
@@ -20,9 +23,16 @@ export function CharactersPanel({ campaignId, isGm, meId, onEditTemplate }: { ca
     <div className="panel">
       <div className="row spread">
         <h3>Personajes</h3>
-        <button className="ghost small" onClick={() => void create()}>
-          + Nuevo
-        </button>
+        <span className="row">
+          {isGm && (
+            <button className="ghost small" onClick={() => setCompendium(true)} title="Monstruos del SRD 5e con su hoja y su IA">
+              📖 Compendio
+            </button>
+          )}
+          <button className="ghost small" onClick={() => void create()}>
+            + Nuevo
+          </button>
+        </span>
       </div>
       {list.length === 0 && <p className="muted hint">{isGm ? 'Crea los PJ y PNJ de la partida.' : 'Crea tu personaje o pide al DM que te asigne uno.'}</p>}
       <ul className="character-list">
@@ -48,6 +58,7 @@ export function CharactersPanel({ campaignId, isGm, meId, onEditTemplate }: { ca
           ⚙ Editar plantilla de hoja
         </button>
       )}
+      {compendium && <CompendiumWindow campaignId={campaignId} onClose={() => setCompendium(false)} />}
     </div>
   );
 }

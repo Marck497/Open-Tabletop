@@ -68,6 +68,14 @@ export const sheetsModule: ServerModule = {
       return reply.code(201).send({ character });
     });
 
+    app.post('/campaigns/:id/compendium/:monsterId', async (req, reply) => {
+      const { id, monsterId } = z.object({ id: z.string(), monsterId: z.string() }).parse(req.params);
+      const { name } = z.object({ name: z.string().max(80).optional() }).parse(req.body ?? {});
+      const character = sheets.createFromMonster(id, requireUser(req).id, monsterId, name);
+      await broadcastCharacter(ctx, null, character);
+      return reply.code(201).send({ character });
+    });
+
     app.get('/characters/:characterId', async (req) => {
       const { characterId } = characterParams.parse(req.params);
       return { character: sheets.access(characterId, requireUser(req).id).character };
