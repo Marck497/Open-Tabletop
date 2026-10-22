@@ -12,6 +12,7 @@ import { MeasuresLayer } from './Measures';
 import { FxLayer } from '../fx/FxLayer';
 import { DrawingShape, fillOf, textBox } from './Drawing';
 import { useBoard } from './store';
+import { createItem, deleteItem, redo, undo, updateItem } from './history';
 import { DoorButtons, newWallId, saveWalls, snapWallPoint, useEyes, useLights, VisionMask, WallLines } from './Walls';
 import { MapEditorPanel } from '../mapeditor/MapEditorPanel';
 import { TerrainLayer } from '../mapeditor/TerrainLayer';
@@ -123,6 +124,16 @@ export function Board({ isGm, meId }: Props) {
     function onKey(e: KeyboardEvent) {
       if ((e.target as HTMLElement).closest('input, textarea, select')) return;
       const { selectedId, scene, myMeasure, items } = useBoard.getState();
+      // Deshacer / rehacer (en el editor de mapas, el suyo).
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && useBoard.getState().tool !== 'map') {
+        const k = e.key.toLowerCase();
+        if (k === 'z' || k === 'y') {
+          e.preventDefault();
+          if (k === 'y' || e.shiftKey) void redo();
+          else void undo();
+          return;
+        }
+      }
       if (e.key === 'Escape') {
         select(null);
         useBoard.getState().clearTargets();
@@ -137,7 +148,7 @@ export function Board({ isGm, meId }: Props) {
       const sel = selectedId ? items[selectedId] : undefined;
       const canDelete = isGm || (sel?.drawing && sel.ownerIds.includes(meId));
       if (canDelete && selectedId && scene && (e.key === 'Delete' || e.key === 'Backspace')) {
-        void emitAck('item:delete', { sceneId: scene.id, id: selectedId });
+        void deleteItem(scene.id, selectedId).catch((err: Error) => useBoard.getState().showNotice(err.message));
       }
     }
     window.addEventListener('keydown', onKey);
@@ -319,10 +330,7 @@ export function Board({ isGm, meId }: Props) {
     if (text !== undefined) {
       const fontSize = Math.round(scene!.gridSize * 0.4);
       const box = textBox(text, fontSize);
-      return emitAck('item:create', {
-        sceneId: scene!.id,
-        item: { layer, x: abs[0]!, y: abs[1]!, ...{ width: box.width, height: box.height }, drawing: { type: 'text', text, fontSize, stroke: draw.stroke } },
-      });
+      return createItem(scene!.id, { layer, x: abs[0]!, y: abs[1]!, ...{ width: box.width, height: box.height }, drawing: { type: 'text', text, fontSize, stroke: draw.stroke } });
     }
     const xs = abs.filter((_, i) => i % 2 === 0);
     const ys = abs.filter((_, i) => i % 2 === 1);
@@ -333,21 +341,18 @@ export function Board({ isGm, meId }: Props) {
     if (width * view.scale < 3 && height * view.scale < 3) return; // un clic sin arrastrar
     const pad = draw.strokeWidth / 2;
     const points = abs.map((v, i) => v - (i % 2 === 0 ? x : y) + pad);
-    return emitAck('item:create', {
-      sceneId: scene!.id,
-      item: {
-        layer,
-        x: x - pad,
-        y: y - pad,
-        width: Math.max(1, width + pad * 2),
-        height: Math.max(1, height + pad * 2),
-        drawing: {
-          type: draw.type,
-          points: draw.type === 'path' || draw.type === 'line' ? points : [],
-          stroke: draw.stroke,
-          strokeWidth: draw.strokeWidth,
-          fill: draw.filled ? fillOf(draw.stroke) : '',
-        },
+    return createItem(scene!.id, {
+      layer,
+      x: x - pad,
+      y: y - pad,
+      width: Math.max(1, width + pad * 2),
+      height: Math.max(1, height + pad * 2),
+      drawing: {
+        type: draw.type,
+        points: draw.type === 'path' || draw.type === 'line' ? points : [],
+        stroke: draw.stroke,
+        strokeWidth: draw.strokeWidth,
+        fill: draw.filled ? fillOf(draw.stroke) : '',
       },
     });
   }
@@ -611,7 +616,7 @@ function ItemNode({ item, isGm, scene, selected, interactive, ghost, transformab
     const x = snap(e.target.x() - w / 2, free);
     const y = snap(e.target.y() - h / 2, free);
     e.target.position({ x: x + w / 2, y: y + h / 2 });
-    void emitAck('item:update', { sceneId: scene.id, id: item.id, patch: { x, y } }).catch((err: Error) => {
+    void updateItem(scene.id, item.id, { x, y }).catch((err: Error) => {
       // Si el servidor lo rechaza (p. ej. hay una pared en medio), volver a la posición guardada.
       e.target.position({ x: item.x + w / 2, y: item.y + h / 2 });
       useBoard.getState().showNotice(err.message);
@@ -632,11 +637,7 @@ function ItemNode({ item, isGm, scene, selected, interactive, ghost, transformab
       points: d.points.map((v, i) => v * (i % 2 === 0 ? nw / w : nh / h)),
       fontSize: d.type === 'text' ? Math.max(6, Math.min(400, d.fontSize * (nh / h))) : d.fontSize,
     };
-    void emitAck('item:update', {
-      sceneId: scene.id,
-      id: item.id,
-      patch: { width: nw, height: nh, x: node.x() - nw / 2, y: node.y() - nh / 2, rotation: node.rotation(), ...(drawing ? { drawing } : {}) },
-    });
+    void updateItem(scene.id, item.id, { width: nw, height: nh, x: node.x() - nw / 2, y: node.y() - nh / 2, rotation: node.rotation(), ...(drawing ? { drawing } : {}) });
   }
 
   function toggleTarget() {
