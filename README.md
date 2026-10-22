@@ -76,6 +76,12 @@ Ejemplos de fórmulas: `floor((fue - 10) / 2)`, `if(sigilo_comp, competencia, 0)
 - Todas las tiradas (de la hoja o del chat) quedan guardadas en el chat.
 - **Iniciativa**: el DM añade tokens (los de la capa DM entran ocultos) y pulsa *Empezar*. Los jugadores entran tirando *Iniciativa* desde su hoja. El token al que le toca se resalta en el tablero, y cada jugador puede terminar su propio turno.
 
+## Macros
+
+- **⚙ Macros** (arriba a la derecha del tablero): botones con una o varias líneas de chat, como `/em desenvaina` o `/r 1d20 + @{fue_mod} + @{competencia} Ataque`.
+- Si la macro no tiene personaje fijo, tira con el del **token seleccionado** (si lo controlas). Así, una misma macro de "Ataque" vale para todos los PNJ del DM.
+- El DM puede compartir macros con toda la mesa (salen con ★).
+
 ## Diario
 
 - Pestaña **Diario**: el DM prepara documentos (cartas, pistas, mapas o descripciones) con texto con formato sencillo (`# título`, `**negrita**`, `*cursiva*`, `- lista`) y una imagen.

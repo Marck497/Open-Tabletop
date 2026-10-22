@@ -183,7 +183,7 @@ textarea { resize: vertical; }
 .roll-label { color: var(--gold); font-size: 0.9rem; margin: 2px 0; }
 .roll-body { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
 .roll-expr { font-size: 0.8rem; color: var(--muted); word-break: break-word; }
-.roll-total { font-size: 1.6rem; font-weight: 700; min-width: 2.2ch; text-align: center; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 0 8px; }
+.roll-total { font-size: 1.6rem; font-weight: 700; min-width: 2.2ch; text-align: center; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 0 8px; flex: none; white-space: nowrap; }
 .roll-dice .dropped { text-decoration: line-through; opacity: 0.5; }
 .roll-dice .crit { color: var(--ok); font-weight: 700; }
 .roll-dice .fumble { color: var(--danger); font-weight: 700; }
@@ -281,3 +281,11 @@ textarea { resize: vertical; }
 .rich-text p { margin: 8px 0; }
 .tabs button { white-space: nowrap; padding: 10px 2px; font-size: 0.8rem; }
 .draw-color { width: 34px !important; height: 28px; padding: 1px; }
+
+/* Macros */
+.macro-bar { position: absolute; right: 10px; top: 10px; z-index: 13; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; padding: 4px 6px; max-width: min(46%, 520px); }
+.macro-list { list-style: none; padding: 0; margin: 10px 0; display: flex; flex-direction: column; gap: 4px; }
+.macro-list .row { flex-wrap: nowrap; gap: 8px; }
+.macro-name { flex: none; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.macro-cmd { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.8rem; color: var(--muted); }
+.macro-form textarea { width: 100%; font-family: ui-monospace, monospace; }

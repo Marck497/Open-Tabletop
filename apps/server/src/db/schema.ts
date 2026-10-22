@@ -205,3 +205,24 @@ export const handouts = sqliteTable(
   },
   (t) => [index('handouts_campaign_idx').on(t.campaignId)],
 );
+
+export const macros = sqliteTable(
+  'macros',
+  {
+    id: text('id').primaryKey(),
+    campaignId: text('campaign_id')
+      .notNull()
+      .references(() => campaigns.id, { onDelete: 'cascade' }),
+    ownerId: text('owner_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    shared: integer('shared', { mode: 'boolean' }).notNull().default(false),
+    name: text('name').notNull(),
+    command: text('command').notNull(),
+    characterId: text('character_id').references(() => characters.id, { onDelete: 'set null' }),
+    inBar: integer('in_bar', { mode: 'boolean' }).notNull().default(true),
+    sortOrder: integer('sort_order').notNull().default(0),
+    ...timestamps,
+  },
+  (t) => [index('macros_campaign_idx').on(t.campaignId)],
+);

@@ -16,6 +16,7 @@ import { useInitiativeSync } from '../initiative/useInitiativeSync';
 import { HandoutWindow } from '../journal/HandoutWindow';
 import { JournalPanel } from '../journal/JournalPanel';
 import { useJournalSync } from '../journal/useJournalSync';
+import { MacroBar } from '../macros/MacroBar';
 import { CharacterSheet } from '../sheets/CharacterSheet';
 import { CharactersPanel } from '../sheets/CharactersPanel';
 import { useSheets } from '../sheets/store';
@@ -119,6 +120,7 @@ export function CampaignPage() {
           <>
             <Board isGm={isGm} meId={me.id} />
             <StatusBar isGm={isGm} meId={me.id} />
+            <MacroBar campaignId={campaign.id} isGm={isGm} meId={me.id} />
             {sceneError && <p className="board-error error">{sceneError}</p>}
           </>
         ) : (
