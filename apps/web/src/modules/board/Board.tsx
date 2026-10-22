@@ -7,7 +7,7 @@ import { useSheets } from '../sheets/store';
 import { addCharacterToken } from '../sheets/tokens';
 import { useActiveItemId } from '../initiative/store';
 import { emitAck, getSocket } from '../../core/socket';
-import { clearMeasure, sendPing, setMeasure, snapPoint, snapTemplateEnd } from './measure';
+import { clearMeasure, fixedTemplateEnd, sendPing, setMeasure, snapPoint, snapTemplateEnd } from './measure';
 import { MeasuresLayer } from './Measures';
 import { DrawingShape, fillOf, textBox } from './Drawing';
 import { useBoard } from './store';
@@ -192,10 +192,12 @@ export function Board({ isGm, meId }: Props) {
       return;
     }
     if (measureTool) {
-      const shape = useBoard.getState().measureShape;
+      const { measureShape: shape, templatePreset } = useBoard.getState();
       const p = measurePoint(stage, e.evt, shape);
       measuring.current = true;
-      setMeasure({ shape, points: [p, p] }, isGm, { now: true });
+      // Plantilla de un hechizo: sale ya con su tamaño; al arrastrar solo cambia la dirección.
+      const fixed = templatePreset?.shape === shape ? templatePreset.cells * scene!.gridSize : 0;
+      setMeasure({ shape, points: [p, fixed ? fixedTemplateEnd(p, pointerInScene(stage), fixed, shape) : p] }, isGm, { now: true });
       return;
     }
     if (pingTool) {
@@ -243,7 +245,13 @@ export function Board({ isGm, meId }: Props) {
     if (measuring.current && mine) {
       const stage = e.target.getStage()!;
       const free = 'altKey' in e.evt && e.evt.altKey;
-      const p = mine.shape === 'ruler' || free ? measurePoint(stage, e.evt, mine.shape) : snapTemplateEnd(mine.points[0]!, pointerInScene(stage), scene!.gridSize, mine.shape);
+      const preset = useBoard.getState().templatePreset;
+      const p =
+        preset?.shape === mine.shape
+          ? fixedTemplateEnd(mine.points[0]!, pointerInScene(stage), preset.cells * scene!.gridSize, mine.shape)
+          : mine.shape === 'ruler' || free
+            ? measurePoint(stage, e.evt, mine.shape)
+            : snapTemplateEnd(mine.points[0]!, pointerInScene(stage), scene!.gridSize, mine.shape);
       const last = mine.points[mine.points.length - 1]!;
       if (p.x !== last.x || p.y !== last.y) setMeasure({ ...mine, points: [...mine.points.slice(0, -1), p] }, isGm);
       return;

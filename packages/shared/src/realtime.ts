@@ -44,7 +44,9 @@ export type SheetAction =
   /** `slot`: nivel del espacio que se gasta (por defecto, el más bajo libre). */
   | { kind: 'cast'; rowId: string; slot?: number }
   | { kind: 'use'; rowId: string }
-  | { kind: 'rest'; rest: 'short' | 'long' };
+  | { kind: 'rest'; rest: 'short' | 'long' }
+  /** Usar una creación (hechizo, ataque u objeto) con esta hoja; `slot` como en `cast`. */
+  | { kind: 'homebrew'; entryId: string; slot?: number };
 
 export interface SheetActionRequest {
   characterId: string;
@@ -99,6 +101,8 @@ export interface ServerToClientEvents {
   'jukebox:updated': (payload: { state: JukeboxState; serverNow: number }) => void;
   /** Han cambiado las macros de la partida (cada uno recarga las que puede ver). */
   'macros:changed': (payload: { campaignId: string }) => void;
+  /** Han cambiado las creaciones (hechizos, ataques, objetos): cada uno recarga las que puede ver. */
+  'homebrew:changed': (payload: { campaignId: string }) => void;
   // Chat, tiradas e iniciativa
   'chat:message': (payload: ChatMessage) => void;
   'chat:cleared': (payload: { campaignId: string }) => void;
@@ -131,6 +135,8 @@ export interface ClientToServerEvents {
   'roll': (payload: RollRequest, ack: Ack<ChatMessage>) => void;
   /** Botones de la hoja: atacar, lanzar un conjuro, gastar un uso o descansar. */
   'sheet:action': (payload: SheetActionRequest, ack: Ack<ChatMessage>) => void;
+  /** Solo DM: aplica el efecto de una creación del chat (salvaciones, daño, curación, estados) a esos tokens. */
+  'effect:apply': (payload: { messageId: string; itemIds: string[] }, ack: Ack<ChatMessage>) => void;
   'chat:send': (payload: { campaignId: string; text: string; asCharacterId?: string | null }, ack: Ack<ChatMessage>) => void;
   'initiative:get': (payload: { campaignId: string }, ack: Ack<InitiativeState>) => void;
   /** Acciones sobre el orden de iniciativa (las de gestión, solo el DM). */

@@ -21,3 +21,5 @@ export * from './compendium/monsters.js';
 export * from './realtime.js';
 export * from './srd/index.js';
 export * from './systems/actions.js';
+export * from './schemas/homebrew.js';
+export * from './homebrew/index.js';

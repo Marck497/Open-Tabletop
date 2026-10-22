@@ -387,6 +387,37 @@ function CombatEditor({ template, update }: { template: SheetTemplate; update: (
         ]}
         onChange={(resources) => set({ resources: resources as CombatMapping['resources'] })}
       />
+      <TableMapping
+        label="Inventario (los objetos consumibles de ⚗ Creaciones restan de la cantidad)"
+        lists={lists}
+        value={combat.inventory ?? null}
+        columns={[
+          ['name', 'Nombre'],
+          ['qty', 'Cantidad'],
+        ]}
+        onChange={(inventory) => set({ inventory: inventory as CombatMapping['inventory'] })}
+      />
+      <p className="muted hint">Para ⚗ Creaciones: con qué se tiran las salvaciones de las áreas y qué usan de serie los hechizos nuevos (vacío = lo de la 5e si la hoja tiene esos campos).</p>
+      <div className="field-row">
+        <label>
+          Salvaciones ({'{a}'} = característica)
+          <input value={combat.saves ?? ''} placeholder="sv_{a}" onChange={(e) => set({ saves: e.target.value || undefined })} />
+        </label>
+        <label>
+          Modificador de lanzamiento
+          <input value={combat.spellMod ?? ''} placeholder="conj_mod" onChange={(e) => set({ spellMod: e.target.value || undefined })} />
+        </label>
+      </div>
+      <div className="field-row">
+        <label>
+          Bono de ataque de conjuro
+          <input value={combat.spellAttack ?? ''} placeholder="conj_ataque" onChange={(e) => set({ spellAttack: e.target.value || undefined })} />
+        </label>
+        <label>
+          CD de conjuro
+          <input value={combat.spellDc ?? ''} placeholder="conj_cd" onChange={(e) => set({ spellDc: e.target.value || undefined })} />
+        </label>
+      </div>
     </details>
   );
 }

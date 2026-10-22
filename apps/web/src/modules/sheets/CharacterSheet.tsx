@@ -5,6 +5,7 @@ import {
   computeAll,
   createResolver,
   evaluate,
+  homebrewSummary,
   slotsOf,
   type CampaignMember,
   type Character,
@@ -21,6 +22,7 @@ import { roll } from '../dice/roll';
 import { AssetPicker } from '../board/AssetPicker';
 import { addCharacterToken } from './tokens';
 import { newRowId, SheetFieldView } from './SheetField';
+import { useHomebrew } from '../homebrew/store';
 import { useSheets } from './store';
 
 interface Props {
@@ -42,6 +44,7 @@ export function CharacterSheet({ character, template, isGm, meId, members, index
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const actions = useMemo(() => actionsOf(template), [template]);
   const slots = useMemo(() => slotsOf(template, character.values), [template, character.values]);
+  const homebrew = useHomebrew((s) => s.entries);
 
   /** Botones de acción: el servidor tira, gasta y lo cuenta en el chat. */
   const act = (action: SheetAction) => void emitAck('sheet:action', { characterId: character.id, action }).catch((e: Error) => alert(e.message));
@@ -51,27 +54,48 @@ export function CharacterSheet({ character, template, isGm, meId, members, index
   };
   const num = (v: unknown) => (typeof v === 'number' ? v : Number(v) || 0);
 
+  /** Creación enlazada a una fila: el botón lo dice al pasar el ratón. */
+  const linkedTitle = (row: SheetRow) => {
+    const e = typeof row._ref === 'string' ? homebrew[row._ref] : undefined;
+    return e ? `⚗ ${e.name}: ${homebrewSummary(e) || 'usar'}` : undefined;
+  };
+
   /** Botón de cada fila en las tablas de ataques, conjuros y recursos. */
   const rowAction = (listKey: string): ((row: SheetRow) => ReactNode) | undefined => {
     if (!canEdit) return undefined;
     if (actions.attacks?.list === listKey)
       return (row) => (
-        <button className="ghost small action-btn" title="Atacar: tirada de ataque y de daño (crítico incluido)" onClick={() => act({ kind: 'attack', rowId: row._id })}>
+        <button className="ghost small action-btn" title={linkedTitle(row) ?? 'Atacar: tirada de ataque y de daño (crítico incluido)'} onClick={() => act({ kind: 'attack', rowId: row._id })}>
           ⚔
         </button>
       );
     if (actions.spells?.list === listKey) {
       const sp = actions.spells;
-      return (row) => <CastButton level={Math.round(num(row[sp.level]))} slots={slots} onCast={(slot) => act({ kind: 'cast', rowId: row._id, slot })} />;
+      return (row) => <CastButton level={Math.round(num(row[sp.level]))} slots={slots} hint={linkedTitle(row)} onCast={(slot) => act({ kind: 'cast', rowId: row._id, slot })} />;
     }
     if (actions.resources?.list === listKey) {
       const r = actions.resources;
+      // Recursos de una creación: usarla (gasta el uso y hace su efecto).
       return (row) => (
-        <button className="ghost small action-btn" disabled={num(row[r.uses]) <= 0} title="Usar (gasta un uso)" onClick={() => act({ kind: 'use', rowId: row._id })}>
+        <button
+          className="ghost small action-btn"
+          disabled={num(row[r.uses]) <= 0}
+          title={linkedTitle(row) ?? 'Usar (gasta un uso)'}
+          onClick={() => act(typeof row._ref === 'string' && homebrew[row._ref] ? { kind: 'homebrew', entryId: row._ref } : { kind: 'use', rowId: row._id })}
+        >
           ▶
         </button>
       );
     }
+    // Otras tablas (inventario…): las filas enlazadas a una creación se pueden usar.
+    const rows = character.values[listKey];
+    if (Array.isArray(rows) && (rows as SheetRow[]).some((r) => typeof r._ref === 'string' && homebrew[r._ref]))
+      return (row) =>
+        typeof row._ref === 'string' && homebrew[row._ref] ? (
+          <button className="ghost small action-btn" title={linkedTitle(row)} onClick={() => act({ kind: 'homebrew', entryId: row._ref as string })}>
+            ▶
+          </button>
+        ) : null;
     return undefined;
   };
 
@@ -303,20 +327,20 @@ function ListField({ field, rows, readOnly, template, values, onChange, onRoll, 
 }
 
 /** Lanzar un conjuro: los trucos sin más; los demás, con el espacio elegido (por defecto, el más bajo libre). */
-function CastButton({ level, slots, onCast }: { level: number; slots: { level: number; max: number; used: number }[]; onCast: (slot?: number) => void }) {
+function CastButton({ level, slots, hint, onCast }: { level: number; slots: { level: number; max: number; used: number }[]; hint?: string; onCast: (slot?: number) => void }) {
   const usable = slots.filter((s) => s.level >= level && s.max > 0);
   const firstFree = usable.find((s) => s.used < s.max)?.level;
   const [slot, setSlot] = useState<number | undefined>(undefined);
   const chosen = slot ?? firstFree;
   if (level <= 0)
     return (
-      <button className="ghost small action-btn" title="Lanzar (truco)" onClick={() => onCast()}>
+      <button className="ghost small action-btn" title={hint ?? 'Lanzar (truco)'} onClick={() => onCast()}>
         ✨
       </button>
     );
   return (
     <span className="cast">
-      <button className="ghost small action-btn" disabled={!chosen} title={chosen ? `Lanzar con un espacio de nivel ${chosen}` : 'No te quedan espacios'} onClick={() => onCast(chosen)}>
+      <button className="ghost small action-btn" disabled={!chosen} title={chosen ? `${hint ? `${hint}\n` : ''}Lanzar con un espacio de nivel ${chosen}` : 'No te quedan espacios'} onClick={() => onCast(chosen)}>
         ✨
       </button>
       {usable.length > 1 && (

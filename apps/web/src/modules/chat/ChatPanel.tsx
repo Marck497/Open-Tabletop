@@ -70,7 +70,7 @@ export function ChatPanel({ campaignId, isGm, meId, members }: Props) {
         )}
         {messages.length === 0 && <p className="muted hint">Aún no hay mensajes. Prueba con <code>/r 1d20</code>.</p>}
         {messages.map((m) => (
-          <Message key={m.id} m={m} meId={meId} nameOf={nameOf} />
+          <Message key={m.id} m={m} meId={meId} isGm={isGm} nameOf={nameOf} />
         ))}
       </div>
       {showHelp && (
@@ -132,13 +132,13 @@ export function ChatPanel({ campaignId, isGm, meId, members }: Props) {
   );
 }
 
-function Message({ m, meId, nameOf }: { m: ChatMessage; meId: string; nameOf: (id: string) => string }) {
+function Message({ m, meId, isGm, nameOf }: { m: ChatMessage; meId: string; isGm: boolean; nameOf: (id: string) => string }) {
   const who = m.characterName ?? m.userName;
   const time = new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   if (m.kind === 'roll' && m.roll)
     return (
       <div className={`chat-msg roll-msg ${m.secret ? 'secret' : ''}`} title={time}>
-        <RollDetail message={m} roll={m.roll} />
+        <RollDetail message={m} roll={m.roll} isGm={isGm} />
       </div>
     );
   if (m.kind === 'emote')

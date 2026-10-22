@@ -1,19 +1,35 @@
 import { useState } from 'react';
-import { assetUrl, type Character } from '@vtt/shared';
+import { assetUrl, type CampaignMember, type Character } from '@vtt/shared';
 import { api } from '../../core/api';
 import { CompendiumWindow } from '../compendium/CompendiumWindow';
+import type { HomebrewDraft } from '../homebrew/HomebrewEditor';
+import { HomebrewWindow } from '../homebrew/HomebrewWindow';
 import { CharacterCreator } from '../srd/CharacterCreator';
 import { SrdBrowser } from '../srd/SrdBrowser';
 import { useSheets } from './store';
 
 /** Lista de personajes que el usuario puede ver ("diario" en Roll20). */
-export function CharactersPanel({ campaignId, isGm, meId, onEditTemplate }: { campaignId: string; isGm: boolean; meId: string; onEditTemplate: () => void }) {
+export function CharactersPanel({
+  campaignId,
+  isGm,
+  meId,
+  members,
+  onEditTemplate,
+}: {
+  campaignId: string;
+  isGm: boolean;
+  meId: string;
+  members: CampaignMember[];
+  onEditTemplate: () => void;
+}) {
   const characters = useSheets((s) => s.characters);
   const openSheet = useSheets((s) => s.openSheet);
   const list = Object.values(characters).sort((a, b) => a.name.localeCompare(b.name));
   const [compendium, setCompendium] = useState(false);
   const [creator, setCreator] = useState(false);
   const [rules, setRules] = useState(false);
+  /** Ventana de creaciones: cerrada (null), abierta, o abierta con una copia del SRD para editar. */
+  const [homebrew, setHomebrew] = useState<{ draft: HomebrewDraft | null } | null>(null);
 
   async function create() {
     const name = prompt(isGm ? 'Nombre del personaje o PNJ' : 'Nombre de tu personaje');
@@ -45,6 +61,9 @@ export function CharactersPanel({ campaignId, isGm, meId, onEditTemplate }: { ca
         <button className="ghost small" onClick={() => setRules(true)} title="Conjuros, objetos, clases y especies del SRD 5e">
           📚 Reglas
         </button>
+        <button className="ghost small" onClick={() => setHomebrew({ draft: null })} title="Crea y edita hechizos, ataques y objetos que funcionan con los botones de las hojas">
+          ⚗ Creaciones
+        </button>
       </div>
       {list.length === 0 && <p className="muted hint">{isGm ? 'Crea los PJ y PNJ de la partida.' : 'Crea tu personaje o pide al DM que te asigne uno.'}</p>}
       <ul className="character-list">
@@ -71,7 +90,18 @@ export function CharactersPanel({ campaignId, isGm, meId, onEditTemplate }: { ca
         </button>
       )}
       {creator && <CharacterCreator campaignId={campaignId} onClose={() => setCreator(false)} />}
-      {rules && <SrdBrowser isGm={isGm} meId={meId} onClose={() => setRules(false)} />}
+      {rules && (
+        <SrdBrowser
+          isGm={isGm}
+          meId={meId}
+          onClose={() => setRules(false)}
+          onCopy={(draft) => {
+            setRules(false);
+            setHomebrew({ draft });
+          }}
+        />
+      )}
+      {homebrew && <HomebrewWindow campaignId={campaignId} isGm={isGm} meId={meId} members={members} initialDraft={homebrew.draft} onClose={() => setHomebrew(null)} />}
       {compendium && <CompendiumWindow campaignId={campaignId} onClose={() => setCompendium(false)} />}
     </div>
   );

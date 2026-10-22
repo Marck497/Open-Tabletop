@@ -18,6 +18,7 @@ import { InitiativeAnnounce, InitiativeTracker, TurnBanner } from '../initiative
 import { useInitiativeSync } from '../initiative/useInitiativeSync';
 import { HandoutWindow } from '../journal/HandoutWindow';
 import { JournalPanel } from '../journal/JournalPanel';
+import { useHomebrewSync } from '../homebrew/store';
 import { useJournalSync } from '../journal/useJournalSync';
 import { MacroBar } from '../macros/MacroBar';
 import { JukeboxPanel } from '../jukebox/JukeboxPanel';
@@ -72,6 +73,7 @@ export function CampaignPage() {
   useSheetsSync(id);
   useInitiativeSync(id);
   useJournalSync(id);
+  useHomebrewSync(id);
   const scene = useBoard((s) => s.scene);
   const hasSelection = useBoard((s) => Boolean(s.selectedId));
   const template = useSheets((s) => s.template);
@@ -163,7 +165,7 @@ export function CampaignPage() {
         <div className="tab-body">
           {activeTab === 'chat' && <ChatPanel campaignId={campaign.id} isGm={isGm} meId={me.id} members={campaign.members} />}
           {activeTab === 'characters' && (
-            <CharactersPanel campaignId={campaign.id} isGm={isGm} meId={me.id} onEditTemplate={() => setEditingTemplate(true)} />
+            <CharactersPanel campaignId={campaign.id} isGm={isGm} meId={me.id} members={campaign.members} onEditTemplate={() => setEditingTemplate(true)} />
           )}
           {activeTab === 'journal' && <JournalPanel campaignId={campaign.id} isGm={isGm} />}
           {activeTab === 'scenes' && isGm && (

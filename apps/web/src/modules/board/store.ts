@@ -11,6 +11,13 @@ export interface DrawStyle {
   filled: boolean;
 }
 
+export interface TemplatePreset {
+  shape: Exclude<MeasureShape, 'ruler'>;
+  /** Radio, largo o lado en casillas. */
+  cells: number;
+  label: string;
+}
+
 export interface RemoteMeasure extends PointerAuthor {
   measure: Measure;
 }
@@ -36,6 +43,8 @@ interface BoardState {
   measureShape: MeasureShape;
   /** Mi medición actual (también la ven los demás). */
   myMeasure: Measure | null;
+  /** Plantilla de tamaño fijo (la de un hechizo): al colocarla solo se elige el origen y la dirección. */
+  templatePreset: TemplatePreset | null;
   /** Mediciones de los demás, por usuario. */
   remoteMeasures: Record<string, RemoteMeasure>;
   pings: Ping[];
@@ -61,6 +70,7 @@ interface BoardState {
   setActiveLayer: (layer: BoardLayer) => void;
   setViewCenter: (c: { x: number; y: number }) => void;
   setMeasureShape: (shape: MeasureShape) => void;
+  startTemplate: (preset: TemplatePreset) => void;
   setDraw: (patch: Partial<DrawStyle>) => void;
   setMyMeasure: (m: Measure | null) => void;
   setRemoteMeasure: (author: PointerAuthor, m: Measure | null) => void;
@@ -86,6 +96,7 @@ export const useBoard = create<BoardState>((set) => ({
   viewCenter: { x: 0, y: 0 },
   measureShape: 'ruler',
   myMeasure: null,
+  templatePreset: null,
   remoteMeasures: {},
   pings: [],
   draw: { type: 'path', stroke: '#e8b25a', strokeWidth: 4, filled: false },
@@ -121,10 +132,11 @@ export const useBoard = create<BoardState>((set) => ({
       return { moving: pos ? { ...rest, [id]: pos } : rest };
     }),
   select: (selectedId) => set({ selectedId }),
-  setTool: (tool) => set({ tool, selectedId: null }),
+  setTool: (tool) => set({ tool, selectedId: null, templatePreset: null }),
   setActiveLayer: (activeLayer) => set({ activeLayer, selectedId: null }),
   setViewCenter: (viewCenter) => set({ viewCenter }),
-  setMeasureShape: (measureShape) => set({ measureShape, tool: 'measure', selectedId: null }),
+  setMeasureShape: (measureShape) => set({ measureShape, tool: 'measure', selectedId: null, templatePreset: null }),
+  startTemplate: (templatePreset) => set({ measureShape: templatePreset.shape, tool: 'measure', selectedId: null, templatePreset }),
   setMyMeasure: (myMeasure) => set({ myMeasure }),
   setDraw: (patch) => set((s) => ({ draw: { ...s.draw, ...patch }, tool: 'draw', selectedId: null })),
   setRemoteMeasure: (author, measure) =>

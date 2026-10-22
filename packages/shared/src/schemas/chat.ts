@@ -10,11 +10,34 @@ export interface ChatRollPart {
   rolls: DiceRoll[];
 }
 
+/**
+ * Lo que hace una creación (hechizo, ataque u objeto) al usarla: el DM puede aplicarlo después
+ * a los tokens del área o al seleccionado (salvaciones, daño, curación y estados).
+ */
+export interface ChatEffect {
+  entryId: string;
+  name: string;
+  /** Tirada de ataque: total, d20 natural y si fue crítico. */
+  attack: { total: number; natural: number | null; crit: boolean } | null;
+  /** Salvación: característica, su nombre en la hoja y la CD. */
+  save: { ability: string; label: string; dc: number; half: boolean } | null;
+  /** Daño total y sus tipos. */
+  damage: number;
+  damageTypes: string[];
+  heal: number;
+  /** Ids de los estados que pone. */
+  conditions: string[];
+  /** Área en las unidades de la escena (pies). */
+  area: { shape: 'circle' | 'cone' | 'line' | 'square'; size: number } | null;
+}
+
 export interface ChatRoll extends ChatRollPart {
   /** Tiradas que van con la principal (el daño de un ataque, el daño extra…). */
   parts?: ChatRollPart[];
   /** Ataque crítico (el daño lleva el doble de dados). */
   crit?: boolean;
+  /** Efecto de una creación, para aplicarlo a los tokens. */
+  effect?: ChatEffect;
 }
 
 export interface ChatMessage {

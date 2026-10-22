@@ -114,6 +114,15 @@ export const combatMappingSchema = z.object({
   slots: z.object({ max: z.string().max(64), used: z.string().max(64), pact: z.string().max(64).default('') }).nullable().optional(),
   /** Tabla de recursos con usos (furia, ki, canalizar divinidad…): usos que quedan, máximo y cuándo se recargan. */
   resources: z.object({ list: keySchema, name: keySchema, uses: keySchema, max: keySchema, recharge: keySchema }).nullable().optional(),
+  /** Inventario: nombre, cantidad y peso. Los objetos consumibles de las creaciones restan de la cantidad. */
+  inventory: z.object({ list: keySchema, name: keySchema, qty: keySchema, weight: keySchema.optional() }).nullable().optional(),
+  /** Campos de las salvaciones con {a} para la característica ("sv_{a}"): con ellos se tiran las salvaciones de las áreas. */
+  saves: z.string().max(64).optional(),
+  /** Fórmulas o campos del bono de ataque y la CD de conjuro, que usan de serie los hechizos nuevos. */
+  spellAttack: z.string().max(200).optional(),
+  spellDc: z.string().max(200).optional(),
+  /** Modificador de lanzamiento (lo que suman las curaciones del SRD). */
+  spellMod: z.string().max(200).optional(),
 });
 export type CombatMapping = z.infer<typeof combatMappingSchema>;
 
