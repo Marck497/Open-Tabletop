@@ -13,6 +13,9 @@ import { ChatPanel } from '../chat/ChatPanel';
 import { RollToasts } from '../dice/RollToasts';
 import { InitiativeTracker } from '../initiative/InitiativeTracker';
 import { useInitiativeSync } from '../initiative/useInitiativeSync';
+import { HandoutWindow } from '../journal/HandoutWindow';
+import { JournalPanel } from '../journal/JournalPanel';
+import { useJournalSync } from '../journal/useJournalSync';
 import { CharacterSheet } from '../sheets/CharacterSheet';
 import { CharactersPanel } from '../sheets/CharactersPanel';
 import { useSheets } from '../sheets/store';
@@ -22,7 +25,7 @@ import { useCampaign } from './hooks';
 import { InvitePanel } from './InvitePanel';
 import { MembersPanel } from './MembersPanel';
 
-type Tab = 'chat' | 'characters' | 'scenes' | 'table';
+type Tab = 'chat' | 'characters' | 'journal' | 'scenes' | 'table';
 
 const TAB_KEY = 'vtt:sidebarTab';
 function readTab(): Tab {
@@ -61,6 +64,7 @@ export function CampaignPage() {
   const { error: sceneError } = useSceneSync(viewingSceneId);
   useSheetsSync(id);
   useInitiativeSync(id);
+  useJournalSync(id);
   const scene = useBoard((s) => s.scene);
   const hasSelection = useBoard((s) => Boolean(s.selectedId));
   const template = useSheets((s) => s.template);
@@ -91,6 +95,7 @@ export function CampaignPage() {
   const tabs: { id: Tab; label: string }[] = [
     { id: 'chat', label: 'Chat' },
     { id: 'characters', label: 'Personajes' },
+    { id: 'journal', label: 'Diario' },
     ...(isGm ? [{ id: 'scenes' as const, label: 'Escenas' }] : []),
     { id: 'table', label: `Mesa (${online.length})` },
   ];
@@ -145,6 +150,7 @@ export function CampaignPage() {
           {activeTab === 'characters' && (
             <CharactersPanel campaignId={campaign.id} isGm={isGm} meId={me.id} onEditTemplate={() => setEditingTemplate(true)} />
           )}
+          {activeTab === 'journal' && <JournalPanel campaignId={campaign.id} isGm={isGm} />}
           {activeTab === 'scenes' && isGm && (
             <ScenesPanel campaignId={campaign.id} activeSceneId={campaign.activeSceneId} viewingId={viewingSceneId} onView={setGmSceneId} />
           )}
@@ -156,6 +162,7 @@ export function CampaignPage() {
           )}
         </div>
       </aside>
+      <HandoutWindow campaignId={campaign.id} isGm={isGm} members={campaign.members} />
       {editingTemplate && template && <TemplateEditor campaignId={campaign.id} template={template} onClose={() => setEditingTemplate(false)} />}
     </div>
   );

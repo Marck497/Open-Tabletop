@@ -266,3 +266,17 @@ textarea { resize: vertical; }
 .status-defs .row { flex-wrap: nowrap; gap: 6px; }
 .status-defs .switch { margin: 0; white-space: nowrap; font-size: 0.8rem; }
 .status-icon { width: 3.2em !important; text-align: center; }
+
+/* Diario */
+.handout-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 2px; }
+.handout-row { width: 100%; display: flex; gap: 8px; align-items: center; text-align: left; }
+.handout-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.modal.handout h2 { margin: 0; font-size: 1.3rem; }
+.handout-image { display: block; max-width: 100%; max-height: 60vh; margin: 12px auto; border-radius: 8px; }
+.rich-text { line-height: 1.55; }
+.rich-text h1 { font-size: 1.35rem; } .rich-text h2 { font-size: 1.15rem; } .rich-text h3 { font-size: 1rem; }
+.gm-notes { margin-top: 14px; padding: 8px 12px; border: 1px dashed var(--gold); border-radius: 8px; }
+.handout-editor textarea { width: 100%; font-family: inherit; }
+.rich-text h1, .rich-text h2, .rich-text h3 { margin: 14px 0 6px; }
+.rich-text p { margin: 8px 0; }
+.tabs button { white-space: nowrap; padding: 10px 2px; font-size: 0.8rem; }

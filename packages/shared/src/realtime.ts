@@ -6,6 +6,7 @@ import type { BoardItem, CreateItemInput, Fog, Scene, SceneState, UpdateItemInpu
 import type { Measure } from './schemas/measure.js';
 import type { AiSettings } from './schemas/ai.js';
 import type { Character } from './schemas/character.js';
+import type { Handout } from './schemas/journal.js';
 import type { ChatMessage, InitiativeEntry, InitiativeState } from './schemas/chat.js';
 
 export interface PresenceUser {
@@ -74,6 +75,11 @@ export interface ServerToClientEvents {
   'template:updated': (payload: { campaignId: string }) => void;
   'character:upserted': (payload: { character: Character }) => void;
   'character:removed': (payload: { campaignId: string; id: string }) => void;
+  // Diario
+  'handout:upserted': (payload: { handout: Handout }) => void;
+  'handout:removed': (payload: { campaignId: string; id: string }) => void;
+  /** El DM enseña un documento a la mesa: se abre en pantalla a quien pueda verlo. */
+  'handout:show': (payload: { campaignId: string; id: string }) => void;
   // Chat, tiradas e iniciativa
   'chat:message': (payload: ChatMessage) => void;
   'chat:cleared': (payload: { campaignId: string }) => void;
