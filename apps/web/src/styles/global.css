@@ -71,7 +71,7 @@ button.danger { color: var(--danger); }
 .campaign-card p { margin: 0; font-size: 0.9rem; }
 
 /* Mesa de juego */
-.table-layout { height: 100%; display: grid; grid-template-columns: 1fr 300px; grid-template-rows: auto 1fr; }
+.table-layout { height: 100%; display: grid; grid-template-columns: minmax(0, 1fr) var(--side-w, 300px); grid-template-rows: auto 1fr; }
 .table-header { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; padding: 8px 14px; border-bottom: 1px solid var(--border); background: var(--bg-elev); }
 .table-header h1 { margin: 0; font-size: 1.1rem; }
 .table-main { position: relative; overflow: hidden; background: #0f0e12; }
@@ -100,7 +100,7 @@ button.danger { color: var(--danger); }
 /* Tablero */
 .table-layout { grid-template-rows: auto auto 1fr; }
 .table-header { grid-row: 1; }
-.toolbar { grid-column: 1 / 2; display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: center; padding: 6px 12px; border-bottom: 1px solid var(--border); background: var(--bg-elev); }
+.toolbar { grid-column: 1 / 2; display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; padding: 6px 12px; border-bottom: 1px solid var(--border); background: var(--bg-elev); }
 .table-main { grid-column: 1 / 2; grid-row: 3; }
 .table-side { grid-column: 2; grid-row: 2 / 4; }
 .tool-group { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
@@ -216,7 +216,7 @@ textarea { resize: vertical; }
 .table-side { display: flex; flex-direction: column; overflow: hidden; }
 .table-side > .panel { overflow-y: auto; max-height: 55%; flex: none; }
 .tabs { display: flex; border-bottom: 1px solid var(--border); flex: none; }
-.tabs button { flex: 1; border: none; border-radius: 0; background: transparent; padding: 10px 4px; font-size: 0.85rem; color: var(--muted); border-bottom: 2px solid transparent; }
+.tabs button { flex: 1; border: none; border-radius: 0; background: transparent; padding: 10px 4px; font-size: 0.85rem; color: var(--muted); border-bottom: 2px solid transparent; position: relative; display: flex; align-items: center; justify-content: center; gap: 5px; min-width: 0; }
 .tabs button.active { color: var(--text); border-bottom-color: var(--accent); background: transparent; }
 .tab-body { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; }
 
@@ -517,3 +517,47 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--border); 
 .perf-list .switch { margin: 0; }
 .perf-list .member-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .perf details summary { cursor: pointer; font-size: 0.9rem; margin-top: 6px; }
+
+/* Ventanas flotantes (hojas): se arrastran por la cabecera y se minimizan */
+.sheet-header { cursor: grab; user-select: none; touch-action: none; }
+.sheet-header:active { cursor: grabbing; }
+.sheet-header input, .sheet-header button { cursor: auto; }
+.sheet-header button { cursor: pointer; }
+.drag-grip { color: var(--muted); font-size: 1.1rem; line-height: 1; margin-right: -4px; }
+.sheet-window.minimized { width: min(300px, calc(100% - 24px)); }
+.sheet-window.minimized > :not(.sheet-header):not(.modal-backdrop) { display: none; }
+.sheet-window.minimized .sheet-header { border-bottom: none; }
+.sheet-window .sheet-name { flex: 1; min-width: 0; }
+.sheet-window.minimized .sheet-header .avatar { width: 30px; height: 30px; font-size: 0.85rem; }
+
+/* Barra lateral: ancho ajustable, se puede esconder */
+.table-side { position: relative; container-type: inline-size; }
+.table-layout.side-hidden { grid-template-columns: minmax(0, 1fr) 0; }
+.table-layout.side-hidden .table-side { display: none; }
+.table-layout.side-hidden .toolbar { grid-column: 1 / -1; }
+.side-resizer { position: absolute; left: -3px; top: 0; bottom: 0; width: 7px; cursor: col-resize; z-index: 3; touch-action: none; }
+.side-resizer:hover, .side-resizer:active { background: color-mix(in srgb, var(--accent) 45%, transparent); }
+.side-toggle { margin-left: auto; position: relative; white-space: nowrap; }
+.conn + .side-toggle { margin-left: 8px; }
+
+/* Pestañas con icono; si no caben, solo la activa enseña su nombre */
+.tab-icon { font-size: 1rem; line-height: 1; }
+.tab-label { overflow: hidden; text-overflow: ellipsis; }
+@container (max-width: 400px) {
+  .tabs button:not(.active) .tab-label { display: none; }
+  .tabs button.active { flex: 2.4; }
+}
+.unread { background: var(--accent); color: #fff; border-radius: 999px; font-size: 0.68rem; font-weight: 700; line-height: 1; padding: 2px 5px; min-width: 16px; text-align: center; }
+.tabs .unread { flex: none; }
+.side-toggle .unread { margin-left: 6px; }
+
+/* Menús desplegables de la barra de herramientas */
+.tool-menu { position: relative; }
+.tool-menu > button { display: inline-flex; align-items: center; gap: 4px; }
+.tool-menu > button.open { border-color: var(--accent); }
+.tool-menu .caret { font-size: 0.7rem; color: var(--muted); }
+.tool-on { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); display: inline-block; }
+.tool-menu-panel { position: absolute; top: calc(100% + 6px); left: 0; z-index: 30; min-width: 230px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55); }
+.tool-menu-panel .switch { margin: 0; white-space: nowrap; }
+.tool-menu-panel > button { align-self: flex-start; }
+.tool-menu-row { display: flex; gap: 6px; flex-wrap: wrap; }

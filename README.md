@@ -45,9 +45,9 @@ Abre `http://IP-DE-LA-PI:3000` desde cualquier equipo de tu red. La primera comp
 **DM**
 - Elige la **capa** en la barra superior: *Mapa* (fondo), *Tokens* (personajes) o *DM* (solo la ves tú). Solo puedes seleccionar elementos de la capa activa.
 - **+ Imagen** sube mapas o retratos; **+ Token** crea una ficha de color. En el panel derecho cambias nombre, tamaño, capa, imagen y qué jugadores pueden moverla.
-- **Niebla**: actívala y usa *Revelar* / *Ocultar* arrastrando rectángulos. Tú la ves semitransparente; los jugadores, negra. Los tokens enemigos bajo la niebla ni siquiera se envían a los jugadores.
+- **Niebla** (menú ☁ Niebla): actívala y usa *Revelar* / *Ocultar* arrastrando rectángulos. Tú la ves semitransparente; los jugadores, negra. Los tokens enemigos bajo la niebla ni siquiera se envían a los jugadores.
 - **Paredes y visión** (🧱 Paredes): arrastra para trazar paredes (se ajustan a las esquinas de la cuadrícula y a los extremos de otras paredes; con *Alt*, libres). Elige el tipo: *pared*, *puerta*, *ventana* (deja ver pero no pasar) o *puerta secreta* (para los jugadores es una pared hasta que la abres). Clic en una pared para cambiarle el tipo; con *Borrar*, para quitarla.
-- Activa **Visión** para que cada jugador vea solo lo que ven sus tokens: el resto queda a oscuras y lo ya explorado, en penumbra. Los tokens que no ven ni siquiera se les envían. *Alcance* limita hasta dónde ven (en casillas, 0 = sin límite) y *Ver como jugadores* te muestra la oscuridad. Ojo: con la visión activada, un jugador sin tokens en la escena no ve nada.
+- En el menú **👁 Visión** activa la *visión dinámica* para que cada jugador vea solo lo que ven sus tokens: el resto queda a oscuras y lo ya explorado, en penumbra. Los tokens que no ven ni siquiera se les envían. *Alcance* limita hasta dónde ven (en casillas, 0 = sin límite) y *Ver como jugadores* te muestra la oscuridad. Ojo: con la visión activada, un jugador sin tokens en la escena no ve nada.
 - **Puertas**: clic en el icono 🚪 para abrirla o cerrarla. Tú, con *Mayús*+clic, le echas la llave 🔒. Los jugadores abren las puertas que ven y no tienen llave, y no pueden mover sus tokens a través de paredes ni puertas cerradas.
 - **Escenas**: el botón **🗺** de la barra de arriba (y la pestaña *Escenas*) abre la lista de mapas que tienes preparados.
   - Pulsa una escena para abrirla **solo tú**: los jugadores no la ven hasta que los lleves.
@@ -69,6 +69,12 @@ Abre `http://IP-DE-LA-PI:3000` desde cualquier equipo de tu red. La primera comp
 - La distancia por casilla (5 pies por defecto), la unidad y cómo se cuentan las diagonales se cambian en *Ajustes de la escena*.
 - Los tokens se ajustan a la cuadrícula al soltarlos (mantén **Alt** para moverlos libremente).
 - **Supr** borra el elemento seleccionado (DM) y **Esc** quita la selección.
+
+**Organizar la pantalla**
+- **Hojas de personaje**: arrástralas por la cabecera (⠿) a donde quieras y minimízalas con ▁. Cada navegador recuerda dónde dejaste cada hoja. La que tocas pasa delante.
+- **Barra lateral**: arrastra su borde izquierdo para ensancharla (doble clic la deja como estaba) y escóndela con **Panel ⇥** arriba a la derecha o con la tecla **B**.
+- **Mensajes nuevos**: si estás en otra pestaña (o con la barra escondida), un número rojo te avisa de los mensajes del chat y de los documentos que el DM te comparte en el Diario.
+- **Pestañas**: *Mayús+1, 2, 3…* abre cada una. El DM tiene además **⚙️ Ajustes** con la invitación, las copias de seguridad y el rendimiento.
 
 ## Editor de mapas
 
@@ -211,7 +217,7 @@ Cuando alguien saca un **20 natural** en un d20, toda la mesa ve un destello dor
 
 ## Copias de seguridad
 
-- En la pestaña **Mesa**, el DM tiene **⬇ Descargar copia**: un archivo `.vtt.json.gz` con escenas y sus carpetas, tokens, paredes, niebla, hojas, plantilla, diario, macros compartidas y música. Con *Incluir imágenes y música* también lleva los archivos (pesa más). El chat no se guarda.
+- En la pestaña **⚙️ Ajustes**, el DM tiene **⬇ Descargar copia**: un archivo `.vtt.json.gz` con escenas y sus carpetas, tokens, paredes, niebla, hojas, plantilla, diario, macros compartidas y música. Con *Incluir imágenes y música* también lleva los archivos (pesa más). El chat no se guarda.
 - Para restaurarla, en la lista de partidas pulsa **⬆ Elegir archivo** en *Restaurar una copia de seguridad* (máx. 500 MB). Se crea una partida **nueva** en la que eres el DM: los jugadores no van en la copia, así que hay que invitarlos otra vez y asignarles sus personajes.
 - Sirve también para pasar una partida de un servidor a otro (p. ej. de tu PC a la Raspberry). Además de esto, conviene copiar de vez en cuando la carpeta de datos entera (ver *Instalar en la Raspberry Pi 5*).
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import type { CampaignMember } from '@vtt/shared';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { getSocket } from '../../core/socket';
@@ -33,23 +33,15 @@ import { CharactersPanel } from '../sheets/CharactersPanel';
 import { useSheets } from '../sheets/store';
 import { TemplateEditor } from '../sheets/TemplateEditor';
 import { useSheetsSync } from '../sheets/useSheetsSync';
-import type { SidebarTab } from '../tutorial/steps';
+import { SideResizer, SideToggle } from '../layout/SideControls';
+import { useLayout } from '../layout/store';
+import { sidebarTabs } from '../layout/tabs';
+import { useUnread } from '../layout/unread';
 import { useTutorial } from '../tutorial/store';
 import { TutorialOverlay } from '../tutorial/TutorialOverlay';
 import { useCampaign } from './hooks';
 import { InvitePanel } from './InvitePanel';
 import { MembersPanel } from './MembersPanel';
-
-type Tab = SidebarTab;
-
-const TAB_KEY = 'vtt:sidebarTab';
-function readTab(): Tab {
-  try {
-    return (localStorage.getItem(TAB_KEY) as Tab | null) ?? 'chat';
-  } catch {
-    return 'chat';
-  }
-}
 
 /**
  * Vista principal de una partida ("la mesa"): tablero en el centro y pestañas a la derecha.
@@ -87,22 +79,24 @@ export function CampaignPage() {
   const openSheets = useSheets((s) => s.open);
   const characters = useSheets((s) => s.characters);
   const [editingTemplate, setEditingTemplate] = useState(false);
-  const [tab, setTabState] = useState<Tab>(readTab);
-  const setTab = (t: Tab) => {
-    setTabState(t);
-    try {
-      localStorage.setItem(TAB_KEY, t);
-    } catch {
-      /* sin almacenamiento: no pasa nada */
-    }
-  };
-  // El recorrido guiado abre la pestaña de la que habla cada paso y, al acabar, vuelve a la de antes.
+  const tab = useLayout((s) => s.tab);
+  const setTab = useLayout((s) => s.setTab);
+  const sideWidth = useLayout((s) => s.sideWidth);
+  const sideHidden = useLayout((s) => s.sideHidden);
+  // El recorrido guiado abre la pestaña de la que habla cada paso (y la barra lateral) y, al acabar, vuelve a la de antes.
   const tourTab = useTutorial((s) => s.steps?.[s.index]?.tab);
   const touring = useTutorial((s) => Boolean(s.steps));
   useEffect(() => {
-    if (tourTab) setTabState(tourTab);
-    else if (!touring) setTabState(readTab());
+    const layout = useLayout.getState();
+    if (tourTab) {
+      layout.setTab(tourTab, false);
+      layout.toggleSide(false);
+    } else if (!touring) layout.restoreTab();
   }, [tourTab, touring]);
+  const tabs = sidebarTabs(isGm);
+  const activeTab = tabs.some((t) => t.id === tab) ? tab : 'chat';
+  const unread = useUnread(id, me.id, isGm, sideHidden ? null : activeTab);
+  const unreadTotal = Object.values(unread).reduce((a, b) => a + (b ?? 0), 0);
   useEffect(() => () => useTutorial.getState().close(), []);
 
   useEffect(() => () => useBoard.getState().clear(), []);
@@ -116,17 +110,8 @@ export function CampaignPage() {
     );
   if (!campaign) return <main className="container muted">Cargando partida…</main>;
 
-  const tabs: { id: Tab; label: string }[] = [
-    { id: 'chat', label: 'Chat' },
-    { id: 'characters', label: 'Personajes' },
-    { id: 'journal', label: 'Diario' },
-    ...(isGm ? [{ id: 'scenes' as const, label: 'Escenas' }] : []),
-    { id: 'table', label: `Mesa (${online.length})` },
-  ];
-  const activeTab = tabs.some((t) => t.id === tab) ? tab : 'chat';
-
   return (
-    <div className="table-layout">
+    <div className={`table-layout ${sideHidden ? 'side-hidden' : ''}`} style={{ '--side-w': `${sideWidth}px` } as CSSProperties}>
       <header className="table-header">
         <button className="ghost" onClick={() => navigate('/')} title="Volver">
           ←
@@ -140,6 +125,7 @@ export function CampaignPage() {
         )}
         {isGm && scene && <ScenePresence sceneId={scene.id} members={campaign.members} partySceneId={campaign.activeSceneId} />}
         <span className={`conn ${connected ? 'on' : 'off'}`}>{connected ? 'Conectado' : 'Reconectando…'}</span>
+        <SideToggle unread={unreadTotal} />
       </header>
       {scene && <Toolbar campaignId={campaign.id} isGm={isGm} />}
       <section className="table-main" data-tour="board">
@@ -165,20 +151,37 @@ export function CampaignPage() {
               <CharacterSheet key={cid} index={i} character={characters[cid]} template={template} isGm={isGm} meId={me.id} members={campaign.members} />
             ) : null,
           )}
-        {activeTab !== 'chat' && <RollToasts campaignId={campaign.id} />}
+        {(sideHidden || activeTab !== 'chat') && <RollToasts campaignId={campaign.id} />}
         <DiceTray campaignId={campaign.id} />
         <Shortcuts campaignId={campaign.id} isGm={isGm} meId={me.id} />
         <CritFx campaignId={campaign.id} />
         <SfxListener campaignId={campaign.id} />
       </section>
-      <aside className="table-side">
+      <aside className="table-side" hidden={sideHidden}>
+        <SideResizer />
         {isGm && hasSelection && <ItemPanel campaignId={campaign.id} members={campaign.members} />}
         <nav className="tabs" role="tablist">
-          {tabs.map((t) => (
-            <button key={t.id} role="tab" aria-selected={activeTab === t.id} className={activeTab === t.id ? 'active' : ''} onClick={() => setTab(t.id)}>
-              {t.label}
-            </button>
-          ))}
+          {tabs.map((t, i) => {
+            const label = t.id === 'table' ? `${t.label} (${online.length})` : t.label;
+            const count = unread[t.id] ?? 0;
+            return (
+              <button
+                key={t.id}
+                role="tab"
+                aria-selected={activeTab === t.id}
+                aria-label={count ? `${label}: ${count} sin leer` : label}
+                className={activeTab === t.id ? 'active' : ''}
+                title={`${label} (Mayús+${i + 1})`}
+                onClick={() => setTab(t.id)}
+              >
+                <span className="tab-icon" aria-hidden>
+                  {t.icon}
+                </span>
+                <span className="tab-label">{label}</span>
+                {count > 0 && <span className="unread">{count > 99 ? '99+' : count}</span>}
+              </button>
+            );
+          })}
         </nav>
         <div className="tab-body" data-tour={activeTab}>
           {activeTab === 'chat' && <ChatPanel campaignId={campaign.id} isGm={isGm} meId={me.id} members={campaign.members} />}
@@ -194,9 +197,13 @@ export function CampaignPage() {
               <MembersPanel campaign={campaign} online={online} meId={me.id} />
               <JukeboxPanel campaignId={campaign.id} isGm={isGm} />
               <FxPanel />
-              {isGm && campaign.inviteCode && <InvitePanel campaignId={campaign.id} inviteCode={campaign.inviteCode} />}
-              {isGm && <BackupPanel campaignId={campaign.id} />}
-              {isGm && <PerformancePanel campaignId={campaign.id} />}
+            </>
+          )}
+          {activeTab === 'settings' && isGm && (
+            <>
+              {campaign.inviteCode && <InvitePanel campaignId={campaign.id} inviteCode={campaign.inviteCode} />}
+              <BackupPanel campaignId={campaign.id} />
+              <PerformancePanel campaignId={campaign.id} />
             </>
           )}
         </div>

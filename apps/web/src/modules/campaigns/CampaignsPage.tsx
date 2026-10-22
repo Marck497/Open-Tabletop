@@ -95,7 +95,7 @@ export function CampaignsPage() {
         </div>
         <div className="card restore-card">
           <h2>Restaurar una copia de seguridad</h2>
-          <p className="muted">Crea una partida nueva a partir de un archivo <code>.vtt.json.gz</code> descargado desde la pestaña Mesa. Serás su DM; luego invita otra vez a los jugadores.</p>
+          <p className="muted">Crea una partida nueva a partir de un archivo <code>.vtt.json.gz</code> descargado desde la pestaña Ajustes de la mesa. Serás su DM; luego invita otra vez a los jugadores.</p>
           <label className="button-like">
             {restoring ? 'Restaurando…' : '⬆ Elegir archivo'}
             <input type="file" accept=".gz,.json,application/gzip,application/json" hidden disabled={restoring} onChange={(e) => void restore(e.target.files?.[0])} />

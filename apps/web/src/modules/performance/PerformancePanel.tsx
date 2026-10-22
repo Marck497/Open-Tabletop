@@ -3,7 +3,7 @@ import { formatBytes, type CleanupResult, type PerformanceReport } from '@vtt/sh
 import { api } from '../../core/api';
 
 /**
- * Panel de rendimiento para la Pi (DM, pestaña Mesa): cómo va el servidor, cuánto ocupa la partida,
+ * Panel de rendimiento para la Pi (DM, pestaña Ajustes): cómo va el servidor, cuánto ocupa la partida,
  * avisos de lo que pesa demasiado y limpieza de los archivos que no usa nada.
  */
 export function PerformancePanel({ campaignId }: { campaignId: string }) {

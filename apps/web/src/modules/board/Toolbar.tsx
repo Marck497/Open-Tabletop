@@ -4,6 +4,7 @@ import { api } from '../../core/api';
 import { emitAck } from '../../core/socket';
 import { addImageItem, addItem } from './actions';
 import { AssetPicker } from './AssetPicker';
+import { ToolMenu } from './ToolMenu';
 import { saveWalls } from './Walls';
 import { LAYER_LABELS, useBoard, type Tool } from './store';
 import { useShortcutHelp } from '../shortcuts/Shortcuts';
@@ -124,7 +125,7 @@ export function Toolbar({ campaignId, isGm }: { campaignId: string; isGm: boolea
           title="Editor de mapas: pinta suelos, crea salas con paredes, pon puertas y objetos o genera una mazmorra"
           onClick={() => setTool(tool === 'map' ? 'select' : 'map')}
         >
-          🗺️ Editor de mapas
+          🗺️ Mapas
         </button>
       </div>
 
@@ -146,28 +147,45 @@ export function Toolbar({ campaignId, isGm }: { campaignId: string; isGm: boolea
         </button>
       </div>
 
-      <div className="tool-group" role="group" aria-label="Niebla" data-tour="fog">
-        <label className="switch">
-          <input type="checkbox" checked={fog.enabled} onChange={(e) => setFog({ ...fog, enabled: e.target.checked })} />
-          Niebla
-        </label>
-        {fog.enabled &&
+      <ToolMenu
+        icon="☁"
+        label="Niebla"
+        title="Niebla de guerra: tapa el mapa y ve revelándolo"
+        on={fog.enabled}
+        data-tour="fog"
+        inline={
+          (tool === 'fog-reveal' || tool === 'fog-hide') &&
           FOG_TOOLS.map((t) => (
             <button key={t.id} className={`small ${tool === t.id ? 'active' : ''}`} title={t.title} onClick={() => setTool(t.id)}>
               {t.label}
             </button>
-          ))}
+          ))
+        }
+      >
+        <label className="switch">
+          <input type="checkbox" checked={fog.enabled} onChange={(e) => setFog({ ...fog, enabled: e.target.checked })} />
+          Niebla activada
+        </label>
         {fog.enabled && (
           <>
-            <button className="ghost small" onClick={() => setFog({ enabled: true, ops: [{ mode: 'reveal', x: 0, y: 0, w, h }] })}>
-              Revelar todo
-            </button>
-            <button className="ghost small" onClick={() => setFog({ enabled: true, ops: [] })}>
-              Tapar todo
-            </button>
+            <div className="tool-menu-row">
+              {FOG_TOOLS.map((t) => (
+                <button key={t.id} data-close className={`small ${tool === t.id ? 'active' : ''}`} title={t.title} onClick={() => setTool(t.id)}>
+                  {t.label}
+                </button>
+              ))}
+            </div>
+            <div className="tool-menu-row">
+              <button className="ghost small" data-close onClick={() => setFog({ enabled: true, ops: [{ mode: 'reveal', x: 0, y: 0, w, h }] })}>
+                Revelar todo
+              </button>
+              <button className="ghost small" data-close onClick={() => setFog({ enabled: true, ops: [] })}>
+                Tapar todo
+              </button>
+            </div>
           </>
         )}
-      </div>
+      </ToolMenu>
 
       <div className="tool-group" role="group" aria-label="Paredes y visión" data-tour="vision">
         <button
@@ -194,53 +212,67 @@ export function Toolbar({ campaignId, isGm }: { campaignId: string; isGm: boolea
             )}
           </>
         )}
-        <label className="switch" title="Cada jugador solo ve lo que ven sus tokens; las paredes tapan la vista">
-          <input type="checkbox" checked={scene.vision} onChange={(e) => saveScene({ vision: e.target.checked })} />
-          Visión
-        </label>
-        {scene.vision && (
-          <>
-            <label className="switch" title="Hasta dónde ven los tokens, en casillas (0 = sin límite)">
-              Alcance
-              <input
-                key={scene.visionRange}
-                type="number"
-                className="tiny-number"
-                min={0}
-                max={1000}
-                defaultValue={scene.visionRange}
-                onBlur={(e) => {
-                  const v = Math.max(0, Math.min(1000, Math.round(Number(e.target.value) || 0)));
-                  if (v !== scene.visionRange) saveScene({ visionRange: v });
-                }}
-              />
-            </label>
-            <label className="switch" title="Lo que ya han visto los tokens de los jugadores se queda a la vista en gris (sin mostrar quién está ahí ahora)">
-              <input type="checkbox" checked={scene.exploration} onChange={(e) => saveScene({ exploration: e.target.checked })} />
-              Recordar lo explorado
-            </label>
-            {scene.exploration && scene.explored && (
-              <button
-                className="ghost small"
-                title="Olvida lo explorado en esta escena (se queda solo lo que ven ahora)"
-                onClick={() =>
-                  confirm('¿Olvidar todo lo explorado en esta escena?') &&
-                  void emitAck('explored:reset', { sceneId: scene.id }).catch((e: Error) => useBoard.getState().showNotice(e.message))
-                }
-              >
-                Olvidar
+        <ToolMenu
+          icon="👁"
+          label="Visión"
+          title="Visión dinámica, alcance, lo explorado y la oscuridad"
+          on={scene.vision}
+          inline={
+            previewVision && (
+              <button className="small active" title="Estás viendo el tablero como los jugadores. Clic para volver a verlo todo." onClick={() => setPreviewVision(false)}>
+                Viendo como jugadores ✕
               </button>
-            )}
-            <label className="switch" title="La escena está a oscuras: los jugadores solo ven lo que alumbran las luces (antorchas, lámparas...) o su visión en la oscuridad">
-              <input type="checkbox" checked={scene.lighting} onChange={(e) => saveScene({ lighting: e.target.checked })} />
-              🌙 A oscuras
-            </label>
-            <label className="switch" title="Oscurece el tablero como lo ven los jugadores (con todos sus tokens)">
-              <input type="checkbox" checked={previewVision} onChange={(e) => setPreviewVision(e.target.checked)} />
-              Ver como jugadores
-            </label>
-          </>
-        )}
+            )
+          }
+        >
+          <label className="switch" title="Cada jugador solo ve lo que ven sus tokens; las paredes tapan la vista">
+            <input type="checkbox" checked={scene.vision} onChange={(e) => saveScene({ vision: e.target.checked })} />
+            Visión dinámica
+          </label>
+          {scene.vision && (
+            <>
+              <label className="switch" title="Hasta dónde ven los tokens, en casillas (0 = sin límite)">
+                Alcance (casillas)
+                <input
+                  key={scene.visionRange}
+                  type="number"
+                  className="tiny-number"
+                  min={0}
+                  max={1000}
+                  defaultValue={scene.visionRange}
+                  onBlur={(e) => {
+                    const v = Math.max(0, Math.min(1000, Math.round(Number(e.target.value) || 0)));
+                    if (v !== scene.visionRange) saveScene({ visionRange: v });
+                  }}
+                />
+              </label>
+              <label className="switch" title="Lo que ya han visto los tokens de los jugadores se queda a la vista en gris (sin mostrar quién está ahí ahora)">
+                <input type="checkbox" checked={scene.exploration} onChange={(e) => saveScene({ exploration: e.target.checked })} />
+                Recordar lo explorado
+              </label>
+              {scene.exploration && scene.explored && (
+                <button
+                  className="ghost small"
+                  title="Olvida lo explorado en esta escena (se queda solo lo que ven ahora)"
+                  onClick={() =>
+                    confirm('¿Olvidar todo lo explorado en esta escena?') &&
+                    void emitAck('explored:reset', { sceneId: scene.id }).catch((e: Error) => useBoard.getState().showNotice(e.message))
+                  }
+                >
+                  Olvidar lo explorado
+                </button>
+              )}
+              <label className="switch" title="La escena está a oscuras: los jugadores solo ven lo que alumbran las luces (antorchas, lámparas...) o su visión en la oscuridad">
+                <input type="checkbox" checked={scene.lighting} onChange={(e) => saveScene({ lighting: e.target.checked })} />
+                🌙 A oscuras
+              </label>
+              <label className="switch" title="Oscurece el tablero como lo ven los jugadores (con todos sus tokens)">
+                <input type="checkbox" checked={previewVision} onChange={(e) => setPreviewVision(e.target.checked)} />
+                Ver como jugadores
+              </label>
+            </>
+          )}
+        </ToolMenu>
       </div>
 
       {picker && (
