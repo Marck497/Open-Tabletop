@@ -49,6 +49,17 @@ async function setup() {
 }
 
 describe('tablero', () => {
+  it('estados: el jugador marca los de su token, no los de otros', async () => {
+    const { pl, sceneId, plC, token } = await setup();
+    const mine = await token('token', { ownerIds: [pl.user.id] });
+    const other = await token('token');
+    const res = await call<BoardItem>(plC, 'item:update', { sceneId, id: mine.id, patch: { statuses: ['derribado', 'concentracion'] } });
+    expect(ok(res).statuses).toEqual(['derribado', 'concentracion']);
+    expect((await call(plC, 'item:update', { sceneId, id: other.id, patch: { statuses: ['muerto'] } })).ok).toBe(false);
+    // Un jugador no puede tocar otras cosas de su token (p. ej. la capa).
+    expect((await call(plC, 'item:update', { sceneId, id: mine.id, patch: { layer: 'gm' } })).ok).toBe(false);
+  });
+
   it('reglas y pings se reenvían a la escena; los del DM pueden ser solo para DM', async () => {
     const { gm, sceneId, gmC, plC } = await setup();
     const measure = { shape: 'ruler', points: [{ x: 35, y: 35 }, { x: 315, y: 35 }] };

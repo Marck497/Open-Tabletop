@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { Circle, Group, Image as KImage, Layer, Rect, Shape, Stage, Text, Transformer } from 'react-konva';
 import type Konva from 'konva';
 import useImage from 'use-image';
-import { assetUrl, createResolver, type BoardItem, type BoardLayer, type Fog, type Measure, type Point, type Scene } from '@vtt/shared';
+import { assetUrl, createResolver, statusesOf, type BoardItem, type BoardLayer, type Fog, type Measure, type Point, type Scene } from '@vtt/shared';
 import { useSheets } from '../sheets/store';
 import { addCharacterToken } from '../sheets/tokens';
 import { useActiveItemId } from '../initiative/store';
@@ -363,6 +363,11 @@ function ItemNode({ item, scene, selected, interactive, ghost, transformable, tu
       return { value, max, color: b.color };
     });
   }, [character, template]);
+  const statusIcons = useMemo(() => {
+    if (!item.statuses.length) return [];
+    const defs = statusesOf(template);
+    return item.statuses.map((id) => defs.find((d) => d.id === id)).filter((d) => !!d);
+  }, [item.statuses, template]);
   const isGmSelected = selected && interactive && transformable;
 
   useEffect(() => {
@@ -467,6 +472,17 @@ function ItemNode({ item, scene, selected, interactive, ghost, transformable, tu
             {b.max > 0 && b.value > b.max && <Rect width={w} height={6} stroke="#fff" strokeWidth={1} cornerRadius={3} />}
           </Group>
         ))}
+        {statusIcons.map((d, i) => {
+          // Iconos en fila sobre la esquina superior derecha; si no caben, siguen hacia abajo.
+          const s = Math.max(18, Math.min(w, h) / 2.6);
+          const perRow = Math.max(1, Math.floor(w / s));
+          return (
+            <Group key={d.id} x={w - s / 2 - (i % perRow) * s} y={s / 2 + Math.floor(i / perRow) * s} listening={false}>
+              <Circle radius={s / 2} fill="rgba(20,18,26,0.8)" stroke="#d6a84a" strokeWidth={1} />
+              <Text text={d.icon} fontSize={s * 0.62} width={s} height={s} offsetX={s / 2} offsetY={s / 2} align="center" verticalAlign="middle" />
+            </Group>
+          );
+        })}
         {item.showName && name && (
           <Text
             text={name}

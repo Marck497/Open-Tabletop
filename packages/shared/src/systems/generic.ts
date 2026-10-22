@@ -1,3 +1,4 @@
+import { GENERIC_STATUSES } from './statuses.js';
 import type { SheetTemplateInput } from '../schemas/sheet.js';
 
 /** Plantilla mínima para empezar un sistema propio desde cero. */
@@ -5,6 +6,7 @@ export const genericTemplate: SheetTemplateInput = {
   name: 'Genérico',
   version: 1,
   bars: [{ value: 'vida', max: 'vida_max', color: '#c0392b' }],
+  statuses: GENERIC_STATUSES,
   combat: { ac: 'defensa', hp: 'vida', hpMax: 'vida_max', speed: '', attacks: null },
   sections: [
     {

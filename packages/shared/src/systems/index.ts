@@ -1,5 +1,6 @@
-import { sheetTemplateSchema, type CombatMapping, type SheetTemplate } from '../schemas/sheet.js';
+import { sheetTemplateSchema, type CombatMapping, type SheetTemplate, type StatusDef } from '../schemas/sheet.js';
 import { dnd5eTemplate } from './dnd5e.js';
+import { DND5E_STATUSES } from './statuses.js';
 import { genericTemplate } from './generic.js';
 
 /** Plantillas incluidas de serie. Se copian a cada partida, donde el DM puede editarlas. */
@@ -23,3 +24,10 @@ export function combatOf(template: SheetTemplate): CombatMapping | null {
   }
   return null;
 }
+
+/** Estados de los tokens de una plantilla (las guardadas antes de existir la opción usan los de 5e). */
+export function statusesOf(template: SheetTemplate | null): StatusDef[] {
+  return template?.statuses ?? DND5E_STATUSES;
+}
+
+export { DND5E_STATUSES, GENERIC_STATUSES } from './statuses.js';

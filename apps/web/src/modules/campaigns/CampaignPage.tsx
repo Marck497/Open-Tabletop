@@ -6,6 +6,7 @@ import { Board } from '../board/Board';
 import { ItemPanel } from '../board/ItemPanel';
 import { ScenesPanel } from '../board/ScenesPanel';
 import { Toolbar } from '../board/Toolbar';
+import { StatusBar } from '../board/StatusBar';
 import { useBoard } from '../board/store';
 import { useSceneSync } from '../board/useSceneSync';
 import { ChatPanel } from '../chat/ChatPanel';
@@ -112,6 +113,7 @@ export function CampaignPage() {
         {viewingSceneId ? (
           <>
             <Board isGm={isGm} meId={me.id} />
+            <StatusBar isGm={isGm} meId={me.id} />
             {sceneError && <p className="board-error error">{sceneError}</p>}
           </>
         ) : (

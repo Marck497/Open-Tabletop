@@ -43,6 +43,13 @@
       "when": 1792625233528,
       "tag": "0005_ai",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1792625708421,
+      "tag": "0006_token_statuses",
+      "breakpoints": true
     }
   ]
 }

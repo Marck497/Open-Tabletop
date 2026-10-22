@@ -1,0 +1,1 @@
+ALTER TABLE `board_items` ADD `statuses` text DEFAULT '[]' NOT NULL;

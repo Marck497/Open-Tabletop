@@ -1,3 +1,4 @@
+import { DND5E_STATUSES } from './statuses.js';
 import type { SheetField, SheetTemplateInput } from '../schemas/sheet.js';
 
 /** Plantilla de D&D 5e (en español). Es un punto de partida: el DM puede editarla entera. */
@@ -66,6 +67,7 @@ export const dnd5eTemplate: SheetTemplateInput = {
   name: 'D&D 5e',
   version: 1,
   bars: [{ value: 'pg_actuales', max: 'pg_max', color: '#c0392b' }],
+  statuses: DND5E_STATUSES,
   combat: {
     ac: 'ca',
     hp: 'pg_actuales',
