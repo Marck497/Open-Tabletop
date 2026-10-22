@@ -18,6 +18,8 @@ export interface DomainEvents {
   /** Una hoja ha perdido PG (o PG temporales): `damage` es cuánto, y `hp` los PG que le quedan. */
   'character:damaged': [{ campaignId: string; characterId: string; damage: number; hp: number }];
   'initiative:turnStarted': [{ campaignId: string; userId: string; state: InitiativeState }];
+  /** El turno ha avanzado hacia delante (empezar combate, siguiente o la IA al acabar): empieza el de `state.turn`. */
+  'initiative:advanced': [{ campaignId: string; state: InitiativeState }];
 }
 
 export class EventBus extends EventEmitter<DomainEvents> {}

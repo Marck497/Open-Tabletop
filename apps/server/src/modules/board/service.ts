@@ -218,10 +218,11 @@ export function createBoardService(ctx: AppContext) {
     if (viewer.role !== 'gm') {
       // Los jugadores solo pueden dibujar, y siempre en la capa de tokens y como dueños de su dibujo.
       if (!data.drawing) throw forbidden('Solo el DM puede añadir elementos');
-      data = { ...data, layer: 'token', ownerIds: [userId], characterId: null, assetId: null, ai: null, statuses: [] };
+      data = { ...data, layer: 'token', ownerIds: [userId], characterId: null, assetId: null, ai: null, statuses: [], statusRounds: {} };
     }
     checkAsset(data.assetId, scene.campaignId);
     checkCharacter(data.characterId, scene.campaignId);
+    data = { ...data, statusRounds: Object.fromEntries(Object.entries(data.statusRounds).filter(([k]) => data.statuses.includes(k))) };
     const z = data.z ?? (db.select({ m: max(boardItems.z) }).from(boardItems).where(eq(boardItems.sceneId, sceneId)).get()?.m ?? 0) + 1;
     const id = randomUUID();
     db.insert(boardItems).values({ id, sceneId, ...data, z }).run();
@@ -244,6 +245,7 @@ export function createBoardService(ctx: AppContext) {
     }
     checkAsset(data.assetId, scene.campaignId);
     checkCharacter(data.characterId, scene.campaignId);
+    tidyRounds(before, data);
     if (Object.keys(data).length) db.update(boardItems).set(data).where(eq(boardItems.id, itemId)).run();
     return { scene, before, after: toItem(itemRow(sceneId, itemId)) };
   }
@@ -253,8 +255,18 @@ export function createBoardService(ctx: AppContext) {
     const scene = toScene(sceneRow(sceneId));
     const data = updateItemSchema.parse(patch);
     const before = toItem(itemRow(sceneId, itemId));
+    tidyRounds(before, data);
     if (Object.keys(data).length) db.update(boardItems).set(data).where(eq(boardItems.id, itemId)).run();
     return { scene, before, after: toItem(itemRow(sceneId, itemId)) };
+  }
+
+  /** Las rondas que quedan solo se guardan para los estados que tiene (al quitar uno, se olvida su duración). */
+  function tidyRounds(before: BoardItem, data: UpdateItemInput & { statusRounds?: Record<string, number>; statuses?: string[] }) {
+    if (!data.statuses && !data.statusRounds) return;
+    const statuses = data.statuses ?? before.statuses;
+    const rounds = data.statusRounds ?? before.statusRounds;
+    const kept = Object.fromEntries(Object.entries(rounds).filter(([k]) => statuses.includes(k)));
+    if (Object.keys(kept).length !== Object.keys(rounds).length || data.statusRounds) data.statusRounds = kept;
   }
 
   /** Elementos de una escena, sin filtrar (uso interno del servidor). */

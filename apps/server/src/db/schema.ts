@@ -147,6 +147,7 @@ export const boardItems = sqliteTable(
     characterId: text('character_id').references(() => characters.id, { onDelete: 'set null' }),
     ai: text('ai', { mode: 'json' }).$type<TokenAi>(),
     statuses: text('statuses', { mode: 'json' }).$type<string[]>().notNull().default([]),
+    statusRounds: text('status_rounds', { mode: 'json' }).$type<Record<string, number>>().notNull().default({}),
     hpView: text('hp_view', { enum: ['gm', 'bar', 'numbers'] }),
     acView: text('ac_view', { enum: ['gm', 'all'] }),
     drawing: text('drawing', { mode: 'json' }).$type<Drawing>(),

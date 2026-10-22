@@ -730,6 +730,10 @@ function ItemNode({ item, isGm, scene, selected, interactive, ghost, transformab
             <Group key={d.id} x={w - s / 2 - (i % perRow) * s} y={s / 2 + Math.floor(i / perRow) * s} listening={false}>
               <Circle radius={s / 2} fill="rgba(20,18,26,0.8)" stroke={d.kind === 'buff' ? '#4cd964' : d.kind === 'debuff' ? '#ff5a4f' : '#d6a84a'} strokeWidth={d.kind ? 2 : 1} />
               <Text text={d.icon} fontSize={s * 0.62} width={s} height={s} offsetX={s / 2} offsetY={s / 2} align="center" verticalAlign="middle" />
+              {item.statusRounds[d.id] ? (
+                // Rondas que le quedan al estado.
+                <Text text={String(item.statusRounds[d.id])} x={s * 0.08} y={s * 0.05} fontSize={s * 0.42} fontStyle="bold" fill="#fff" stroke="#000" strokeWidth={s * 0.06} fillAfterStrokeEnabled />
+              ) : null}
             </Group>
           );
         })}

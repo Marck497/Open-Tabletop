@@ -35,7 +35,9 @@ async function autoPlay(ctx: AppContext, campaignId: string, userId: string) {
       // Si alguien ha cambiado el turno mientras tanto, no se pasa otra vez.
       const now = initiative.load(campaignId);
       if (!now.active || now.entries[now.turn]?.id !== entryId) return;
-      await broadcastInitiative(ctx, initiative.advance(campaignId));
+      const advanced = initiative.advance(campaignId);
+      await broadcastInitiative(ctx, advanced);
+      ctx.events.emit('initiative:advanced', { campaignId, state: advanced });
     }
   } catch (e) {
     // No hay nadie a quien responder: se registra y se para.

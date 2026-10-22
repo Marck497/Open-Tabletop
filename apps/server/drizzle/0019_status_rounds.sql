@@ -1,0 +1,1 @@
+ALTER TABLE `board_items` ADD `status_rounds` text DEFAULT '{}' NOT NULL;
