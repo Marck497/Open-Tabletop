@@ -25,6 +25,7 @@ import { addCharacterToken } from './tokens';
 import { newRowId, SheetFieldView } from './SheetField';
 import { useHomebrew } from '../homebrew/store';
 import { useSheets } from './store';
+import { useFloatingWindow } from '../layout/floating';
 
 interface Props {
   character: Character;
@@ -45,6 +46,8 @@ export function CharacterSheet({ character, template, isGm, meId, members, index
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const actions = useMemo(() => actionsOf(template), [template]);
   const slots = useMemo(() => slotsOf(template, character.values), [template, character.values]);
+  const win = useFloatingWindow(`vtt:win:sheet:${character.id}`, { right: 12 + index * 24, top: 12 + index * 24 });
+  const isFront = useSheets((s) => s.open[s.open.length - 1] === character.id);
   const homebrew = useHomebrew((s) => s.entries);
 
   /** Botones de acción: el servidor tira, gasta y lo cuenta en el chat. */
@@ -122,8 +125,16 @@ export function CharacterSheet({ character, template, isGm, meId, members, index
   };
 
   return (
-    <div className="sheet-window card" style={{ right: 12 + index * 24, top: 12 + index * 24 }}>
-      <header className="sheet-header">
+    <div
+      ref={win.ref}
+      className={`sheet-window card ${win.minimized ? 'minimized' : ''}`}
+      style={{ ...win.style, zIndex: 20 + index }}
+      onPointerDownCapture={() => !isFront && useSheets.getState().openSheet(character.id)}
+    >
+      <header className="sheet-header" {...win.handleProps}>
+        <span className="drag-grip" aria-hidden title="Arrastra para mover la hoja">
+          ⠿
+        </span>
         <button className="avatar" disabled={!canEdit} onClick={() => setPicker(true)} title={canEdit ? 'Cambiar imagen' : undefined}>
           {character.avatarAssetId ? <img src={assetUrl(character.avatarAssetId)} alt="" /> : <span>{character.name.slice(0, 1)}</span>}
         </button>
@@ -134,7 +145,7 @@ export function CharacterSheet({ character, template, isGm, meId, members, index
           readOnly={!canEdit}
           onBlur={(e) => e.target.value.trim() && e.target.value !== character.name && void save({ name: e.target.value.trim() })}
         />
-        {canEdit && (actions.hp || actions.slots || actions.resources) && (
+        {canEdit && !win.minimized && (actions.hp || actions.slots || actions.resources) && (
           <>
             <button className="ghost small" onClick={() => rest('short')} title="Descanso corto: recursos de descanso corto y espacios de pacto">
               ☾
@@ -144,11 +155,14 @@ export function CharacterSheet({ character, template, isGm, meId, members, index
             </button>
           </>
         )}
-        {isGm && (
+        {isGm && !win.minimized && (
           <button className="ghost small" onClick={() => setSettings((v) => !v)} title="Permisos y opciones">
             ⚙
           </button>
         )}
+        <button className="ghost small" onClick={win.toggleMinimized} title={win.minimized ? 'Desplegar la hoja' : 'Minimizar la hoja'}>
+          {win.minimized ? '▢' : '▁'}
+        </button>
         <button className="ghost small" onClick={() => closeSheet(character.id)} title="Cerrar">
           ✕
         </button>

@@ -1,5 +1,5 @@
 /** Pestañas de la barra lateral de la mesa. */
-export type SidebarTab = 'chat' | 'characters' | 'journal' | 'scenes' | 'table';
+export type SidebarTab = 'chat' | 'characters' | 'journal' | 'scenes' | 'table' | 'settings';
 
 /** Un paso del recorrido guiado. */
 export interface TourStep {
@@ -47,12 +47,12 @@ export const GM_TOUR: TourStep[] = [
   {
     target: 'fog',
     title: 'Niebla de guerra',
-    body: 'Activa la niebla y usa ☀ Revelar y ☁ Ocultar arrastrando sobre el tablero, o revela o tapa todo de golpe.',
+    body: 'Abre el menú ☁ Niebla para activarla. Elige ☀ Revelar o ☁ Ocultar y arrastra sobre el tablero, o revela o tapa todo de golpe.',
   },
   {
     target: 'vision',
     title: 'Paredes y visión',
-    body: '🧱 Paredes traza muros y puertas. Con Visión, cada jugador solo ve lo que ven sus tokens y las paredes tapan la vista. Recordar lo explorado deja en gris lo ya visto. Con 🌙 A oscuras solo se ve lo que alumbran las luces (antorchas, lámparas) o la visión en la oscuridad, que se configuran en el panel de cada token. Ver como jugadores te enseña el tablero como lo ven ellos.',
+    body: '🧱 Paredes traza muros y puertas. En el menú 👁 Visión activas la visión dinámica: cada jugador solo ve lo que ven sus tokens y las paredes tapan la vista. Recordar lo explorado deja en gris lo ya visto. Con 🌙 A oscuras solo se ve lo que alumbran las luces (antorchas, lámparas) o la visión en la oscuridad, que se configuran en el panel de cada token. Ver como jugadores te enseña el tablero como lo ven ellos.',
   },
   {
     target: 'mapeditor',
@@ -103,7 +103,13 @@ export const GM_TOUR: TourStep[] = [
     target: 'table',
     tab: 'table',
     title: 'Mesa y música',
-    body: 'Aquí ves quién está conectado, pones música y ambiente, copias el enlace de invitación y haces copias de seguridad de la partida.',
+    body: 'Aquí ves quién está conectado, pones música y ambiente y eliges qué efectos y animaciones ver en este dispositivo.',
+  },
+  {
+    target: 'settings',
+    tab: 'settings',
+    title: 'Ajustes',
+    body: 'El enlace de invitación para tus amigos, las copias de seguridad de la partida y el rendimiento de la Raspberry. Truco: Mayús+1, 2, 3… abre cada pestaña, B esconde la barra lateral y puedes arrastrar su borde para ensancharla.',
   },
   end,
 ];
@@ -159,7 +165,7 @@ export const PLAYER_TOUR: TourStep[] = [
     target: 'table',
     tab: 'table',
     title: 'Mesa y música',
-    body: 'Mira quién está conectado, ajusta tu volumen de la música y elige qué efectos y animaciones quieres ver en este dispositivo.',
+    body: 'Mira quién está conectado, ajusta tu volumen de la música y elige qué efectos y animaciones quieres ver en este dispositivo. Truco: Mayús+1, 2, 3… abre cada pestaña y B esconde la barra lateral para ver más tablero. Las hojas de personaje se arrastran por su cabecera.',
   },
   end,
 ];

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-/** Descarga de la copia de seguridad de la partida (DM, en la pestaña Mesa). */
+/** Descarga de la copia de seguridad de la partida (DM, en la pestaña Ajustes). */
 export function BackupPanel({ campaignId }: { campaignId: string }) {
   const [files, setFiles] = useState(true);
   return (

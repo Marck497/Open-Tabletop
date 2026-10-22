@@ -5,6 +5,8 @@ interface JournalState {
   handouts: Record<string, Handout>;
   /** Documento abierto en pantalla. */
   openId: string | null;
+  /** Si ya llegó la primera carga (para distinguir lo cargado de lo que te comparten después). */
+  loaded: boolean;
   setAll: (list: Handout[]) => void;
   upsert: (h: Handout) => void;
   remove: (id: string) => void;
@@ -15,10 +17,11 @@ interface JournalState {
 export const useJournal = create<JournalState>((set) => ({
   handouts: {},
   openId: null,
+  loaded: false,
   setAll: (list) =>
     set((s) => {
       const handouts = Object.fromEntries(list.map((h) => [h.id, h]));
-      return { handouts, openId: s.openId && handouts[s.openId] ? s.openId : null };
+      return { handouts, loaded: true, openId: s.openId && handouts[s.openId] ? s.openId : null };
     }),
   upsert: (h) => set((s) => ({ handouts: { ...s.handouts, [h.id]: h } })),
   remove: (id) =>
@@ -27,5 +30,5 @@ export const useJournal = create<JournalState>((set) => ({
       return { handouts, openId: s.openId === id ? null : s.openId };
     }),
   open: (openId) => set({ openId }),
-  reset: () => set({ handouts: {}, openId: null }),
+  reset: () => set({ handouts: {}, openId: null, loaded: false }),
 }));

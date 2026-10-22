@@ -3,6 +3,8 @@ import { create } from 'zustand';
 import { emitAck } from '../../core/socket';
 import { updateItem } from '../board/history';
 import { useBoard } from '../board/store';
+import { useLayout } from '../layout/store';
+import { sidebarTabs } from '../layout/tabs';
 
 /**
  * Atajos de teclado de la mesa. Los de la escena (Supr, Esc, Ctrl+Z…) viven en el tablero;
@@ -25,6 +27,8 @@ export const SHORTCUTS: Shortcut[] = [
   { keys: 'Flechas', label: 'Mover el token seleccionado una casilla' },
   { keys: 'C', label: 'Centrar la vista en el token seleccionado (o en el tuyo)' },
   { keys: 'N', label: 'Pasar turno (el DM, o tú en tu turno)' },
+  { keys: 'Mayús+1 · 2 · 3…', label: 'Abrir una pestaña de la barra lateral (Chat, Personajes, Diario…)' },
+  { keys: 'B', label: 'Esconder o mostrar la barra lateral' },
   { keys: 'Supr', label: 'Borrar lo seleccionado' },
   { keys: 'Ctrl+Z · Ctrl+Y', label: 'Deshacer · rehacer' },
   { keys: 'Esc', label: 'Soltar la selección, los objetivos y la medición' },
@@ -54,6 +58,22 @@ export function Shortcuts({ campaignId, isGm, meId }: { campaignId: string; isGm
 
       if (key === '?') return setHelp();
       if (key === 'Escape') return setHelp(false);
+
+      // Pestañas de la barra lateral: Mayús + número (se mira la tecla física, no el símbolo que escribe).
+      const digit = e.shiftKey ? /^Digit([1-9])$/.exec(e.code) : null;
+      if (digit) {
+        const tab = sidebarTabs(isGm)[Number(digit[1]) - 1];
+        if (!tab) return;
+        e.preventDefault();
+        useLayout.getState().setTab(tab.id);
+        useLayout.getState().toggleSide(false);
+        return;
+      }
+      if (key === 'b') {
+        e.preventDefault();
+        useLayout.getState().toggleSide();
+        return;
+      }
 
       const tools: Record<string, () => void> = {
         v: () => board.setTool('select'),
