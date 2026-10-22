@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { BoardItem, BoardLayer, DrawingType, Fog, Measure, MeasureShape, PointerAuthor, Scene, SceneState, Wall, WallKind } from '@vtt/shared';
+import type { BoardItem, BoardLayer, DrawingType, Fog, LightSource, Measure, MeasureShape, PointerAuthor, Scene, SceneState, Wall, WallKind } from '@vtt/shared';
 
 export type Tool = 'select' | 'measure' | 'ping' | 'draw' | 'walls' | 'map' | 'fog-reveal' | 'fog-hide';
 
@@ -31,6 +31,8 @@ export interface Ping extends PointerAuthor {
 interface BoardState {
   scene: Scene | null;
   items: Record<string, BoardItem>;
+  /** Escena a oscuras: luces que ve el jugador (las manda el servidor ya filtradas). */
+  lights: LightSource[];
   selectedId: string | null;
   /** Tokens marcados como objetivo (solo en este navegador): a ellos van los ataques y hechizos. */
   targets: string[];
@@ -94,6 +96,7 @@ const PING_MS = 2000;
 export const useBoard = create<BoardState>((set) => ({
   scene: null,
   items: {},
+  lights: [],
   selectedId: null,
   targets: [],
   tool: 'select',
@@ -111,16 +114,17 @@ export const useBoard = create<BoardState>((set) => ({
   previewVision: false,
   notice: null,
 
-  load: ({ scene, items }) =>
+  load: ({ scene, items, lights }) =>
     set((s) => ({
       ...(s.scene?.id !== scene.id ? { remoteMeasures: {}, myMeasure: null, pings: [], targets: [] } : {}),
       scene,
       items: Object.fromEntries(items.map((i) => [i.id, i])),
+      lights: lights ?? [],
       moving: {},
       selectedId: items.some((i) => i.id === s.selectedId) ? s.selectedId : null,
       targets: s.targets.filter((id) => items.some((i) => i.id === id)),
     })),
-  clear: () => set({ scene: null, items: {}, selectedId: null, targets: [], moving: {}, remoteMeasures: {}, myMeasure: null, pings: [] }),
+  clear: () => set({ scene: null, items: {}, lights: [], selectedId: null, targets: [], moving: {}, remoteMeasures: {}, myMeasure: null, pings: [] }),
   setScene: (scene) => set((s) => (s.scene?.id === scene.id ? { scene } : {})),
   setFog: (fog) => set((s) => (s.scene ? { scene: { ...s.scene, fog } } : {})),
   setExplored: (explored) => set((s) => (s.scene ? { scene: { ...s.scene, explored } } : {})),

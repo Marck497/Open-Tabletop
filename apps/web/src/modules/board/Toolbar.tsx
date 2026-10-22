@@ -227,6 +227,10 @@ export function Toolbar({ campaignId, isGm }: { campaignId: string; isGm: boolea
                 Olvidar
               </button>
             )}
+            <label className="switch" title="La escena está a oscuras: los jugadores solo ven lo que alumbran las luces (antorchas, lámparas...) o su visión en la oscuridad">
+              <input type="checkbox" checked={scene.lighting} onChange={(e) => saveScene({ lighting: e.target.checked })} />
+              🌙 A oscuras
+            </label>
             <label className="switch" title="Oscurece el tablero como lo ven los jugadores (con todos sus tokens)">
               <input type="checkbox" checked={previewVision} onChange={(e) => setPreviewVision(e.target.checked)} />
               Ver como jugadores

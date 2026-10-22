@@ -1,7 +1,7 @@
 import { campaignRoom, sceneRoom, type BoardItem, type CampaignRole, type Scene, type ServerToClientEvents } from '@vtt/shared';
 import type { AppContext, IoSocket } from '../../core/module.js';
 import { createCampaignService } from '../campaigns/service.js';
-import { canSeeItem, eyesOf, forViewer, isEye } from './visibility.js';
+import { canSeeItem, forViewer, isEye, sightOf, type Sight } from './visibility.js';
 import type { BoardService } from './service.js';
 
 /**
@@ -27,9 +27,9 @@ export function createBoardBroadcaster(ctx: AppContext, board: BoardService) {
   function eyesFor(scene: Scene) {
     if (!scene.vision) return () => undefined;
     const items = board.itemsOf(scene.id).items;
-    const cache = new Map<string, ReturnType<typeof eyesOf>>();
+    const cache = new Map<string, Sight | undefined>();
     return (userId: string) => {
-      if (!cache.has(userId)) cache.set(userId, eyesOf(items, userId));
+      if (!cache.has(userId)) cache.set(userId, sightOf(items, scene, 'player', userId));
       return cache.get(userId);
     };
   }
@@ -37,10 +37,12 @@ export function createBoardBroadcaster(ctx: AppContext, board: BoardService) {
   async function itemChanged(scene: Scene, before: BoardItem | null, after: BoardItem | null) {
     const eyes = eyesFor(scene);
     const movesEye = (i: BoardItem | null, userId: string) => !!i && isEye(i) && i.ownerIds.includes(userId);
+    // A oscuras, si una luz se mueve, se enciende o se apaga, cambia lo que ven todos.
+    const movesLight = scene.vision && scene.lighting && (!!before?.light || !!after?.light);
     const withStats = board.statsFor(scene.campaignId);
     for (const { socket, userId, role } of await socketsWithRole(scene)) {
       // Si se mueve (o aparece, o se va) uno de sus tokens, cambia todo lo que ve: se le manda la escena entera.
-      if (scene.vision && role !== 'gm' && (movesEye(before, userId) || movesEye(after, userId))) {
+      if (scene.vision && role !== 'gm' && (movesLight || movesEye(before, userId) || movesEye(after, userId))) {
         socket.emit('scene:sync', board.stateFor(scene, { userId, role }));
         continue;
       }

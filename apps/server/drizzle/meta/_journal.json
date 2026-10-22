@@ -120,6 +120,13 @@
       "when": 1792667040719,
       "tag": "0016_explored",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "6",
+      "when": 1792667834814,
+      "tag": "0017_lights",
+      "breakpoints": true
     }
   ]
 }

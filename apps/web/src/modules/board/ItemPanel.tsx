@@ -1,5 +1,20 @@
 import { useEffect, useState } from 'react';
-import { acViewOf, AC_VIEWS, BOARD_LAYERS, hpViewOf, HP_VIEWS, HP_VIEW_LABELS, type AcView, type BoardLayer, type CampaignMember, type HpView } from '@vtt/shared';
+import {
+  acViewOf,
+  AC_VIEWS,
+  BOARD_LAYERS,
+  DARKVISION_PRESETS,
+  hpViewOf,
+  HP_VIEWS,
+  HP_VIEW_LABELS,
+  LIGHT_PRESETS,
+  type AcView,
+  type BoardItem,
+  type BoardLayer,
+  type CampaignMember,
+  type HpView,
+  type Scene,
+} from '@vtt/shared';
 import { emitAck } from '../../core/socket';
 import { updateSelected } from './actions';
 import { AssetPicker } from './AssetPicker';
@@ -96,6 +111,8 @@ export function ItemPanel({ campaignId, members }: { campaignId: string; members
       )}
 
       {item.characterId && !item.drawing && <StatsVisibility />}
+
+      {!item.drawing && <LightPanel item={item} scene={scene} />}
 
       {item.layer !== 'map' && !item.drawing && <AiPanel item={item} hasSheet={!!item.characterId} />}
 
@@ -198,6 +215,65 @@ function StatsVisibility() {
         <button className="ghost small" onClick={applyToEnemies} title="Copia estas dos opciones a los demás tokens con hoja y sin dueño de esta escena">
           Aplicar a los {enemies.length} enemigos de la escena
         </button>
+      )}
+    </fieldset>
+  );
+}
+
+/** Luz que da el elemento y su visión en la oscuridad (cuentan con la escena a oscuras). */
+function LightPanel({ item, scene }: { item: BoardItem; scene: Scene }) {
+  const unit = scene.distanceUnit || 'pies';
+  const preset = item.light ? LIGHT_PRESETS.find((p) => p.light.bright === item.light!.bright && p.light.dim === item.light!.dim) : undefined;
+  const num = (v: string) => Math.max(0, Math.min(1000, Number(v) || 0));
+  return (
+    <fieldset className="owners">
+      <legend>Luz y visión{!scene.lighting && ' (activa «🌙 A oscuras» en la escena)'}</legend>
+      <label>
+        Luz
+        <select
+          value={item.light ? (preset?.label ?? 'custom') : ''}
+          onChange={(e) => {
+            const p = LIGHT_PRESETS.find((x) => x.label === e.target.value);
+            if (!e.target.value) void updateSelected({ light: null });
+            else if (p) void updateSelected({ light: p.light });
+            else void updateSelected({ light: item.light ?? { bright: 10, dim: 10, color: '#ffb74d' } });
+          }}
+        >
+          <option value="">Ninguna</option>
+          {LIGHT_PRESETS.map((p) => (
+            <option key={p.label} value={p.label}>
+              {p.label} ({p.light.bright}/{p.light.dim})
+            </option>
+          ))}
+          <option value="custom">Personalizada</option>
+        </select>
+      </label>
+      {item.light && (
+        <div className="field-row">
+          <label>
+            Brillante ({unit})
+            <input type="number" min={0} step={5} value={item.light.bright} onChange={(e) => void updateSelected({ light: { ...item.light!, bright: num(e.target.value) } })} />
+          </label>
+          <label>
+            Tenue, además ({unit})
+            <input type="number" min={0} step={5} value={item.light.dim} onChange={(e) => void updateSelected({ light: { ...item.light!, dim: num(e.target.value) } })} />
+          </label>
+          <label>
+            Color
+            <input type="color" value={item.light.color} onChange={(e) => void updateSelected({ light: { ...item.light!, color: e.target.value } })} />
+          </label>
+        </div>
+      )}
+      {item.layer === 'token' && (
+        <label>
+          Visión en la oscuridad ({unit})
+          <input type="number" min={0} step={5} list="darkvision-presets" value={item.darkvision} onChange={(e) => void updateSelected({ darkvision: num(e.target.value) })} />
+          <datalist id="darkvision-presets">
+            {DARKVISION_PRESETS.map((d) => (
+              <option key={d} value={d} />
+            ))}
+          </datalist>
+        </label>
       )}
     </fieldset>
   );

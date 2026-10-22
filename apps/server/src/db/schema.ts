@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm';
 import { index, integer, primaryKey, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
-import type { AiSettings, BoardLayer, Drawing, HomebrewData, JukeboxTrack, ChatRoll, TokenAi, Fog, InitiativeEntry, SheetTemplate, SheetValues, Wall } from '@vtt/shared';
+import type { AiSettings, BoardLayer, Drawing, HomebrewData, JukeboxTrack, ChatRoll, TokenAi, Fog, InitiativeEntry, Light, SheetTemplate, SheetValues, Wall } from '@vtt/shared';
 
 const timestamps = {
   createdAt: text('created_at').notNull().default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ','now'))`),
@@ -103,6 +103,7 @@ export const scenes = sqliteTable(
     visionRange: integer('vision_range').notNull().default(0),
     exploration: integer('exploration', { mode: 'boolean' }).notNull().default(true),
     explored: text('explored').notNull().default(''),
+    lighting: integer('lighting', { mode: 'boolean' }).notNull().default(false),
     ...timestamps,
   },
   (t) => [index('scenes_campaign_idx').on(t.campaignId)],
@@ -149,6 +150,8 @@ export const boardItems = sqliteTable(
     hpView: text('hp_view', { enum: ['gm', 'bar', 'numbers'] }),
     acView: text('ac_view', { enum: ['gm', 'all'] }),
     drawing: text('drawing', { mode: 'json' }).$type<Drawing>(),
+    light: text('light', { mode: 'json' }).$type<Light>(),
+    darkvision: real('darkvision').notNull().default(0),
     ...timestamps,
   },
   (t) => [index('board_items_scene_idx').on(t.sceneId)],

@@ -7,6 +7,7 @@ export * from './schemas/measure.js';
 export * from './schemas/walls.js';
 export * from './schemas/terrain.js';
 export * from './schemas/explored.js';
+export * from './schemas/lights.js';
 export * from './schemas/ai.js';
 export * from './schemas/journal.js';
 export * from './schemas/macro.js';
