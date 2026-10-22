@@ -6,6 +6,7 @@ import { addImageItem, addItem } from './actions';
 import { AssetPicker } from './AssetPicker';
 import { saveWalls } from './Walls';
 import { LAYER_LABELS, useBoard, type Tool } from './store';
+import { useShortcutHelp } from '../shortcuts/Shortcuts';
 
 const MEASURE_ICONS: Record<MeasureShape, string> = { ruler: '📏', circle: '◯', cone: '◺', line: '━', square: '▢' };
 const MEASURE_HINTS: Record<MeasureShape, string> = {
@@ -73,6 +74,9 @@ export function Toolbar({ campaignId, isGm }: { campaignId: string; isGm: boolea
         onClick={() => setTool('ping')}
       >
         📍
+      </button>
+      <button className="small ghost" title="Atajos de teclado (?)" aria-label="Atajos de teclado" onClick={() => useShortcutHelp.getState().toggle()}>
+        ⌨
       </button>
     </div>
   );

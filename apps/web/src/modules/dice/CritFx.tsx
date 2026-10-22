@@ -14,24 +14,26 @@ interface FxSettings {
   sound: boolean;
   /** Animaciones de ataques y hechizos sobre el tablero. */
   board: boolean;
-  set: (patch: Partial<Pick<FxSettings, 'enabled' | 'sound' | 'board'>>) => void;
+  /** Dados 3D que ruedan en una bandeja con cada tirada. */
+  dice3d: boolean;
+  set: (patch: Partial<Pick<FxSettings, 'enabled' | 'sound' | 'board' | 'dice3d'>>) => void;
 }
 
 function readFx() {
   try {
     const v = JSON.parse(localStorage.getItem(FX_KEY) ?? 'null');
-    if (v && typeof v.enabled === 'boolean') return { enabled: v.enabled, sound: !!v.sound, board: v.board !== false };
+    if (v && typeof v.enabled === 'boolean') return { enabled: v.enabled, sound: !!v.sound, board: v.board !== false, dice3d: v.dice3d !== false };
   } catch {
     /* sin almacenamiento */
   }
-  return { enabled: true, sound: true, board: true };
+  return { enabled: true, sound: true, board: true, dice3d: true };
 }
 
 export const useFx = create<FxSettings>((set) => ({
   ...readFx(),
   set: (patch) =>
     set((s) => {
-      const next = { enabled: patch.enabled ?? s.enabled, sound: patch.sound ?? s.sound, board: patch.board ?? s.board };
+      const next = { enabled: patch.enabled ?? s.enabled, sound: patch.sound ?? s.sound, board: patch.board ?? s.board, dice3d: patch.dice3d ?? s.dice3d };
       try {
         localStorage.setItem(FX_KEY, JSON.stringify(next));
       } catch {
@@ -98,7 +100,11 @@ export function CritFx({ campaignId }: { campaignId: string }) {
       if (m.campaignId !== campaignId || m.kind !== 'roll' || !useFx.getState().enabled) return;
       const kind = naturalOutcome(m.roll);
       if (!kind) return;
+      // Con los dados 3D, primero se ve caer el dado y luego llega la animación.
       clearTimeout(timer);
+      timer = setTimeout(() => show(m, kind), useFx.getState().dice3d ? 1000 : 0);
+    };
+    const show = (m: ChatMessage, kind: 'crit' | 'fumble') => {
       setShown({ id: m.id, kind, who: m.characterName ?? m.userName, label: m.roll?.label || m.roll?.expression || '', total: m.roll?.total ?? 0 });
       if (useFx.getState().sound) playSound(kind);
       // La pifia sacude la pantalla.
@@ -162,7 +168,7 @@ export function CritFx({ campaignId }: { campaignId: string }) {
 
 /** Opciones de los efectos en este dispositivo (pestaña Mesa). */
 export function FxPanel() {
-  const { enabled, sound, board, set } = useFx();
+  const { enabled, sound, board, dice3d, set } = useFx();
   return (
     <div className="panel">
       <h3>Efectos</h3>
@@ -179,6 +185,10 @@ export function FxPanel() {
       <label className="switch">
         <input type="checkbox" checked={board} onChange={(e) => set({ board: e.target.checked })} />
         Animaciones de ataques y hechizos en el tablero
+      </label>
+      <label className="switch">
+        <input type="checkbox" checked={dice3d} onChange={(e) => set({ dice3d: e.target.checked })} />
+        Dados 3D al tirar
       </label>
       <p className="muted hint">Para apuntar: Alt+clic en un token (o clic en uno que no sea tuyo) antes de atacar. </p>
       <p className="muted hint">Solo en este dispositivo: cada jugador lo elige.</p>

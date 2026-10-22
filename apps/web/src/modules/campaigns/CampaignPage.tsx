@@ -13,6 +13,8 @@ import { useBoard } from '../board/store';
 import { useSceneSync } from '../board/useSceneSync';
 import { ChatPanel } from '../chat/ChatPanel';
 import { RollToasts } from '../dice/RollToasts';
+import { DiceTray } from '../dice3d/DiceTray';
+import { Shortcuts } from '../shortcuts/Shortcuts';
 import { CritFx, FxPanel } from '../dice/CritFx';
 import { InitiativeAnnounce, InitiativeTracker, TurnBanner } from '../initiative/InitiativeTracker';
 import { useInitiativeSync } from '../initiative/useInitiativeSync';
@@ -162,6 +164,8 @@ export function CampaignPage() {
             ) : null,
           )}
         {activeTab !== 'chat' && <RollToasts campaignId={campaign.id} />}
+        <DiceTray campaignId={campaign.id} />
+        <Shortcuts campaignId={campaign.id} isGm={isGm} meId={me.id} />
         <CritFx campaignId={campaign.id} />
       </section>
       <aside className="table-side">

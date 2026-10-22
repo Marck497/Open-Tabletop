@@ -32,7 +32,7 @@ export const GM_TOUR: TourStep[] = [
   {
     target: 'tools',
     title: 'Herramientas',
-    body: '✋ selecciona y mueve. 📏 ◯ ◺ ━ ▢ miden distancias y áreas de hechizos. ✏️ dibuja, y 📍 señala un punto (con Mayús, centra la vista de todos ahí).',
+    body: '✋ selecciona y mueve. 📏 ◯ ◺ ━ ▢ miden distancias y áreas de hechizos. ✏️ dibuja, y 📍 señala un punto (con Mayús, centra la vista de todos ahí). ⌨ (o la tecla ?) enseña los atajos de teclado.',
   },
   {
     target: 'layers',
@@ -119,7 +119,7 @@ export const PLAYER_TOUR: TourStep[] = [
   {
     target: 'tools',
     title: 'Herramientas',
-    body: '✋ selecciona y mueve. 📏 ◯ ◺ ━ ▢ miden distancias y áreas de hechizos. ✏️ dibuja y 📍 hace un ping.',
+    body: '✋ selecciona y mueve. 📏 ◯ ◺ ━ ▢ miden distancias y áreas de hechizos. ✏️ dibuja y 📍 hace un ping. ⌨ (o la tecla ?) enseña los atajos de teclado, como mover tu token con las flechas.',
   },
   {
     target: 'characters',
