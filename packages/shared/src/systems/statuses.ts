@@ -17,7 +17,7 @@ export const DND5E_STATUSES: StatusDef[] = [
   { id: 'paralizado', label: 'Paralizado', icon: '🧊', incapacitated: true, kind: 'debuff' },
   { id: 'petrificado', label: 'Petrificado', icon: '🗿', incapacitated: true, kind: 'debuff', resist: 'todo' },
   { id: 'agotamiento', label: 'Agotamiento', icon: '😩', incapacitated: false, kind: 'debuff' },
-  { id: 'concentracion', label: 'Concentración', icon: '🎯', incapacitated: false },
+  { id: 'concentracion', label: 'Concentración', icon: '🎯', incapacitated: false, concentration: 'con' },
   { id: 'bendecido', label: 'Bendecido', icon: '✨', incapacitated: false, kind: 'buff' },
   { id: 'acelerado', label: 'Acelerado', icon: '⚡', incapacitated: false, kind: 'buff' },
   { id: 'inspirado', label: 'Inspiración bárdica', icon: '🎵', incapacitated: false, kind: 'buff' },

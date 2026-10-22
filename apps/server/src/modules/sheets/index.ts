@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { campaignRoom, type Character } from '@vtt/shared';
+import { campaignRoom, hpPoolOf, type Character } from '@vtt/shared';
 import type { AppContext, ServerModule } from '../../core/module.js';
 import { requireUser } from '../auth/index.js';
 import { createCampaignService } from '../campaigns/service.js';
@@ -12,6 +12,13 @@ const characterParams = z.object({ characterId: z.string() });
 export async function broadcastCharacter(ctx: AppContext, before: Character | null, after: Character | null) {
   const c = (after ?? before)!;
   ctx.events.emit('character:changed', { campaignId: c.campaignId, characterId: c.id });
+  // Si ha perdido vida (por cualquier camino: 🎯 Aplicar, la IA o a mano en la hoja), se avisa (p. ej. a la concentración).
+  if (before && after) {
+    const template = createSheetService(ctx).getTemplate(c.campaignId);
+    const was = hpPoolOf(template, before.values);
+    const now = hpPoolOf(template, after.values);
+    if (was && now && now.pool < was.pool) ctx.events.emit('character:damaged', { campaignId: c.campaignId, characterId: c.id, damage: was.pool - now.pool, hp: now.hp });
+  }
   if (!ctx.io) return;
   const campaigns = createCampaignService(ctx);
   for (const s of await ctx.io.in(campaignRoom(c.campaignId)).fetchSockets()) {

@@ -34,6 +34,7 @@ export function statusesOf(template: SheetTemplate | null): StatusDef[] {
     ...d,
     ...(d.kind ? {} : { kind: KNOWN.get(d.id)?.kind }),
     ...(d.resist === undefined && KNOWN.get(d.id)?.resist ? { resist: KNOWN.get(d.id)!.resist } : {}),
+    ...(d.concentration === undefined && KNOWN.get(d.id)?.concentration ? { concentration: KNOWN.get(d.id)!.concentration } : {}),
   }));
 }
 

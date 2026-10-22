@@ -110,3 +110,16 @@ export function traitDefenses(traits: string, known: string[]): Defenses {
   }
   return out;
 }
+
+/** CD de la salvación de concentración al recibir daño (5e: 10 o la mitad del daño, lo que sea mayor). */
+export const concentrationDc = (damage: number) => Math.max(10, Math.floor(damage / 2));
+
+/** Puntos de golpe más los temporales de una hoja (para saber cuánto daño ha recibido entre dos versiones). */
+export function hpPoolOf(template: SheetTemplate, values: SheetValues): { hp: number; pool: number } | null {
+  const combat = combatOf(template);
+  const keys = new Set(allFields(template).map((f) => f.key));
+  if (!combat?.hp || !keys.has(combat.hp)) return null;
+  const n = (k: string | undefined) => (k && keys.has(k) ? Number(values[k]) || 0 : 0);
+  const hp = n(combat.hp);
+  return { hp, pool: hp + n(combat.hpTemp) };
+}

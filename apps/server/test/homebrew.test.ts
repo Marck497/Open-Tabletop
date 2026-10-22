@@ -19,6 +19,8 @@ const ok = <T>(r: AckResult<T>): T => {
 };
 const G = 70;
 
+const tick = () => new Promise((r) => setTimeout(r, 100));
+
 async function setup() {
   server = await listenWithRealtime();
   const { app } = server;
@@ -118,6 +120,40 @@ describe('creaciones (hechizos, ataques y objetos)', () => {
     expect(applied.text).toContain(`Roca: ${dmg} de daño (sin hoja), derribado`);
     const after = ok(await call<SceneState>(gmC, 'scene:view', { sceneId: gobTok.sceneId }));
     expect(after.items.find((i) => i.id === gobTok.id)?.statuses).toEqual(['derribado']);
+  });
+
+  it('concentración: al recibir daño se tira la salvación y, si falla, se pierde', async () => {
+    const { gm, gmC, req, newCharacter, sheet, createEntry, token } = await setup();
+    const hit = await createEntry(gm.cookie, { kind: 'attack', name: 'Golpe', data: { damage: [{ dice: '4', type: 'contundente' }] } });
+    const bigHit = await createEntry(gm.cookie, { kind: 'attack', name: 'Golpazo', data: { damage: [{ dice: '100', type: 'contundente' }] } });
+    const user = await newCharacter('Usuario', {});
+    const tough = await newCharacter('Clériga', { con: 30, pg_max: 500, pg_actuales: 500 });
+    const frail = await newCharacter('Mago', { con: 1, pg_max: 500, pg_actuales: 500 });
+    const toughTok = await token({ x: 0, y: 0, characterId: tough.id, statuses: ['concentracion'] });
+    const frailTok = await token({ x: G, y: 0, characterId: frail.id, statuses: ['concentracion'] });
+    const use = (entryId: string) => call<ChatMessage>(gmC, 'sheet:action', { characterId: user.id, action: { kind: 'homebrew', entryId } }).then(ok);
+    const messages: ChatMessage[] = [];
+    gmC.on('chat:message', (m) => messages.push(m));
+    const statusesOf = async (id: string) => ok(await call<SceneState>(gmC, 'scene:view', { sceneId: toughTok.sceneId })).items.find((i) => i.id === id)!.statuses;
+
+    // 4 de daño: CD 10, la clériga (+10) siempre salva.
+    ok(await call(gmC, 'effect:apply', { messageId: (await use(hit.id)).id, itemIds: [toughTok.id] }));
+    await tick();
+    expect(messages.find((m) => m.roll?.label.startsWith('🎯 Clériga mantiene la concentración'))?.roll?.label).toMatch(/salvación de constitución \(cd 10\) ✔ salva/);
+    expect(await statusesOf(toughTok.id)).toContain('concentracion');
+
+    // 100 de daño: CD 50, el mago la pierde.
+    ok(await call(gmC, 'effect:apply', { messageId: (await use(bigHit.id)).id, itemIds: [frailTok.id] }));
+    await tick();
+    expect(messages.some((m) => m.roll?.label.startsWith('🎯 Mago pierde la concentración: salvación de constitución (cd 50) ✘ falla'))).toBe(true);
+    expect(await statusesOf(frailTok.id)).not.toContain('concentracion');
+
+    // También al bajar la vida a mano en la hoja; a 0 PG se pierde sin tirar.
+    await req(gm.cookie, 'PATCH', `/characters/${tough.id}`, { values: { pg_actuales: 0 } });
+    await tick();
+    expect(messages.some((m) => m.roll?.label === '🎯 Clériga cae a 0 PG y pierde la concentración')).toBe(true);
+    expect(await statusesOf(toughTok.id)).not.toContain('concentracion');
+    expect((await sheet(tough.id)).values.pg_actuales).toBe(0);
   });
 
   it('🎯 Aplicar respeta resistencias, inmunidades y vulnerabilidades (de la hoja y de los estados)', async () => {

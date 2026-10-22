@@ -15,6 +15,8 @@ export interface DomainEvents {
   /** Ha empezado el turno de alguien (al empezar el combate o al pasar turno). */
   /** Ha cambiado una hoja (o la plantilla entera, con characterId null): el tablero reenvía la vida de sus tokens. */
   'character:changed': [{ campaignId: string; characterId: string | null }];
+  /** Una hoja ha perdido PG (o PG temporales): `damage` es cuánto, y `hp` los PG que le quedan. */
+  'character:damaged': [{ campaignId: string; characterId: string; damage: number; hp: number }];
   'initiative:turnStarted': [{ campaignId: string; userId: string; state: InitiativeState }];
 }
 
