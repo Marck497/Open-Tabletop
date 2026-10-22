@@ -113,6 +113,8 @@ export function ItemPanel({ campaignId, members }: { campaignId: string; members
 
       {item.characterId && !item.drawing && <StatsVisibility />}
 
+      <GmNotes item={item} />
+
       {!item.drawing && <LightPanel item={item} scene={scene} />}
 
       {item.layer !== 'map' && !item.drawing && <AiPanel item={item} hasSheet={!!item.characterId} />}
@@ -277,5 +279,28 @@ function LightPanel({ item, scene }: { item: BoardItem; scene: Scene }) {
         </label>
       )}
     </fieldset>
+  );
+}
+
+/** Notas privadas del DM sobre el elemento (PNJ, trampas, secretos). Se guardan al salir del cuadro. */
+function GmNotes({ item }: { item: BoardItem }) {
+  const [text, setText] = useState(item.gmNotes);
+  useEffect(() => setText(item.gmNotes), [item.id, item.gmNotes]);
+  return (
+    <label>
+      📝 Notas del DM (los jugadores no las ven)
+      <textarea
+        rows={text ? Math.min(10, text.split('\n').length + 1) : 2}
+        maxLength={5000}
+        value={text}
+        placeholder="Quién es, qué sabe, qué lleva encima, qué pasa si…"
+        onChange={(e) => setText(e.target.value)}
+        onBlur={() => {
+          const scene = useBoard.getState().scene;
+          // Con el id del elemento: al cambiar de selección, el cuadro pierde el foco después.
+          if (scene && text !== item.gmNotes) void updateItem(scene.id, item.id, { gmNotes: text });
+        }}
+      />
+    </label>
   );
 }
