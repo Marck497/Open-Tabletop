@@ -1,0 +1,1 @@
+ALTER TABLE `scenes` ADD `terrain` text DEFAULT '' NOT NULL;

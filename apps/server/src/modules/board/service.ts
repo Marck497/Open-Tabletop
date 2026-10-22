@@ -11,6 +11,8 @@ import {
   hasLineOfSight,
   isDoor,
   wallsSchema,
+  terrainSchema,
+  resizeTerrain,
   type BoardItem,
   type CampaignRole,
   type CreateItemInput,
@@ -95,9 +97,13 @@ export function createBoardService(ctx: AppContext) {
   }
 
   function updateScene(sceneId: string, userId: string, input: UpdateSceneInput): Scene {
-    requireGmScene(sceneId, userId);
+    const before = requireGmScene(sceneId, userId);
     const data = updateSceneSchema.parse(input);
-    if (Object.keys(data).length) db.update(scenes).set(data).where(eq(scenes.id, sceneId)).run();
+    const w = data.widthCells ?? before.widthCells;
+    const h = data.heightCells ?? before.heightCells;
+    // Si cambia el tamaño, el suelo pintado se recorta o se amplía con vacío.
+    const terrain = before.terrain && (w !== before.widthCells || h !== before.heightCells) ? { terrain: resizeTerrain(before.terrain, before.widthCells, before.heightCells, w, h) } : {};
+    if (Object.keys(data).length) db.update(scenes).set({ ...data, ...terrain }).where(eq(scenes.id, sceneId)).run();
     return toScene(sceneRow(sceneId));
   }
 
@@ -275,6 +281,21 @@ export function createBoardService(ctx: AppContext) {
     return toScene(sceneRow(sceneId));
   }
 
+  /** Suelo pintado; con `walls`, también las paredes (para que cambien a la vez). */
+  function setTerrain(sceneId: string, userId: string, input: string, wallsInput?: WallInput[]): Scene {
+    const scene = requireGmScene(sceneId, userId);
+    const terrain = terrainSchema.parse(input);
+    if (terrain && terrain.length !== scene.widthCells * scene.heightCells) throw badRequest('El terreno no encaja con el tamaño de la escena');
+    const walls = wallsInput === undefined ? undefined : wallsSchema.parse(wallsInput);
+    if (walls && new Set(walls.map((w) => w.id)).size !== walls.length) throw badRequest('Paredes repetidas');
+    // Sin nada pintado se guarda vacío.
+    db.update(scenes)
+      .set({ terrain: /[^.]/.test(terrain) ? terrain : '', ...(walls ? { walls } : {}) })
+      .where(eq(scenes.id, sceneId))
+      .run();
+    return toScene(sceneRow(sceneId));
+  }
+
   /** Abrir/cerrar una puerta (y, el DM, echarle la llave). Los jugadores necesitan verla. */
   function toggleDoor(sceneId: string, userId: string, wallId: string, patch: { open?: boolean; locked?: boolean }): Scene {
     const { scene, viewer } = access(sceneId, userId);
@@ -316,6 +337,7 @@ export function createBoardService(ctx: AppContext) {
     setFog,
     addFogOp,
     setWalls,
+    setTerrain,
     toggleDoor,
   };
 }

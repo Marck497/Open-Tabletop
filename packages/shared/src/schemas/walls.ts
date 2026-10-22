@@ -38,6 +38,8 @@ export const wallSchema = z.object({
   open: z.boolean().default(false),
   /** Puertas: con llave, los jugadores no pueden abrirla. */
   locked: z.boolean().default(false),
+  /** Generada sola a partir del suelo pintado (se rehace al repintar). */
+  auto: z.boolean().optional(),
 });
 export type Wall = z.infer<typeof wallSchema>;
 export type WallInput = z.input<typeof wallSchema>;

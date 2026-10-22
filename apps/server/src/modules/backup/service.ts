@@ -155,7 +155,8 @@ export function createBackupService(ctx: AppContext) {
         tx.delete(scenes).where(eq(scenes.campaignId, campaignId)).run();
       }
       for (const { id, ...s } of backup.scenes) {
-        tx.insert(scenes).values({ ...s, id: fresh(id), campaignId }).run();
+        const fits = s.terrain.length === (s.widthCells ?? 30) * (s.heightCells ?? 20);
+        tx.insert(scenes).values({ ...s, terrain: fits ? s.terrain : '', id: fresh(id), campaignId }).run();
         summary.scenes++;
       }
       for (const { id, ...ch } of backup.characters) {

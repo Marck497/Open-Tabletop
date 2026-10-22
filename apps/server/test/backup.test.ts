@@ -51,6 +51,7 @@ describe('copias de seguridad', () => {
     ok(await call(gmC, 'scene:view', { sceneId }));
     const token = ok(await call<BoardItem>(gmC, 'item:create', { sceneId, item: { layer: 'token', x: 70, y: 70, width: 70, height: 70, characterId: character.id, assetId: asset.id, ownerIds: [pl.user.id] } }));
     ok(await call(gmC, 'walls:set', { sceneId, walls: [{ id: 'w1', x1: 0, y1: 0, x2: 140, y2: 0, kind: 'door', locked: true }] }));
+    ok(await call(gmC, 'terrain:set', { sceneId, terrain: 'w'.repeat(600) }));
     await req(gm.cookie, 'POST', `/campaigns/${campaign.id}/handouts`, { title: 'Mapa del tesoro', body: 'Bajo el **roble**', imageAssetId: asset.id, gmNotes: 'Es falso' });
     await req(gm.cookie, 'POST', `/campaigns/${campaign.id}/macros`, { name: 'Ataque', command: '/r 1d20+5', characterId: character.id });
     await req(pl.cookie, 'POST', `/campaigns/${campaign.id}/macros`, { name: 'Privada', command: '/r 1d4' });
@@ -78,7 +79,7 @@ describe('copias de seguridad', () => {
 
     const { scenes, activeSceneId } = (await req(other.cookie, 'GET', `/campaigns/${summary.campaignId}/scenes`)).json();
     expect(scenes).toHaveLength(1);
-    expect(scenes[0]).toMatchObject({ name: 'Cueva', vision: true, walls: [{ id: 'w1', kind: 'door', locked: true }] });
+    expect(scenes[0]).toMatchObject({ name: 'Cueva', vision: true, walls: [{ id: 'w1', kind: 'door', locked: true }], terrain: 'w'.repeat(600) });
     expect(activeSceneId).toBe(scenes[0].id);
 
     const oC: Client = connect(server.url, { transports: ['websocket'], extraHeaders: { cookie: other.cookie }, reconnection: false });
