@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { createItemSchema, fogSchema, sceneInputSchema } from './board.js';
+import { terrainSchema } from './terrain.js';
 import { updateCharacterSchema } from './character.js';
 import { handoutInputSchema } from './journal.js';
 import { macroInputSchema } from './macro.js';
@@ -38,6 +39,7 @@ export const backupSchema = z.object({
         sortOrder: z.number().int().default(0),
         fog: fogSchema.optional(),
         walls: wallsSchema.default([]),
+        terrain: terrainSchema.default(''),
       }),
     )
     .max(500)

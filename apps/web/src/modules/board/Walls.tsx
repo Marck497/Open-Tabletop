@@ -68,7 +68,7 @@ export function WallLines({ scene, scale, editing }: { scene: Scene; scale: numb
   const mode = useBoard((s) => s.wallMode);
   const onPick = (w: Wall) => {
     if (mode === 'erase') return void saveWalls(scene, scene.walls.filter((x) => x.id !== w.id));
-    if (w.kind !== mode) void saveWalls(scene, scene.walls.map((x) => (x.id === w.id ? { ...x, kind: mode, open: false, locked: false } : x)));
+    if (w.kind !== mode) void saveWalls(scene, scene.walls.map((x) => (x.id === w.id ? { ...x, kind: mode, open: false, locked: false, auto: false } : x)));
   };
   return (
     <Group opacity={editing ? 1 : 0.55} listening={editing}>

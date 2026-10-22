@@ -16,6 +16,20 @@ export function DrawingShape({ drawing, width, height }: { drawing: Drawing; wid
       return <Ellipse x={width / 2} y={height / 2} radiusX={width / 2} radiusY={height / 2} fill={fill || undefined} {...common} />;
     case 'text':
       return <Text text={drawing.text} fontSize={drawing.fontSize} fill={stroke} fontStyle="bold" shadowColor="#000" shadowBlur={4} shadowOpacity={0.9} />;
+    case 'stamp':
+      return (
+        <Text
+          text={drawing.text}
+          width={width}
+          height={height}
+          fontSize={Math.min(width, height) * 0.8}
+          align="center"
+          verticalAlign="middle"
+          shadowColor="#000"
+          shadowBlur={6}
+          shadowOpacity={0.6}
+        />
+      );
   }
 }
 

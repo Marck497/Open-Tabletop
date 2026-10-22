@@ -85,10 +85,12 @@ export interface Scene {
   sortOrder: number;
   fog: Fog;
   walls: Wall[];
+  /** Suelo pintado por casillas (ver terrain.ts); '' = sin pintar. */
+  terrain: string;
 }
 
-/** Dibujos sobre el tablero: trazos a mano alzada, líneas, rectángulos, elipses y textos. */
-export const DRAWING_TYPES = ['path', 'line', 'rect', 'ellipse', 'text'] as const;
+/** Dibujos sobre el tablero: trazos a mano alzada, líneas, rectángulos, elipses, textos y sellos (un emoji que ocupa su caja). */
+export const DRAWING_TYPES = ['path', 'line', 'rect', 'ellipse', 'text', 'stamp'] as const;
 export type DrawingType = (typeof DRAWING_TYPES)[number];
 
 export const drawingSchema = z.object({

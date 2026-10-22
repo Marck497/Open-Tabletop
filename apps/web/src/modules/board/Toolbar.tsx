@@ -114,6 +114,16 @@ export function Toolbar({ campaignId, isGm }: { campaignId: string; isGm: boolea
     <div className="toolbar">
       {tools}
       {drawTools}
+      <div className="tool-group">
+        <button
+          className={`small ${tool === 'map' ? 'active' : ''}`}
+          title="Editor de mapas: pinta suelos, crea salas con paredes, pon puertas y objetos o genera una mazmorra"
+          onClick={() => setTool(tool === 'map' ? 'select' : 'map')}
+        >
+          🗺️ Editor de mapas
+        </button>
+      </div>
+
       <div className="tool-group" role="group" aria-label="Capa">
         <span className="tool-label">Capa</span>
         {BOARD_LAYERS.map((l) => (

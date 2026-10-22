@@ -85,6 +85,13 @@
       "when": 1792627214773,
       "tag": "0011_walls_vision",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1792629520562,
+      "tag": "0012_terrain",
+      "breakpoints": true
     }
   ]
 }
