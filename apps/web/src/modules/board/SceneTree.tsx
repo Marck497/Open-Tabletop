@@ -316,7 +316,7 @@ export function SceneSwitcher(props: Omit<Props, 'scenes' | 'folders'> & { curre
   const [open, setOpen] = useState(false);
   const { scenes, folders } = useSceneList(props.campaignId);
   return (
-    <div className="scene-switcher">
+    <div className="scene-switcher" data-tour="scene-switcher">
       <button className={`small ${open ? 'active' : ''}`} onClick={() => setOpen(!open)} aria-expanded={open} title="Cambiar de escena o llevar a los jugadores">
         🗺 {props.current?.name ?? 'Escenas'} ▾
       </button>

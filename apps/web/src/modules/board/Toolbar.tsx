@@ -49,7 +49,7 @@ export function Toolbar({ campaignId, isGm }: { campaignId: string; isGm: boolea
   const saveScene = (patch: UpdateSceneInput) => void api.patch(`/scenes/${scene.id}`, patch).catch((e: Error) => useBoard.getState().showNotice(e.message));
 
   const tools = (
-    <div className="tool-group" role="group" aria-label="Herramientas">
+    <div className="tool-group" role="group" aria-label="Herramientas" data-tour="tools">
       <button className={`small ${tool === 'select' ? 'active' : ''}`} title="Seleccionar y mover (arrastra el fondo para desplazarte, rueda para zoom, doble clic para hacer ping)" onClick={() => setTool('select')}>
         ✋
       </button>
@@ -114,7 +114,7 @@ export function Toolbar({ campaignId, isGm }: { campaignId: string; isGm: boolea
     <div className="toolbar">
       {tools}
       {drawTools}
-      <div className="tool-group">
+      <div className="tool-group" data-tour="mapeditor">
         <button
           className={`small ${tool === 'map' ? 'active' : ''}`}
           title="Editor de mapas: pinta suelos, crea salas con paredes, pon puertas y objetos o genera una mazmorra"
@@ -124,7 +124,7 @@ export function Toolbar({ campaignId, isGm }: { campaignId: string; isGm: boolea
         </button>
       </div>
 
-      <div className="tool-group" role="group" aria-label="Capa">
+      <div className="tool-group" role="group" aria-label="Capa" data-tour="layers">
         <span className="tool-label">Capa</span>
         {BOARD_LAYERS.map((l) => (
           <button key={l} className={`small ${activeLayer === l ? 'active' : ''}`} onClick={() => setActiveLayer(l)}>
@@ -133,7 +133,7 @@ export function Toolbar({ campaignId, isGm }: { campaignId: string; isGm: boolea
         ))}
       </div>
 
-      <div className="tool-group">
+      <div className="tool-group" data-tour="add">
         <button className="small" onClick={() => void addItem({ layer: activeLayer, width: scene.gridSize, height: scene.gridSize, name: 'Token', showName: true })}>
           + Token
         </button>
@@ -142,7 +142,7 @@ export function Toolbar({ campaignId, isGm }: { campaignId: string; isGm: boolea
         </button>
       </div>
 
-      <div className="tool-group" role="group" aria-label="Niebla">
+      <div className="tool-group" role="group" aria-label="Niebla" data-tour="fog">
         <label className="switch">
           <input type="checkbox" checked={fog.enabled} onChange={(e) => setFog({ ...fog, enabled: e.target.checked })} />
           Niebla
@@ -165,7 +165,7 @@ export function Toolbar({ campaignId, isGm }: { campaignId: string; isGm: boolea
         )}
       </div>
 
-      <div className="tool-group" role="group" aria-label="Paredes y visión">
+      <div className="tool-group" role="group" aria-label="Paredes y visión" data-tour="vision">
         <button
           className={`small ${tool === 'walls' ? 'active' : ''}`}
           title="Paredes y puertas: arrastra para trazar (se ajusta a la cuadrícula; Alt, libre). Clic en una pared para cambiarle el tipo."

@@ -446,3 +446,13 @@ body.fx-shake .table-main { animation: fx-shake 0.6s cubic-bezier(.36,.07,.19,.9
 @media (max-width: 640px) {
   .hb-damage { flex-wrap: wrap; }
 }
+
+/* Recorrido guiado (/tutorial): no bloquea la mesa, solo la tarjeta recibe clics. */
+.tour { position: fixed; inset: 0; z-index: 1000; pointer-events: none; }
+.tour-dim { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.55); }
+.tour-spot {
+  position: fixed; border-radius: 10px; border: 2px solid var(--gold);
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55); transition: top 0.2s, left 0.2s, width 0.2s, height 0.2s;
+}
+.tour-card { position: fixed; pointer-events: auto; padding: 14px 16px; max-width: calc(100vw - 24px); box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5); }
+.tour-card p { margin: 8px 0 12px; line-height: 1.45; }
