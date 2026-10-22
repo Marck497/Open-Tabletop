@@ -41,7 +41,7 @@ export function createBackupService(ctx: AppContext) {
         .from(boardItems)
         .all()
         .filter((i) => sceneIds.has(i.sceneId))
-        .map(({ createdAt: _t, ...i }) => ({ ...i, ai: i.ai ?? null, drawing: i.drawing ?? null })),
+        .map(({ createdAt: _t, ...i }) => ({ ...i, ai: i.ai ?? null, drawing: i.drawing ?? null, light: i.light ?? null })),
       characters: db
         .select()
         .from(characters)

@@ -15,6 +15,9 @@ import {
   terrainSchema,
   resizeTerrain,
   exploreFrom,
+  eyeOf,
+  lightsOf,
+  lightsSeenBy,
   type BoardItem,
   type CampaignRole,
   type CreateItemInput,
@@ -34,7 +37,7 @@ import { badRequest, forbidden, notFound } from '../../core/errors.js';
 import { assets, boardItems, campaignMembers, campaigns, characters, sceneFolders, scenes } from '../../db/schema.js';
 import { createCampaignService } from '../campaigns/service.js';
 import { createStatsDecorator } from './stats.js';
-import { canSeeItem, eyesOf, forViewer, isEye, PLAYER_DRAWING_FIELDS, PLAYER_EDITABLE_FIELDS, sceneFor } from './visibility.js';
+import { canSeeItem, eyesOf, forViewer, isEye, PLAYER_DRAWING_FIELDS, PLAYER_EDITABLE_FIELDS, sceneFor, sightOf } from './visibility.js';
 
 type SceneRow = typeof scenes.$inferSelect;
 type ItemRow = typeof boardItems.$inferSelect;
@@ -174,10 +177,13 @@ export function createBoardService(ctx: AppContext) {
   function stateFor(scene: Scene, viewer: Viewer): SceneState {
     const items = allItems(scene.id);
     const withStats = statsFor(scene.campaignId);
-    const eyes = scene.vision && viewer.role !== 'gm' ? eyesOf(items, viewer.userId) : undefined;
+    const sight = sightOf(items, scene, viewer.role, viewer.userId);
+    const bounds = { width: scene.widthCells * scene.gridSize, height: scene.heightCells * scene.gridSize };
     return {
       scene: sceneFor(scene, viewer.role),
-      items: items.filter((i) => canSeeItem(i, scene, viewer.role, viewer.userId, eyes)).map((i) => withStats(forViewer(i, viewer.role), viewer.role, viewer.userId)),
+      items: items.filter((i) => canSeeItem(i, scene, viewer.role, viewer.userId, sight)).map((i) => withStats(forViewer(i, viewer.role), viewer.role, viewer.userId)),
+      // Solo las luces que alumbran algo que ve (no se delata una antorcha tras una pared).
+      ...(sight?.lights ? { lights: lightsSeenBy(sight.eyes, sight.lights, scene.walls, scene.visionRange * scene.gridSize, bounds) } : {}),
     };
   }
 
@@ -321,8 +327,8 @@ export function createBoardService(ctx: AppContext) {
   function explore(sceneId: string): Scene | null {
     const { scene, items } = itemsOf(sceneId);
     if (!scene.vision || !scene.exploration) return null;
-    const eyes = items.filter((i) => isEye(i) && i.ownerIds.length > 0).map((i) => ({ x: i.x + i.width / 2, y: i.y + i.height / 2 }));
-    const explored = exploreFrom(scene, scene.explored, eyes);
+    const eyes = items.filter((i) => isEye(i) && i.ownerIds.length > 0).map((i) => eyeOf(i, scene));
+    const explored = exploreFrom(scene, scene.explored, eyes, scene.lighting ? lightsOf(items, scene) : null);
     if (explored === null) return null;
     db.update(scenes).set({ explored }).where(eq(scenes.id, sceneId)).run();
     return { ...scene, explored };
@@ -378,7 +384,7 @@ export function createBoardService(ctx: AppContext) {
   function playerSeesWall(scene: Scene, wall: Wall, userId: string) {
     const mid = { x: (wall.x1 + wall.x2) / 2, y: (wall.y1 + wall.y2) / 2 };
     const range = scene.visionRange * scene.gridSize;
-    return eyesOf(allItems(scene.id), userId).some((e) => (!range || Math.hypot(e.x - mid.x, e.y - mid.y) <= range) && hasLineOfSight(e, mid, scene.walls, wall.id));
+    return eyesOf(allItems(scene.id), userId, scene).some((e) => (!range || Math.hypot(e.x - mid.x, e.y - mid.y) <= range) && hasLineOfSight(e, mid, scene.walls, wall.id));
   }
 
   return {

@@ -442,6 +442,44 @@ describe('paredes y visión', () => {
     expect((await sync).scene.explored).toBe(first);
   });
 
+  it('a oscuras: solo ve lo iluminado o lo que alcanza su visión en la oscuridad', async () => {
+    const { app, gm, pl, sceneId, gmC, plC, token } = await setup();
+    const hero = await token('token', { x: 0, y: 140, ownerIds: [pl.user.id] });
+    // El orco está a 7 casillas (35 pies) del héroe.
+    const orc = await token('token', { x: 490, y: 140 });
+    let sync = next(plC, 'scene:sync');
+    await app.inject({ method: 'PATCH', url: `/api/scenes/${sceneId}`, headers: { cookie: gm.cookie }, payload: { vision: true, lighting: true } });
+    let state = await sync;
+    expect(state.items.map((i) => i.id)).toEqual([hero.id]);
+    expect(state.lights).toEqual([]);
+    // Con visión en la oscuridad de 60 pies ya lo ve.
+    sync = next(plC, 'scene:sync');
+    ok(await call(gmC, 'item:update', { sceneId, id: hero.id, patch: { darkvision: 60 } }));
+    expect((await sync).items.map((i) => i.id)).toContain(orc.id);
+    // Sin ella, una antorcha en la capa del DM al lado del orco lo ilumina (y el jugador recibe la luz, no el elemento).
+    sync = next(plC, 'scene:sync');
+    ok(await call(gmC, 'item:update', { sceneId, id: hero.id, patch: { darkvision: 0 } }));
+    await sync;
+    sync = next(plC, 'scene:sync');
+    const torch = await token('gm', { x: 560, y: 140, light: { bright: 20, dim: 20 } });
+    state = await sync;
+    expect(state.items.map((i) => i.id).sort()).toEqual([hero.id, orc.id].sort());
+    expect(state.lights).toHaveLength(1);
+    expect(state.lights![0]).toMatchObject({ x: 595, y: 175, bright: 280, radius: 560 });
+    // Una pared tapa la antorcha: ni orco ni luz.
+    sync = next(plC, 'scene:sync');
+    ok(await call(gmC, 'walls:set', { sceneId, walls: [{ id: 'w', x1: 420, y1: 0, x2: 420, y2: 1400, kind: 'wall' }] }));
+    state = await sync;
+    expect(state.items.map((i) => i.id)).toEqual([hero.id]);
+    expect(state.lights).toEqual([]);
+    // El jugador enciende y apaga la antorcha de su token, pero no se pone visión en la oscuridad.
+    sync = next(plC, 'scene:sync');
+    ok(await call(plC, 'item:update', { sceneId, id: hero.id, patch: { light: { bright: 20, dim: 20 } } }));
+    expect((await sync).lights).toHaveLength(1);
+    expect((await call(plC, 'item:update', { sceneId, id: hero.id, patch: { darkvision: 60 } })).ok).toBe(false);
+    expect(torch.light).toMatchObject({ bright: 20, dim: 20, color: '#ffb74d' });
+  });
+
   it('visión sin tokens propios: el jugador no ve los tokens ajenos', async () => {
     const { app, gm, sceneId, plC, token } = await setup();
     await token('token', { x: 280, y: 140 });

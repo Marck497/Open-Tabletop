@@ -12,7 +12,7 @@ import { MeasuresLayer } from './Measures';
 import { FxLayer } from '../fx/FxLayer';
 import { DrawingShape, fillOf, textBox } from './Drawing';
 import { useBoard } from './store';
-import { DoorButtons, newWallId, saveWalls, snapWallPoint, useEyes, VisionMask, WallLines } from './Walls';
+import { DoorButtons, newWallId, saveWalls, snapWallPoint, useEyes, useLights, VisionMask, WallLines } from './Walls';
 import { MapEditorPanel } from '../mapeditor/MapEditorPanel';
 import { TerrainLayer } from '../mapeditor/TerrainLayer';
 import { useMapEditor } from '../mapeditor/store';
@@ -150,6 +150,7 @@ export function Board({ isGm, meId }: Props) {
   }, [itemsById, moving]);
   const byLayer = (layer: BoardLayer) => items.filter((i) => i.layer === layer);
   const eyes = useEyes(scene, itemsById, meId, isGm, previewVision);
+  const lights = useLights(scene, itemsById, isGm);
 
   const onWheel = useCallback((e: Konva.KonvaEventObject<WheelEvent>) => {
     e.evt.preventDefault();
@@ -425,7 +426,13 @@ export function Board({ isGm, meId }: Props) {
         </Layer>
         {eyes && (
           <Layer listening={false} opacity={isGm ? 0.7 : 1}>
-            <VisionMask scene={scene} eyes={eyes} />
+            <VisionMask scene={scene} eyes={eyes} lights={lights} />
+          </Layer>
+        )}
+        {!eyes && lights && (
+          // El DM ve por dónde llega la luz, con la oscuridad suavizada.
+          <Layer listening={false} opacity={0.45}>
+            <VisionMask scene={scene} eyes={null} lights={lights} />
           </Layer>
         )}
         <Layer listening={false} opacity={isGm ? 0.45 : 1}>
