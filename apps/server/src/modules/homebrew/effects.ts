@@ -170,7 +170,9 @@ export function createHomebrewEffects(ctx: AppContext) {
     return found.map((f) => board.itemsOf(f.sceneId).items.find((i) => i.id === f.id)!).filter(Boolean);
   }
 
-  async function addStatuses(item: BoardItem, add: string[]) {
+  async function addStatuses(stale: BoardItem, add: string[]) {
+    // Se relee: otro módulo (p. ej. la concentración) puede haberle cambiado los estados entretanto.
+    const item = board.itemsOf(stale.sceneId).items.find((i) => i.id === stale.id) ?? stale;
     const statuses = [...new Set([...item.statuses, ...add])].slice(0, 30);
     if (statuses.length === item.statuses.length) return;
     const { scene, before, after } = board.systemUpdate(item.sceneId, item.id, { statuses });

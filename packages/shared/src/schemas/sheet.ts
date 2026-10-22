@@ -140,6 +140,11 @@ export const statusDefSchema = z.object({
   kind: z.enum(['buff', 'debuff']).optional(),
   /** Tipos de daño a los que da resistencia mientras se tiene (separados por comas; «todo» = cualquiera). */
   resist: z.string().max(200).optional(),
+  /**
+   * Concentración: al recibir daño se tira esta salvación (la parte {a} de las salvaciones, «con» en 5e)
+   * contra CD max(10, daño / 2); si falla, o cae a 0 PG, se le quita el estado.
+   */
+  concentration: z.string().max(40).optional(),
 });
 export type StatusDef = z.infer<typeof statusDefSchema>;
 
