@@ -459,3 +459,44 @@ body.fx-shake .table-main { animation: fx-shake 0.6s cubic-bezier(.36,.07,.19,.9
 }
 .tour-card { position: fixed; pointer-events: auto; padding: 14px 16px; max-width: calc(100vw - 24px); box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5); }
 .tour-card p { margin: 8px 0 12px; line-height: 1.45; }
+
+/* Dados 3D (módulo dice3d) */
+.dice-trays { position: absolute; right: 12px; bottom: 60px; z-index: 40; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; pointer-events: none; }
+.dice-tray { pointer-events: auto; cursor: pointer; background: rgba(22, 21, 26, 0.82); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px 6px; max-width: 360px; animation: tray-in 0.25s ease-out both; }
+.dice-row { display: flex; flex-wrap: wrap; gap: 16px 10px; justify-content: flex-end; align-items: center; }
+.dice-caption { text-align: right; font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+.dice-caption strong { color: var(--text); font-size: 1rem; }
+.dice-more { color: var(--muted); font-weight: 700; }
+.die3d { --spin: 450deg; position: relative; width: 44px; height: 44px; perspective: 320px; animation: die-drop 0.95s cubic-bezier(0.2, 0.9, 0.3, 1.15) both; }
+.die3d.dropped { opacity: 0.38; }
+.die-sides { position: absolute; left: 0; right: 0; bottom: -12px; text-align: center; font-size: 0.6rem; color: var(--muted); }
+.cube { position: absolute; left: 4px; top: 4px; width: 36px; height: 36px; transform-style: preserve-3d; transform: rotateX(var(--rx)) rotateY(var(--ry)); animation: cube-roll 1.15s cubic-bezier(0.15, 0.7, 0.3, 1) both; }
+.cube .face { position: absolute; inset: 0; display: grid; place-items: center; background: #ece8f1; color: #16151a; border: 1px solid rgba(0, 0, 0, 0.35); border-radius: 6px; font-weight: 800; font-size: 1.1rem; backface-visibility: hidden; box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.25); }
+.cube .f1 { transform: translateZ(18px); }
+.cube .f6 { transform: rotateY(180deg) translateZ(18px); }
+.cube .f2 { transform: rotateY(90deg) translateZ(18px); }
+.cube .f5 { transform: rotateY(-90deg) translateZ(18px); }
+.cube .f3 { transform: rotateX(90deg) translateZ(18px); }
+.cube .f4 { transform: rotateX(-90deg) translateZ(18px); }
+.die3d .token { position: absolute; inset: 0; transform-style: preserve-3d; animation: token-roll 1.15s cubic-bezier(0.15, 0.7, 0.3, 1) both; }
+.token-face { position: absolute; inset: 0; width: 100%; height: 100%; backface-visibility: hidden; overflow: visible; }
+.token-face.back { transform: rotateY(180deg); }
+.token-face polygon { fill: var(--bg-elev-2); stroke: var(--gold); stroke-width: 4; stroke-linejoin: round; }
+.token-face text { fill: var(--text); font-weight: 800; font-family: inherit; }
+.die3d.max .token-face polygon { fill: var(--gold); stroke: #fff3c4; }
+.die3d.max .token-face text { fill: #1a1820; }
+.die3d.min .token-face polygon { fill: #6e1d1b; stroke: var(--danger); }
+@keyframes tray-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes die-drop { 0% { transform: translate(70px, -150px) scale(0.6); opacity: 0; } 25% { opacity: 1; } 70% { transform: translate(0, 4px) scale(1); } 85% { transform: translate(0, -6px); } 100% { transform: none; } }
+@keyframes cube-roll { from { transform: rotateX(calc(var(--rx) + 720deg)) rotateY(calc(var(--ry) + var(--spin))); } to { transform: rotateX(var(--rx)) rotateY(var(--ry)); } }
+@keyframes token-roll { from { transform: rotateX(540deg) rotateY(var(--spin)) rotateZ(90deg); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .die3d, .cube, .die3d .token, .dice-tray { animation: none; }
+}
+
+/* Atajos de teclado (módulo shortcuts) */
+.shortcuts-help { width: min(520px, 100%); }
+.shortcuts-help table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+.shortcuts-help td { padding: 5px 6px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.shortcuts-help td:first-child { white-space: nowrap; width: 1%; }
+kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 5px; background: var(--bg-elev-2); font-family: inherit; font-size: 0.85rem; }

@@ -1,0 +1,130 @@
+import { useEffect } from 'react';
+import { create } from 'zustand';
+import { emitAck } from '../../core/socket';
+import { updateItem } from '../board/history';
+import { useBoard } from '../board/store';
+
+/**
+ * Atajos de teclado de la mesa. Los de la escena (Supr, Esc, Ctrl+Z…) viven en el tablero;
+ * aquí van los de herramientas, capas, mover con las flechas, pasar turno y la ayuda (?).
+ */
+interface Shortcut {
+  keys: string;
+  label: string;
+  gmOnly?: boolean;
+}
+
+export const SHORTCUTS: Shortcut[] = [
+  { keys: 'V', label: 'Seleccionar y mover' },
+  { keys: 'R', label: 'Regla' },
+  { keys: 'P', label: 'Ping' },
+  { keys: 'D', label: 'Dibujar' },
+  { keys: 'W', label: 'Paredes y puertas', gmOnly: true },
+  { keys: 'M', label: 'Editor de mapas', gmOnly: true },
+  { keys: '1 · 2 · 3', label: 'Capa de mapa, tokens o DM', gmOnly: true },
+  { keys: 'Flechas', label: 'Mover el token seleccionado una casilla' },
+  { keys: 'C', label: 'Centrar la vista en el token seleccionado (o en el tuyo)' },
+  { keys: 'N', label: 'Pasar turno (el DM, o tú en tu turno)' },
+  { keys: 'Supr', label: 'Borrar lo seleccionado' },
+  { keys: 'Ctrl+Z · Ctrl+Y', label: 'Deshacer · rehacer' },
+  { keys: 'Esc', label: 'Soltar la selección, los objetivos y la medición' },
+  { keys: 'Alt+clic', label: 'Apuntar a un token (objetivo de ataques y hechizos)' },
+  { keys: 'Doble clic', label: 'Ping (con Mayús, el DM centra la vista de todos)' },
+  { keys: '?', label: 'Esta ayuda' },
+];
+
+/** Si la ayuda está abierta (también la abre el botón ⌨ de la barra). */
+export const useShortcutHelp = create<{ open: boolean; toggle: (open?: boolean) => void }>((set) => ({
+  open: false,
+  toggle: (open) => set((s) => ({ open: open ?? !s.open })),
+}));
+
+const isTyping = (t: EventTarget | null) => !!(t as HTMLElement | null)?.closest?.('input, textarea, select, [contenteditable="true"]');
+
+export function Shortcuts({ campaignId, isGm, meId }: { campaignId: string; isGm: boolean; meId: string }) {
+  const help = useShortcutHelp((s) => s.open);
+  const setHelp = useShortcutHelp((s) => s.toggle);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.ctrlKey || e.metaKey || e.altKey || isTyping(e.target)) return;
+      const board = useBoard.getState();
+      const { scene, selectedId, items } = board;
+      const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+
+      if (key === '?') return setHelp();
+      if (key === 'Escape') return setHelp(false);
+
+      const tools: Record<string, () => void> = {
+        v: () => board.setTool('select'),
+        r: () => board.setMeasureShape('ruler'),
+        p: () => board.setTool('ping'),
+        d: () => board.setTool('draw'),
+        ...(isGm
+          ? {
+              w: () => board.setWallMode(board.wallMode),
+              m: () => board.setTool(board.tool === 'map' ? 'select' : 'map'),
+              '1': () => board.setActiveLayer('map'),
+              '2': () => board.setActiveLayer('token'),
+              '3': () => board.setActiveLayer('gm'),
+            }
+          : {}),
+      };
+      if (tools[key] && scene) {
+        e.preventDefault();
+        tools[key]();
+        return;
+      }
+
+      if (key === 'n') {
+        e.preventDefault();
+        void emitAck('initiative:action', { campaignId, type: 'next' }).catch((err: Error) => board.showNotice(err.message));
+        return;
+      }
+
+      const sel = selectedId ? items[selectedId] : undefined;
+      if (key === 'c' && scene) {
+        const target = sel ?? Object.values(items).find((i) => i.layer === 'token' && !i.drawing && i.ownerIds.includes(meId));
+        if (!target) return;
+        useBoard.setState({ focus: { x: target.x + target.width / 2, y: target.y + target.height / 2, n: Date.now() } });
+        return;
+      }
+
+      const step: Record<string, [number, number]> = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] };
+      if (step[key] && scene && sel && board.tool === 'select') {
+        const mine = isGm ? sel.layer === board.activeLayer : sel.layer === 'token' && sel.ownerIds.includes(meId);
+        if (!mine) return;
+        e.preventDefault();
+        const [dx, dy] = step[key];
+        const g = scene.gridSize;
+        void updateItem(scene.id, sel.id, { x: sel.x + dx * g, y: sel.y + dy * g }).catch((err: Error) => board.showNotice(err.message));
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [campaignId, isGm, meId]);
+
+  if (!help) return null;
+  return (
+    <div className="modal-backdrop" onClick={() => setHelp(false)}>
+      <div className="modal card shortcuts-help" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Atajos de teclado">
+        <h2>⌨ Atajos de teclado</h2>
+        <table>
+          <tbody>
+            {SHORTCUTS.filter((s) => isGm || !s.gmOnly).map((s) => (
+              <tr key={s.keys}>
+                <td>
+                  <kbd>{s.keys}</kbd>
+                </td>
+                <td>{s.label}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="row">
+          <button onClick={() => setHelp(false)}>Cerrar</button>
+        </div>
+      </div>
+    </div>
+  );
+}
