@@ -151,3 +151,20 @@ describe('tiradas', () => {
     expect(res.ok).toBe(false);
   });
 });
+
+describe('compendio', () => {
+  it('el DM añade un monstruo del SRD con la hoja rellena; los jugadores no pueden', async () => {
+    const { gm, pl, campaign, req } = await setup();
+    expect((await req(pl.cookie, 'POST', `/campaigns/${campaign.id}/compendium/goblin`, {})).statusCode).toBe(403);
+    expect((await req(gm.cookie, 'POST', `/campaigns/${campaign.id}/compendium/no-existe`, {})).statusCode).toBe(404);
+    const res = await req(gm.cookie, 'POST', `/campaigns/${campaign.id}/compendium/goblin`, { name: 'Goblin 2' });
+    expect(res.statusCode).toBe(201);
+    const { character } = res.json();
+    expect(character).toMatchObject({ name: 'Goblin 2', controlledBy: [], values: { ca: 15, pg_actuales: 7, des: 14 } });
+    expect(character.values.ataques[0]).toMatchObject({ nombre: 'Cimitarra', bono: '+4', dano: '1d6 + 2' });
+    // Los jugadores no ven la hoja del PNJ.
+    const list = (await req(pl.cookie, 'GET', `/campaigns/${campaign.id}/characters`)).json().characters;
+    expect(list).toEqual([]);
+  });
+});
+

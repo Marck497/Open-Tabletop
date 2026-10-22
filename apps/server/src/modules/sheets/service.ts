@@ -5,6 +5,8 @@ import {
   DEFAULT_TEMPLATE_ID,
   createCharacterSchema,
   defaultValues,
+  monsterById,
+  monsterValues,
   sheetTemplateSchema,
   updateCharacterSchema,
   type CampaignRole,
@@ -162,7 +164,16 @@ export function createSheetService(ctx: AppContext) {
     return character;
   }
 
-  return { getTemplate, templateFor, saveTemplate, resetTemplate, list, access, create, update, remove, row };
+  /** El DM añade un monstruo del compendio: un PNJ con la hoja ya rellena. */
+  function createFromMonster(campaignId: string, userId: string, monsterId: string, name?: string): Character {
+    campaignsSvc.requireGm(campaignId, userId);
+    const monster = monsterById(monsterId);
+    if (!monster) throw notFound('Monstruo no encontrado');
+    const character = create(campaignId, userId, { name: name?.trim() || monster.name });
+    return update(character.id, userId, { values: monsterValues(getTemplate(campaignId), monster) }).after;
+  }
+
+  return { getTemplate, templateFor, saveTemplate, resetTemplate, list, access, create, update, remove, row, createFromMonster };
 }
 
 export type SheetService = ReturnType<typeof createSheetService>;

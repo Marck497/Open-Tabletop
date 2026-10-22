@@ -300,3 +300,14 @@ textarea { resize: vertical; }
 .track-name { flex: 2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.9rem; }
 .sound-unlock { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); z-index: 60; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5); }
 .toolbar input.tiny-number { width: 4.5em; padding: 2px 4px; }
+.modal.compendium { width: min(820px, 100%); display: flex; flex-direction: column; gap: 10px; }
+.modal.compendium input:not([type=number]) { flex: 1; min-width: 160px; }
+.compendium input.tiny-number { width: 4.5em; padding: 2px 4px; }
+.compendium-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.compendium-list > li { border-bottom: 1px solid rgba(255,255,255,0.06); padding: 2px 0; }
+.compendium-row { flex-wrap: nowrap; }
+.compendium-name { flex: 1; text-align: left; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.compendium-stats { white-space: nowrap; font-size: 0.85rem; color: var(--muted, #9a96a6); }
+.monster-details { padding: 4px 12px 10px; font-size: 0.9rem; }
+.monster-details ul { margin: 6px 0; padding-left: 18px; }
+.ability-row { display: flex; flex-wrap: wrap; gap: 12px; }
