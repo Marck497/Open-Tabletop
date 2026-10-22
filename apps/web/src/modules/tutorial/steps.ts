@@ -27,7 +27,7 @@ export const GM_TOUR: TourStep[] = [
   {
     target: 'board',
     title: 'El tablero',
-    body: 'Arrastra el fondo para moverte y usa la rueda para el zoom. Doble clic hace un ping que ve toda la mesa. Arrastra tokens para moverlos (con Alt, sin ajustarse a la cuadrícula).',
+    body: 'Arrastra el fondo para moverte y usa la rueda para el zoom. Doble clic hace un ping que ve toda la mesa. Arrastra tokens para moverlos (con Alt, sin ajustarse a la cuadrícula). Ctrl+Z deshace y Ctrl+Y rehace.',
   },
   {
     target: 'tools',
@@ -42,7 +42,7 @@ export const GM_TOUR: TourStep[] = [
   {
     target: 'add',
     title: 'Tokens e imágenes',
-    body: 'Añade tokens o imágenes en la capa activa. Al seleccionar uno aparece a la derecha su panel: nombre, tamaño, dueños, vida, CA, visión e IA de enemigo. También puedes arrastrar un personaje de la pestaña Personajes al tablero.',
+    body: 'Añade tokens o imágenes en la capa activa. Al seleccionar uno aparece a la derecha su panel: nombre, tamaño, dueños, vida, CA, luz, visión en la oscuridad e IA de enemigo. También puedes arrastrar un personaje de la pestaña Personajes al tablero.',
   },
   {
     target: 'fog',
@@ -52,7 +52,7 @@ export const GM_TOUR: TourStep[] = [
   {
     target: 'vision',
     title: 'Paredes y visión',
-    body: '🧱 Paredes traza muros y puertas. Con Visión, cada jugador solo ve lo que ven sus tokens y las paredes tapan la vista. Recordar lo explorado deja en gris lo ya visto, y Ver como jugadores te enseña el tablero como lo ven ellos.',
+    body: '🧱 Paredes traza muros y puertas. Con Visión, cada jugador solo ve lo que ven sus tokens y las paredes tapan la vista. Recordar lo explorado deja en gris lo ya visto. Con 🌙 A oscuras solo se ve lo que alumbran las luces (antorchas, lámparas) o la visión en la oscuridad, que se configuran en el panel de cada token. Ver como jugadores te enseña el tablero como lo ven ellos.',
   },
   {
     target: 'mapeditor',
