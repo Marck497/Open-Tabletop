@@ -9,6 +9,7 @@ import { useActiveItemId } from '../initiative/store';
 import { emitAck, getSocket } from '../../core/socket';
 import { clearMeasure, fixedTemplateEnd, sendPing, setMeasure, snapPoint, snapTemplateEnd } from './measure';
 import { MeasuresLayer } from './Measures';
+import { WallArt } from './WallArt';
 import { addTurn, listenTurns } from './waypoints';
 import { FxLayer } from '../fx/FxLayer';
 import { DrawingShape, fillOf, textBox } from './Drawing';
@@ -429,6 +430,7 @@ export function Board({ isGm, meId }: Props) {
             <ItemNode {...itemProps(i)} />
           ))}
           {scene.gridVisible && <Grid scene={scene} />}
+          <WallArt walls={scene.walls} gridSize={scene.gridSize} isGm={isGm} />
         </Layer>
         <Layer>
           {byLayer('token').map((i) => (
@@ -451,7 +453,7 @@ export function Board({ isGm, meId }: Props) {
         </Layer>
         <Layer>
           {isGm && byLayer('gm').map((i) => <ItemNode {...itemProps(i)} />)}
-          {isGm && (wallTool || scene.walls.length > 0) && <WallLines scene={scene} scale={view.scale} editing={wallTool} />}
+          {isGm && wallTool && <WallLines scene={scene} scale={view.scale} editing={wallTool} />}
           {wallDraft && (
             <Line
               points={[wallDraft.a.x, wallDraft.a.y, wallDraft.b.x, wallDraft.b.y]}
