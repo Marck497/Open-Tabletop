@@ -9,6 +9,7 @@ import { useActiveItemId } from '../initiative/store';
 import { emitAck, getSocket } from '../../core/socket';
 import { clearMeasure, fixedTemplateEnd, sendPing, setMeasure, snapPoint, snapTemplateEnd } from './measure';
 import { MeasuresLayer } from './Measures';
+import { addTurn, listenTurns } from './waypoints';
 import { FxLayer } from '../fx/FxLayer';
 import { DrawingShape, fillOf, textBox } from './Drawing';
 import { useBoard } from './store';
@@ -123,7 +124,7 @@ export function Board({ isGm, meId }: Props) {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if ((e.target as HTMLElement).closest('input, textarea, select')) return;
-      const { selectedId, scene, myMeasure, items } = useBoard.getState();
+      const { selectedId, scene, items } = useBoard.getState();
       // Deshacer / rehacer (en el editor de mapas, el suyo).
       if ((e.ctrlKey || e.metaKey) && !e.altKey && useBoard.getState().tool !== 'map') {
         const k = e.key.toLowerCase();
@@ -139,12 +140,8 @@ export function Board({ isGm, meId }: Props) {
         useBoard.getState().clearTargets();
         clearMeasure(isGm);
       }
-      // Espacio mientras se mide con la regla: añade un punto intermedio.
-      if (e.key === ' ' && measuring.current && myMeasure?.shape === 'ruler' && myMeasure.points.length < 32) {
-        e.preventDefault();
-        const last = myMeasure.points[myMeasure.points.length - 1]!;
-        setMeasure({ ...myMeasure, points: [...myMeasure.points, last] }, isGm);
-      }
+      // Espacio mientras se mide o se arrastra un token: punto de giro (igual que el clic derecho).
+      if (e.key === ' ' && addTurn()) e.preventDefault();
       const sel = selectedId ? items[selectedId] : undefined;
       const canDelete = isGm || (sel?.drawing && sel.ownerIds.includes(meId));
       if (canDelete && selectedId && scene && (e.key === 'Delete' || e.key === 'Backspace')) {
@@ -210,6 +207,8 @@ export function Board({ isGm, meId }: Props) {
       const { measureShape: shape, templatePreset } = useBoard.getState();
       const p = measurePoint(stage, e.evt, shape);
       measuring.current = true;
+      // Con la regla, clic derecho (o espacio) sin soltar: punto intermedio para cambiar de dirección.
+      if (shape === 'ruler') listenTurns(addRulerTurn);
       // Plantilla de un hechizo: sale ya con su tamaño; al arrastrar solo cambia la dirección.
       const fixed = templatePreset?.shape === shape ? templatePreset.cells * scene!.gridSize : 0;
       setMeasure({ shape, points: [p, fixed ? fixedTemplateEnd(p, pointerInScene(stage), fixed, shape) : p] }, isGm, { now: true });
@@ -243,6 +242,12 @@ export function Board({ isGm, meId }: Props) {
     }
     // Clic en zona vacía: deseleccionar.
     if (e.target === stage || e.target.name() === 'background') select(null);
+  }
+
+  function addRulerTurn() {
+    const mine = useBoard.getState().myMeasure;
+    if (mine?.shape !== 'ruler' || mine.points.length >= 32) return;
+    setMeasure({ ...mine, points: [...mine.points, mine.points[mine.points.length - 1]!] }, isGm);
   }
 
   function onStageMouseMove(e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) {
@@ -310,6 +315,7 @@ export function Board({ isGm, meId }: Props) {
     if (measuring.current) {
       // La medición se queda a la vista hasta pulsar Esc, empezar otra o cambiar de herramienta.
       measuring.current = false;
+      listenTurns(null);
       const mine = useBoard.getState().myMeasure;
       const [a, b] = [mine?.points[0], mine?.points[mine.points.length - 1]];
       if (a && b && a.x === b.x && a.y === b.y && mine!.points.length === 2) clearMeasure(isGm);
@@ -564,6 +570,9 @@ function ItemNode({ item, isGm, scene, selected, interactive, ghost, transformab
   const groupRef = useRef<Konva.Group>(null);
   const trRef = useRef<Konva.Transformer>(null);
   const lastEmit = useRef(0);
+  /** Puntos de giro del arrastre en curso (clic derecho sin soltar el izquierdo) y última casilla bajo el puntero. */
+  const turns = useRef<Point[]>([]);
+  const lastTo = useRef<Point | null>(null);
   const character = useSheets((s) => (item.characterId ? s.characters[item.characterId] : undefined));
   const template = useSheets((s) => s.template);
   const imageId = item.assetId ?? character?.avatarAssetId ?? null;
@@ -598,10 +607,26 @@ function ItemNode({ item, isGm, scene, selected, interactive, ghost, transformab
   const g = scene.gridSize;
   const snap = (v: number, free: boolean) => (free ? v : Math.round(v / g) * g);
 
+  const origin = () => ({ x: item.x + w / 2, y: item.y + h / 2 });
+
+  function onDragStart(e: Konva.KonvaEventObject<DragEvent>) {
+    e.cancelBubble = true;
+    turns.current = [];
+    lastTo.current = null;
+    if (item.drawing) return;
+    listenTurns(() => {
+      const to = lastTo.current;
+      const prev = turns.current[turns.current.length - 1] ?? origin();
+      if (!to || turns.current.length >= 30 || (to.x === prev.x && to.y === prev.y)) return;
+      turns.current = [...turns.current, to];
+      onDragPath({ shape: 'ruler', points: [origin(), ...turns.current, to] });
+    });
+  }
+
   function onDragMove(e: Konva.KonvaEventObject<DragEvent>) {
-    const origin = { x: item.x + w / 2, y: item.y + h / 2 };
     const to = e.evt.altKey ? { x: e.target.x(), y: e.target.y() } : { x: snap(e.target.x() - w / 2, false) + w / 2, y: snap(e.target.y() - h / 2, false) + h / 2 };
-    if (!item.drawing) onDragPath({ shape: 'ruler', points: [origin, to] });
+    lastTo.current = to;
+    if (!item.drawing) onDragPath({ shape: 'ruler', points: [origin(), ...turns.current, to] });
     const now = performance.now();
     if (now - lastEmit.current < MOVE_THROTTLE_MS) return;
     lastEmit.current = now;
@@ -611,12 +636,15 @@ function ItemNode({ item, isGm, scene, selected, interactive, ghost, transformab
   function onDragEnd(e: Konva.KonvaEventObject<DragEvent>) {
     e.cancelBubble = true;
     onDragPath(null);
+    listenTurns(null);
+    const path = turns.current;
+    turns.current = [];
     // Los dibujos no se ajustan a la cuadrícula.
     const free = e.evt.altKey || !!item.drawing;
     const x = snap(e.target.x() - w / 2, free);
     const y = snap(e.target.y() - h / 2, free);
     e.target.position({ x: x + w / 2, y: y + h / 2 });
-    void updateItem(scene.id, item.id, { x, y }).catch((err: Error) => {
+    void updateItem(scene.id, item.id, { x, y }, path).catch((err: Error) => {
       // Si el servidor lo rechaza (p. ej. hay una pared en medio), volver a la posición guardada.
       e.target.position({ x: item.x + w / 2, y: item.y + h / 2 });
       useBoard.getState().showNotice(err.message);
@@ -687,7 +715,7 @@ function ItemNode({ item, isGm, scene, selected, interactive, ghost, transformab
         }}
         onDblClick={() => character && useSheets.getState().openSheet(character.id)}
         onDblTap={() => character && useSheets.getState().openSheet(character.id)}
-        onDragStart={(e) => (e.cancelBubble = true)}
+        onDragStart={onDragStart}
         onDragMove={(e) => {
           e.cancelBubble = true;
           onDragMove(e);

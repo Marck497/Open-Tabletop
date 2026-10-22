@@ -27,7 +27,7 @@ export const GM_TOUR: TourStep[] = [
   {
     target: 'board',
     title: 'El tablero',
-    body: 'Arrastra el fondo para moverte y usa la rueda para el zoom. Doble clic hace un ping que ve toda la mesa. Arrastra tokens para moverlos (con Alt, sin ajustarse a la cuadrícula). Ctrl+Z deshace y Ctrl+Y rehace.',
+    body: 'Arrastra el fondo para moverte y usa la rueda para el zoom. Doble clic hace un ping que ve toda la mesa. Arrastra tokens para moverlos (con Alt, sin ajustarse a la cuadrícula); sin soltar, un clic derecho deja un punto de giro para doblar esquinas, y también sirve con la regla. Ctrl+Z deshace y Ctrl+Y rehace.',
   },
   {
     target: 'tools',
@@ -125,7 +125,7 @@ export const PLAYER_TOUR: TourStep[] = [
   {
     target: 'board',
     title: 'El tablero',
-    body: 'Arrastra el fondo para moverte y usa la rueda para el zoom. Arrastra tus tokens para moverlos y haz doble clic para señalar un punto a la mesa. Si el DM activa la visión, solo verás lo que ven tus tokens.',
+    body: 'Arrastra el fondo para moverte y usa la rueda para el zoom. Arrastra tus tokens para moverlos (sin soltar, un clic derecho deja un punto de giro para rodear una pared o doblar una esquina) y haz doble clic para señalar un punto a la mesa. Si el DM activa la visión, solo verás lo que ven tus tokens.',
   },
   {
     target: 'tools',

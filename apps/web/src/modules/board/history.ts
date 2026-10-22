@@ -1,4 +1,4 @@
-import type { BoardItem, CreateItemInput, UpdateItemInput, Wall } from '@vtt/shared';
+import type { BoardItem, CreateItemInput, Point, UpdateItemInput, Wall } from '@vtt/shared';
 import { emitAck } from '../../core/socket';
 import { useBoard } from './store';
 
@@ -60,15 +60,16 @@ export async function createItem(sceneId: string, input: CreateItemInput): Promi
 }
 
 /** Cambia un elemento y apunta en el historial cómo estaba (solo los campos que cambian). */
-export async function updateItem(sceneId: string, id: string, patch: UpdateItemInput): Promise<BoardItem> {
+/** `path`: puntos de giro de un movimiento con rodeo (deshacerlo vuelve por el mismo camino). */
+export async function updateItem(sceneId: string, id: string, patch: UpdateItemInput, path?: Point[]): Promise<BoardItem> {
   const before = useBoard.getState().items[id];
-  const result = await emitAck('item:update', { sceneId, id, patch });
+  const result = await emitAck('item:update', { sceneId, id, patch, ...(path?.length ? { path } : {}) });
   if (before) {
     const back = Object.fromEntries(Object.keys(patch).map((k) => [k, before[k as keyof BoardItem] ?? null])) as UpdateItemInput;
     push({
       sceneId,
-      undo: () => emitAck('item:update', { sceneId, id: idOf(id), patch: back }),
-      redo: () => emitAck('item:update', { sceneId, id: idOf(id), patch }),
+      undo: () => emitAck('item:update', { sceneId, id: idOf(id), patch: back, ...(path?.length ? { path: [...path].reverse() } : {}) }),
+      redo: () => emitAck('item:update', { sceneId, id: idOf(id), patch, ...(path?.length ? { path } : {}) }),
       mergeKey: `${id}:${Object.keys(patch).sort().join(',')}`,
     });
   }

@@ -11,7 +11,7 @@ import { useShortcutHelp } from '../shortcuts/Shortcuts';
 
 const MEASURE_ICONS: Record<MeasureShape, string> = { ruler: '📏', circle: '◯', cone: '◺', line: '━', square: '▢' };
 const MEASURE_HINTS: Record<MeasureShape, string> = {
-  ruler: 'Arrastra para medir. Espacio añade un punto intermedio, Alt mide sin ajustar y Esc la quita.',
+  ruler: 'Arrastra para medir. Sin soltar, clic derecho o Espacio añade un punto de giro, Alt mide sin ajustar y Esc la quita.',
   circle: 'Arrastra desde el centro: radio del hechizo.',
   cone: 'Arrastra desde el origen hacia donde apunta el cono.',
   line: 'Arrastra la línea (1 casilla de ancho).',

@@ -171,7 +171,7 @@ export const boardModule: ServerModule = {
 
     socket.on('item:update', (payload, ack) =>
       handleAck(ack, async () => {
-        const { scene, before, after } = board.updateItem(payload.sceneId, payload.id, userId(), payload.patch);
+        const { scene, before, after } = board.updateItem(payload.sceneId, payload.id, userId(), payload.patch, payload.path);
         await broadcast.itemChanged(scene, before, after);
         if (movesPlayerEye(before, after)) broadcast.explore(scene.id);
         const { role } = board.access(payload.sceneId, userId()).viewer;
