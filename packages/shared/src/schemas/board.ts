@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { DIAGONAL_RULES, type DiagonalRule } from './measure.js';
 
 /**
  * Capas del tablero (como en Roll20):
@@ -50,6 +51,10 @@ export const sceneInputSchema = z.object({
   gridVisible: z.boolean(),
   gridColor: z.string().max(32),
   backgroundColor: z.string().max(32),
+  /** Distancia que representa una casilla (5 en 5e) y su unidad. */
+  cellDistance: z.number().positive().max(10000),
+  distanceUnit: z.string().trim().max(16),
+  diagonalRule: z.enum(DIAGONAL_RULES),
 });
 export const createSceneSchema = sceneInputSchema.partial().extend({ name: z.string().trim().min(1).max(80) });
 export const updateSceneSchema = sceneInputSchema.partial();
@@ -66,6 +71,9 @@ export interface Scene {
   gridVisible: boolean;
   gridColor: string;
   backgroundColor: string;
+  cellDistance: number;
+  distanceUnit: string;
+  diagonalRule: DiagonalRule;
   sortOrder: number;
   fog: Fog;
 }

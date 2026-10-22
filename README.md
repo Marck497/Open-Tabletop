@@ -50,6 +50,11 @@ Abre `http://IP-DE-LA-PI:3000` desde cualquier equipo de tu red. La primera comp
 
 **Todos**
 - Arrastra el fondo para moverte y usa la rueda para hacer zoom.
+- **Medir** (📏 en la barra): arrastra para medir. *Espacio* añade un punto intermedio, *Alt* mide sin ajustar a la cuadrícula y *Esc* la quita. Todos ven tu regla con tu nombre.
+- **Plantillas de área** (◯ círculo, ◺ cono, ━ línea, ▢ cubo): marcan las casillas afectadas por un hechizo y miden casillas enteras.
+- **Ping** (📍 o doble clic en el fondo): señala un punto a la mesa. El DM, con *Mayús*, además centra la vista de todos ahí. Lo que mide el DM en la capa DM solo lo ven los DM.
+- Al arrastrar un token ves cuánto se ha movido.
+- La distancia por casilla (5 pies por defecto), la unidad y cómo se cuentan las diagonales se cambian en *Ajustes de la escena*.
 - Los tokens se ajustan a la cuadrícula al soltarlos (mantén **Alt** para moverlos libremente).
 - **Supr** borra el elemento seleccionado (DM) y **Esc** quita la selección.
 

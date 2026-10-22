@@ -2,11 +2,13 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { Circle, Group, Image as KImage, Layer, Rect, Shape, Stage, Text, Transformer } from 'react-konva';
 import type Konva from 'konva';
 import useImage from 'use-image';
-import { assetUrl, createResolver, type BoardItem, type BoardLayer, type Fog, type Scene } from '@vtt/shared';
+import { assetUrl, createResolver, type BoardItem, type BoardLayer, type Fog, type Measure, type Point, type Scene } from '@vtt/shared';
 import { useSheets } from '../sheets/store';
 import { addCharacterToken } from '../sheets/tokens';
 import { useActiveItemId } from '../initiative/store';
 import { emitAck, getSocket } from '../../core/socket';
+import { clearMeasure, sendPing, setMeasure, snapPoint, snapTemplateEnd } from './measure';
+import { MeasuresLayer } from './Measures';
 import { useBoard } from './store';
 
 interface Props {
@@ -39,6 +41,11 @@ export function Board({ isGm, meId }: Props) {
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [view, setView] = useState<Viewport>({ x: 0, y: 0, scale: 1 });
   const [fogDraft, setFogDraft] = useState<{ x0: number; y0: number; x1: number; y1: number } | null>(null);
+  /** Midiendo ahora mismo (botón pulsado). */
+  const measuring = useRef(false);
+  /** Distancia que recorre el token que estoy arrastrando (solo la veo yo). */
+  const [dragMeasure, setDragMeasure] = useState<Measure | null>(null);
+  const focus = useBoard((s) => s.focus);
 
   // Tamaño del lienzo = tamaño del contenedor.
   useLayoutEffect(() => {
@@ -60,6 +67,18 @@ export function Board({ isGm, meId }: Props) {
     setView({ scale, x: (size.width - w * scale) / 2, y: (size.height - h * scale) / 2 });
   }, [scene, size]);
 
+  // El DM ha pedido centrar la vista de todos en un punto.
+  useEffect(() => {
+    if (!focus || !size.width) return;
+    setView((v) => ({ ...v, x: size.width / 2 - focus.x * v.scale, y: size.height / 2 - focus.y * v.scale }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focus]);
+
+  // Al dejar la herramienta de medir, mi medición desaparece.
+  useEffect(() => {
+    if (tool !== 'measure') clearMeasure(isGm);
+  }, [tool, isGm]);
+
   useEffect(() => {
     if (size.width) useBoard.getState().setViewCenter({ x: (size.width / 2 - view.x) / view.scale, y: (size.height / 2 - view.y) / view.scale });
   }, [view, size]);
@@ -68,8 +87,17 @@ export function Board({ isGm, meId }: Props) {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if ((e.target as HTMLElement).closest('input, textarea, select')) return;
-      const { selectedId, scene } = useBoard.getState();
-      if (e.key === 'Escape') select(null);
+      const { selectedId, scene, myMeasure } = useBoard.getState();
+      if (e.key === 'Escape') {
+        select(null);
+        clearMeasure(isGm);
+      }
+      // Espacio mientras se mide con la regla: añade un punto intermedio.
+      if (e.key === ' ' && measuring.current && myMeasure?.shape === 'ruler' && myMeasure.points.length < 32) {
+        e.preventDefault();
+        const last = myMeasure.points[myMeasure.points.length - 1]!;
+        setMeasure({ ...myMeasure, points: [...myMeasure.points, last] }, isGm);
+      }
       if (isGm && selectedId && scene && (e.key === 'Delete' || e.key === 'Backspace')) {
         void emitAck('item:delete', { sceneId: scene.id, id: selectedId });
       }
@@ -100,14 +128,33 @@ export function Board({ isGm, meId }: Props) {
 
   const sceneW = scene.widthCells * scene.gridSize;
   const sceneH = scene.heightCells * scene.gridSize;
-  const fogTool = isGm && tool !== 'select' && scene.fog.enabled;
+  const fogTool = isGm && tool.startsWith('fog-') && scene.fog.enabled;
+  const measureTool = tool === 'measure';
+  const pingTool = tool === 'ping';
+  const freeTool = !fogTool && !measureTool && !pingTool;
 
   function pointerInScene(stage: Konva.Stage) {
     return stage.getRelativePointerPosition()!;
   }
 
+  function measurePoint(stage: Konva.Stage, evt: MouseEvent | TouchEvent, shape: Measure['shape']): Point {
+    const free = 'altKey' in evt && evt.altKey;
+    return snapPoint(pointerInScene(stage), scene!.gridSize, free ? 'free' : shape === 'ruler' ? 'center' : 'half');
+  }
+
   function onStageMouseDown(e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) {
     const stage = e.target.getStage()!;
+    if (measureTool) {
+      const shape = useBoard.getState().measureShape;
+      const p = measurePoint(stage, e.evt, shape);
+      measuring.current = true;
+      setMeasure({ shape, points: [p, p] }, isGm, { now: true });
+      return;
+    }
+    if (pingTool) {
+      sendPing(pointerInScene(stage), isGm && e.evt.shiftKey);
+      return;
+    }
     if (fogTool) {
       const p = pointerInScene(stage);
       setFogDraft({ x0: p.x, y0: p.y, x1: p.x, y1: p.y });
@@ -118,12 +165,30 @@ export function Board({ isGm, meId }: Props) {
   }
 
   function onStageMouseMove(e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) {
+    const mine = useBoard.getState().myMeasure;
+    if (measuring.current && mine) {
+      const stage = e.target.getStage()!;
+      const free = 'altKey' in e.evt && e.evt.altKey;
+      const p = mine.shape === 'ruler' || free ? measurePoint(stage, e.evt, mine.shape) : snapTemplateEnd(mine.points[0]!, pointerInScene(stage), scene!.gridSize, mine.shape);
+      const last = mine.points[mine.points.length - 1]!;
+      if (p.x !== last.x || p.y !== last.y) setMeasure({ ...mine, points: [...mine.points.slice(0, -1), p] }, isGm);
+      return;
+    }
     if (!fogDraft) return;
     const p = pointerInScene(e.target.getStage()!);
     setFogDraft({ ...fogDraft, x1: p.x, y1: p.y });
   }
 
   function onStageMouseUp() {
+    if (measuring.current) {
+      // La medición se queda a la vista hasta pulsar Esc, empezar otra o cambiar de herramienta.
+      measuring.current = false;
+      const mine = useBoard.getState().myMeasure;
+      const [a, b] = [mine?.points[0], mine?.points[mine.points.length - 1]];
+      if (a && b && a.x === b.x && a.y === b.y && mine!.points.length === 2) clearMeasure(isGm);
+      else setMeasure(mine, isGm, { now: true });
+      return;
+    }
     if (!fogDraft || !scene) return;
     const rect = normRect(fogDraft);
     setFogDraft(null);
@@ -136,17 +201,18 @@ export function Board({ isGm, meId }: Props) {
     item,
     scene,
     selected: item.id === selectedId,
-    interactive: !fogTool && (isGm ? item.layer === activeLayer : item.layer === 'token' && item.ownerIds.includes(meId)),
+    interactive: freeTool && (isGm ? item.layer === activeLayer : item.layer === 'token' && item.ownerIds.includes(meId)),
     ghost: item.layer === 'gm',
     transformable: isGm,
     turn: item.id === activeItemId,
     onSelect: () => select(item.id),
+    onDragPath: setDragMeasure,
   });
 
   return (
     <div
       ref={containerRef}
-      className={`board-container ${fogTool ? 'crosshair' : ''}`}
+      className={`board-container ${freeTool ? '' : 'crosshair'}`}
       onDragOver={(e) => isGm && e.dataTransfer.types.includes('application/x-vtt-character') && e.preventDefault()}
       onDrop={(e) => {
         // Soltar un personaje de la lista sobre el tablero crea su token ahí.
@@ -169,7 +235,7 @@ export function Board({ isGm, meId }: Props) {
         y={view.y}
         scaleX={view.scale}
         scaleY={view.scale}
-        draggable={!fogTool}
+        draggable={freeTool}
         onDragEnd={(e) => e.target === e.target.getStage() && setView((v) => ({ ...v, x: e.target.x(), y: e.target.y() }))}
         onWheel={onWheel}
         onMouseDown={onStageMouseDown}
@@ -178,6 +244,10 @@ export function Board({ isGm, meId }: Props) {
         onTouchMove={onStageMouseMove}
         onMouseUp={onStageMouseUp}
         onTouchEnd={onStageMouseUp}
+        onDblClick={(e) => {
+          // Doble clic en el fondo: ping (con Mayús, el DM centra la vista de todos).
+          if (freeTool && (e.target === e.target.getStage() || e.target.name() === 'background')) sendPing(pointerInScene(e.target.getStage()!), isGm && e.evt.shiftKey);
+        }}
       >
         <Layer>
           <Rect name="background" width={sceneW} height={sceneH} fill={scene.backgroundColor} />
@@ -206,6 +276,7 @@ export function Board({ isGm, meId }: Props) {
               listening={false}
             />
           )}
+          <MeasuresLayer scene={scene} scale={view.scale} dragMeasure={dragMeasure} />
         </Layer>
       </Stage>
     </div>
@@ -270,9 +341,11 @@ interface ItemNodeProps {
   /** Es su turno en la iniciativa. */
   turn: boolean;
   onSelect: () => void;
+  /** Recorrido mientras se arrastra (null al soltar). */
+  onDragPath: (m: Measure | null) => void;
 }
 
-function ItemNode({ item, scene, selected, interactive, ghost, transformable, turn, onSelect }: ItemNodeProps) {
+function ItemNode({ item, scene, selected, interactive, ghost, transformable, turn, onSelect, onDragPath }: ItemNodeProps) {
   const groupRef = useRef<Konva.Group>(null);
   const trRef = useRef<Konva.Transformer>(null);
   const lastEmit = useRef(0);
@@ -304,6 +377,9 @@ function ItemNode({ item, scene, selected, interactive, ghost, transformable, tu
   const snap = (v: number, free: boolean) => (free ? v : Math.round(v / g) * g);
 
   function onDragMove(e: Konva.KonvaEventObject<DragEvent>) {
+    const origin = { x: item.x + w / 2, y: item.y + h / 2 };
+    const to = e.evt.altKey ? { x: e.target.x(), y: e.target.y() } : { x: snap(e.target.x() - w / 2, false) + w / 2, y: snap(e.target.y() - h / 2, false) + h / 2 };
+    onDragPath({ shape: 'ruler', points: [origin, to] });
     const now = performance.now();
     if (now - lastEmit.current < MOVE_THROTTLE_MS) return;
     lastEmit.current = now;
@@ -312,6 +388,7 @@ function ItemNode({ item, scene, selected, interactive, ghost, transformable, tu
 
   function onDragEnd(e: Konva.KonvaEventObject<DragEvent>) {
     e.cancelBubble = true;
+    onDragPath(null);
     const free = e.evt.altKey;
     const x = snap(e.target.x() - w / 2, free);
     const y = snap(e.target.y() - h / 2, free);
