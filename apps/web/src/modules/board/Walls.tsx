@@ -19,6 +19,7 @@ import {
 } from '@vtt/shared';
 import { emitAck } from '../../core/socket';
 import { useBoard } from './store';
+import { recordWalls } from './history';
 
 /** ¿Es un token que mira? (igual que en el servidor) */
 const isEye = (i: BoardItem) => i.layer === 'token' && !i.drawing;
@@ -57,6 +58,7 @@ export function useLights(scene: Scene | null, items: Record<string, BoardItem>,
 
 /** Paredes y puertas guardadas (con un id nuevo para las que se añaden). */
 export function saveWalls(scene: Scene, walls: Wall[]) {
+  recordWalls(scene.id, scene.walls, walls);
   useBoard.getState().setWalls(walls);
   return emitAck('walls:set', { sceneId: scene.id, walls });
 }

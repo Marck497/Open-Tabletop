@@ -17,6 +17,7 @@ import {
 } from '@vtt/shared';
 import { emitAck } from '../../core/socket';
 import { updateSelected } from './actions';
+import { deleteItem, updateItem } from './history';
 import { AssetPicker } from './AssetPicker';
 import { LAYER_LABELS, useBoard } from './store';
 import { useSheets } from '../sheets/store';
@@ -151,11 +152,11 @@ export function ItemPanel({ campaignId, members }: { campaignId: string; members
             Ajustar a la escena
           </button>
         )}
-        <button className="ghost small danger" onClick={() => void emitAck('item:delete', { sceneId: scene.id, id: item.id })}>
+        <button className="ghost small danger" onClick={() => void deleteItem(scene.id, item.id)}>
           Borrar
         </button>
       </div>
-      <p className="muted hint">Arrastra para mover (se ajusta a la cuadrícula; mantén Alt para moverlo libre). Supr para borrar.</p>
+      <p className="muted hint">Arrastra para mover (se ajusta a la cuadrícula; mantén Alt para moverlo libre). Supr para borrar; Ctrl+Z deshace y Ctrl+Y rehace.</p>
 
       {picker && (
         <AssetPicker
@@ -183,7 +184,7 @@ function StatsVisibility() {
   // Aplicar lo mismo a todos los enemigos (tokens con hoja y sin dueños) de la escena.
   const enemies = Object.values(useBoard.getState().items).filter((i) => i.characterId && !i.drawing && !i.ownerIds.length && i.id !== item.id);
   const applyToEnemies = () =>
-    enemies.forEach((i) => void emitAck('item:update', { sceneId: scene.id, id: i.id, patch: { hpView: item.hpView, acView: item.acView } }));
+    enemies.forEach((i) => void updateItem(scene.id, i.id, { hpView: item.hpView, acView: item.acView }));
   return (
     <fieldset className="owners">
       <legend>Lo que ven los jugadores</legend>

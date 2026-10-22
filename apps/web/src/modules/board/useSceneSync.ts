@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { ServerToClientEvents } from '@vtt/shared';
 import { emitAck, getSocket } from '../../core/socket';
 import { useBoard } from './store';
+import { resetHistory } from './history';
 
 type Payload<K extends keyof ServerToClientEvents> = Parameters<ServerToClientEvents[K]>[0];
 
@@ -14,6 +15,7 @@ export function useSceneSync(sceneId: string | null) {
 
   useEffect(() => {
     const board = useBoard.getState;
+    resetHistory(sceneId);
     if (!sceneId) {
       board().clear();
       return;
