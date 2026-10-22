@@ -3,7 +3,7 @@
  * Cada módulo añade aquí sus eventos para que ambos lados compartan los tipos.
  */
 import type { BoardItem, CreateItemInput, Fog, Scene, SceneState, UpdateItemInput } from './schemas/board.js';
-import type { Measure } from './schemas/measure.js';
+import type { Measure, Point } from './schemas/measure.js';
 import type { BoardFx } from './fx.js';
 import type { WallInput } from './schemas/walls.js';
 import type { AiSettings } from './schemas/ai.js';
@@ -133,7 +133,8 @@ export interface ClientToServerEvents {
   /** Abre una escena: se suscribe a sus cambios y recibe su estado. */
   'scene:view': (payload: { sceneId: string }, ack: Ack<SceneState>) => void;
   'item:create': (payload: { sceneId: string; item: CreateItemInput }, ack: Ack<BoardItem>) => void;
-  'item:update': (payload: { sceneId: string; id: string; patch: UpdateItemInput }, ack: Ack<BoardItem>) => void;
+  /** `path`: puntos de giro del movimiento, si el token no ha ido en línea recta. */
+  'item:update': (payload: { sceneId: string; id: string; patch: UpdateItemInput; path?: Point[] }, ack: Ack<BoardItem>) => void;
   'item:delete': (payload: { sceneId: string; id: string }, ack: Ack) => void;
   'item:moving': (payload: { sceneId: string; id: string; x: number; y: number }) => void;
   /** El DM sustituye todas las paredes de la escena. */

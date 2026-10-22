@@ -407,6 +407,23 @@ describe('paredes y visión', () => {
     expect((await sync).items.map((i) => i.id)).toEqual([hero.id]);
   });
 
+  it('rodear una pared con puntos de giro: cada tramo se comprueba', async () => {
+    const { pl, sceneId, gmC, plC, token } = await setup();
+    // Pared de x=210 que llega hasta y=700: por debajo se puede pasar.
+    ok(await call(gmC, 'walls:set', { sceneId, walls: [{ id: 'w', x1: 210, y1: 0, x2: 210, y2: 700, kind: 'wall' }] }));
+    const hero = await token('token', { x: 0, y: 140, ownerIds: [pl.user.id] });
+    const move = (path?: object[]) => call<BoardItem>(plC, 'item:update', { sceneId, id: hero.id, patch: { x: 280, y: 140 }, path });
+
+    expect(await move()).toMatchObject({ ok: false });
+    // Un giro que sigue chocando con la pared tampoco vale.
+    expect(await move([{ x: 35, y: 400 }])).toMatchObject({ ok: false });
+    expect(await move([{ x: 35, y: 805 }, { x: 315, y: 805 }])).toMatchObject({ ok: true });
+    // El rodeo de vuelta también.
+    expect((await call(plC, 'item:update', { sceneId, id: hero.id, patch: { x: 0, y: 140 }, path: [{ x: 315, y: 805 }, { x: 35, y: 805 }] })).ok).toBe(true);
+    // Demasiados giros: se rechaza.
+    expect(await move(Array.from({ length: 31 }, () => ({ x: 35, y: 805 })))).toMatchObject({ ok: false });
+  });
+
   it('recuerda lo explorado por escena sin enseñar los tokens que hay ahí, y el DM lo olvida', async () => {
     const { app, gm, pl, sceneId, gmC, plC, token } = await setup();
     const hero = await token('token', { x: 0, y: 140, ownerIds: [pl.user.id] });

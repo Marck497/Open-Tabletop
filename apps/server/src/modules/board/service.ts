@@ -9,6 +9,7 @@ import {
   updateSceneSchema,
   movePlayersSchema,
   canMoveStraight,
+  movePathSchema,
   hasLineOfSight,
   isDoor,
   wallsSchema,
@@ -24,6 +25,7 @@ import {
   type CreateSceneInput,
   type Fog,
   type FogOp,
+  type Point,
   type Scene,
   type SceneFolder,
   type SceneState,
@@ -229,19 +231,20 @@ export function createBoardService(ctx: AppContext) {
     return { scene, item: toItem(itemRow(sceneId, id)) };
   }
 
-  /** Movimiento/edición. Los jugadores solo pueden mover sus propios tokens. */
+  /** Movimiento/edición. Los jugadores solo pueden mover sus propios tokens. `path`: puntos de giro del movimiento. */
   function updateItem(
     sceneId: string,
     itemId: string,
     userId: string,
     patch: UpdateItemInput,
+    path: Point[] = [],
   ): { scene: Scene; before: BoardItem; after: BoardItem } {
     const { scene, viewer } = access(sceneId, userId);
     const data = updateItemSchema.parse(patch);
     const before = toItem(itemRow(sceneId, itemId));
     if (viewer.role !== 'gm') {
       assertPlayerCanEdit(before, scene, viewer, Object.keys(data));
-      assertNoWallInTheWay(before, scene, data.x ?? before.x, data.y ?? before.y);
+      assertNoWallInTheWay(before, scene, data.x ?? before.x, data.y ?? before.y, path);
     }
     checkAsset(data.assetId, scene.campaignId);
     checkCharacter(data.characterId, scene.campaignId);
@@ -282,12 +285,14 @@ export function createBoardService(ctx: AppContext) {
     if (keys.some((k) => !allowed.has(k))) throw forbidden('Solo puedes mover tus tokens');
   }
 
-  /** Los jugadores no pueden atravesar paredes ni puertas cerradas con sus tokens. */
-  function assertNoWallInTheWay(item: BoardItem, scene: Scene, x: number, y: number) {
-    if (!isEye(item) || !scene.walls.length || (x === item.x && y === item.y)) return;
-    const from = { x: item.x + item.width / 2, y: item.y + item.height / 2 };
-    const to = { x: x + item.width / 2, y: y + item.height / 2 };
-    if (!canMoveStraight(from, to, scene.walls)) throw forbidden('Hay una pared en medio');
+  /** Los jugadores no pueden atravesar paredes ni puertas cerradas con sus tokens (se mira cada tramo del recorrido). */
+  function assertNoWallInTheWay(item: BoardItem, scene: Scene, x: number, y: number, path: Point[]) {
+    const turns = movePathSchema.parse(path);
+    if (!isEye(item) || !scene.walls.length || (x === item.x && y === item.y && !turns.length)) return;
+    const stops = [{ x: item.x + item.width / 2, y: item.y + item.height / 2 }, ...turns, { x: x + item.width / 2, y: y + item.height / 2 }];
+    for (let i = 1; i < stops.length; i++) {
+      if (!canMoveStraight(stops[i - 1]!, stops[i]!, scene.walls)) throw forbidden('Hay una pared en medio');
+    }
   }
 
   /** Comprueba que puede arrastrar el token (para el movimiento en vivo, que no se guarda). */

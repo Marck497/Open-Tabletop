@@ -32,6 +32,7 @@ export const SHORTCUTS: Shortcut[] = [
   { keys: 'Supr', label: 'Borrar lo seleccionado' },
   { keys: 'Ctrl+Z · Ctrl+Y', label: 'Deshacer · rehacer' },
   { keys: 'Esc', label: 'Soltar la selección, los objetivos y la medición' },
+  { keys: 'Clic derecho · Espacio', label: 'Arrastrando un token o midiendo: punto de giro para cambiar de dirección' },
   { keys: 'Alt+clic', label: 'Apuntar a un token (objetivo de ataques y hechizos)' },
   { keys: 'Doble clic', label: 'Ping (con Mayús, el DM centra la vista de todos)' },
   { keys: '?', label: 'Esta ayuda' },

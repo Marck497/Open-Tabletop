@@ -28,6 +28,12 @@ export const DIAGONAL_LABELS: Record<DiagonalRule, string> = {
 const pointSchema = z.object({ x: z.number().finite(), y: z.number().finite() });
 export type Point = z.infer<typeof pointSchema>;
 
+/**
+ * Puntos de giro (centros) de un token que se mueve dando un rodeo, entre el origen y el destino.
+ * Así se puede doblar una esquina sin atravesar la pared: el servidor comprueba cada tramo.
+ */
+export const movePathSchema = z.array(pointSchema).max(30);
+
 export const measureSchema = z.object({
   shape: z.enum(MEASURE_SHAPES),
   /** Regla: origen, puntos intermedios y final. Plantillas: origen y final. */
