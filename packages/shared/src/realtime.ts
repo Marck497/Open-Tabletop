@@ -9,7 +9,7 @@ import type { AiSettings } from './schemas/ai.js';
 import type { Character } from './schemas/character.js';
 import type { Handout } from './schemas/journal.js';
 import type { JukeboxAction, JukeboxState } from './schemas/jukebox.js';
-import type { ChatMessage, InitiativeEntry, InitiativeState } from './schemas/chat.js';
+import type { ChatMessage, InitiativeEntry, InitiativeScope, InitiativeState } from './schemas/chat.js';
 
 export interface PresenceUser {
   userId: string;
@@ -90,6 +90,8 @@ export interface ServerToClientEvents {
   'chat:message': (payload: ChatMessage) => void;
   'chat:cleared': (payload: { campaignId: string }) => void;
   'initiative:updated': (payload: InitiativeState) => void;
+  /** Se acaba de tirar la iniciativa: los clientes enseñan el orden en grande. */
+  'initiative:announce': (payload: { campaignId: string }) => void;
 }
 
 export interface ClientToServerEvents {
@@ -133,7 +135,11 @@ export type InitiativeAction =
   | { type: 'start' }
   | { type: 'end' }
   | { type: 'clear' }
-  | { type: 'aiSettings'; settings: Partial<AiSettings> };
+  | { type: 'aiSettings'; settings: Partial<AiSettings> }
+  /** DM: tira la iniciativa de los tokens de la escena con el bono de su hoja y ordena. */
+  | { type: 'rollAll'; scope: InitiativeScope }
+  /** Jugador: tira la de sus personajes que están en la escena. */
+  | { type: 'rollMine' };
 
 /** Nombre de la sala de Socket.IO de una partida. */
 export const campaignRoom = (campaignId: string) => `campaign:${campaignId}`;

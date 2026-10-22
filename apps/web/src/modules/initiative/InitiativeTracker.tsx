@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import type { InitiativeAction, InitiativeEntry } from '@vtt/shared';
+import { useEffect, useState } from 'react';
+import type { InitiativeAction, InitiativeEntry, InitiativeState } from '@vtt/shared';
 import { emitAck } from '../../core/socket';
 import { useBoard } from '../board/store';
 import { useSheets } from '../sheets/store';
@@ -26,9 +26,20 @@ export function InitiativeTracker({ campaignId, isGm, meId }: Props) {
       .finally(() => setActing(false));
   };
 
-  if (!state || (!isGm && state.entries.length === 0)) return null;
+  if (!state) return null;
   const current = state.entries[state.turn];
   const myTurn = state.active && current?.characterId && characters[current.characterId]?.controlledBy.includes(meId);
+  // ¿Tiene el jugador algún token en la escena que aún no esté en la lista?
+  const mineMissing =
+    !isGm &&
+    Object.values(items).some(
+      (i) =>
+        !i.drawing &&
+        i.layer !== 'map' &&
+        (i.ownerIds.includes(meId) || (i.characterId && characters[i.characterId]?.controlledBy.includes(meId))) &&
+        !state.entries.some((e) => e.itemId === i.id || (i.characterId && e.characterId === i.characterId)),
+    );
+  if (!isGm && state.entries.length === 0 && !mineMissing) return null;
 
   function addSelected() {
     const { selectedId, items } = useBoard.getState();
@@ -76,6 +87,11 @@ export function InitiativeTracker({ campaignId, isGm, meId }: Props) {
               </button>
             </>
           )}
+          {!isGm && mineMissing && (
+            <button className="small primary" onClick={() => void act({ type: 'rollMine' })} title="Tira 1d20 más el bono de iniciativa de tu hoja">
+              🎲 Tirar mi iniciativa
+            </button>
+          )}
           {!isGm && myTurn && (
             <button className="small primary" onClick={() => void act({ type: 'next' })}>
               Terminar mi turno
@@ -91,6 +107,25 @@ export function InitiativeTracker({ campaignId, isGm, meId }: Props) {
             ))}
             {state.active && state.turn === -1 && <li className="muted">Turno de alguien oculto…</li>}
           </ol>
+          {isGm && (
+            <div className="row">
+              <button
+                className="small primary"
+                onClick={() => (!state.entries.length || confirm('¿Volver a tirar la iniciativa de todos los tokens de la escena?')) && void act({ type: 'rollAll', scope: 'all' })}
+                title="Tira 1d20 + el bono de iniciativa de la hoja de cada token de la escena y los ordena (a igualdad, gana el bono más alto)"
+              >
+                🎲 Tirar a todos
+              </button>
+              {state.entries.length > 0 && (
+                <button className="ghost small" onClick={() => void act({ type: 'rollAll', scope: 'missing' })} title="Tira solo para los tokens que aún no están en la lista">
+                  🎲 Los que faltan
+                </button>
+              )}
+              <button className="ghost small" onClick={() => void act({ type: 'rollAll', scope: 'npcs' })} title="Vuelve a tirar solo la de los enemigos y PNJ">
+                🎲 Enemigos
+              </button>
+            </div>
+          )}
           {isGm && (
             <div className="row">
               <button className="ghost small" onClick={addSelected} title="Añade el token seleccionado">
@@ -124,7 +159,7 @@ export function InitiativeTracker({ campaignId, isGm, meId }: Props) {
               </label>
             </div>
           )}
-          {!isGm && <p className="muted hint">Tira iniciativa desde tu hoja para entrar.</p>}
+          {!isGm && state.entries.length === 0 && <p className="muted hint">Tira tu iniciativa para entrar en el combate.</p>}
         </>
       )}
     </div>
@@ -152,6 +187,13 @@ function Entry({ entry, active, isGm, act, ai }: { entry: InitiativeEntry; activ
       </span>
       <span className="init-name">
         {entry.name}
+        {entry.die != null && (
+          <small className="muted init-roll" title="Dado + bono de iniciativa">
+            {' '}
+            ({entry.die}
+            {entry.bonus ? ` ${entry.bonus > 0 ? '+' : '−'} ${Math.abs(entry.bonus)}` : ''})
+          </small>
+        )}
         {ai && <span title="Tiene IA"> 🤖</span>}
       </span>
       {isGm && (
@@ -165,5 +207,58 @@ function Entry({ entry, active, isGm, act, ai }: { entry: InitiativeEntry; activ
         </span>
       )}
     </li>
+  );
+}
+
+/** Barra arriba del tablero, para todos: de quién es el turno y quién va después. */
+export function TurnBanner({ meId }: { meId: string }) {
+  const state = useInitiative((s) => s.state);
+  const characters = useSheets((s) => s.characters);
+  if (!state?.active || !state.entries.length) return null;
+  const current = state.entries[state.turn];
+  const next = state.entries.length > 1 ? state.entries[(Math.max(0, state.turn) + 1) % state.entries.length] : undefined;
+  const mine = !!current?.characterId && !!characters[current.characterId]?.controlledBy.includes(meId);
+  return (
+    <div className={`turn-banner ${mine ? 'mine' : ''}`} role="status">
+      <span className="muted">Ronda {state.round}</span>
+      <strong>{mine ? '¡Es tu turno!' : current ? `Turno de ${current.name}` : 'Turno de alguien oculto'}</strong>
+      {next && next !== current && <span className="muted">Después: {next.name}</span>}
+    </div>
+  );
+}
+
+const ANNOUNCE_MS = 9000;
+
+/** Al tirar la iniciativa, todos ven el orden de turnos en grande unos segundos. */
+export function InitiativeAnnounce({ meId }: { meId: string }) {
+  const announce = useInitiative((s) => s.announce);
+  const state = useInitiative((s) => s.state);
+  const characters = useSheets((s) => s.characters);
+  useEffect(() => {
+    if (announce <= 0) return;
+    const t = setTimeout(() => useInitiative.getState().hideAnnounce(), ANNOUNCE_MS);
+    return () => clearTimeout(t);
+  }, [announce]);
+  if (announce <= 0 || !state?.entries.length) return null;
+  return <AnnounceCard state={state} isMine={(e) => !!e.characterId && !!characters[e.characterId]?.controlledBy.includes(meId)} />;
+}
+
+function AnnounceCard({ state, isMine }: { state: InitiativeState; isMine: (e: InitiativeEntry) => boolean }) {
+  const close = () => useInitiative.getState().hideAnnounce();
+  return (
+    <div className="initiative-announce card" role="dialog" aria-label="Orden de iniciativa" onClick={close}>
+      <h2>⚔️ Orden de iniciativa</h2>
+      <ol>
+        {state.entries.map((e, i) => (
+          <li key={e.id} className={`${isMine(e) ? 'mine' : ''} ${e.hidden ? 'hidden-entry' : ''}`}>
+            <span className="place">{i + 1}.</span>
+            <span className="who">{e.name}</span>
+            <span className="total">{e.value}</span>
+            <small className="muted">{e.die != null ? `${e.die}${e.bonus ? ` ${e.bonus > 0 ? '+' : '−'} ${Math.abs(e.bonus)}` : ''}` : ''}</small>
+          </li>
+        ))}
+      </ol>
+      <p className="muted hint">Toca para cerrar</p>
+    </div>
   );
 }

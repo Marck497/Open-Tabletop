@@ -127,3 +127,61 @@ describe('iniciativa', () => {
     expect((await call(anaC.c, 'initiative:action', { campaignId: campaign.id, type: 'next' })).ok).toBe(false);
   });
 });
+
+describe('iniciativa automática', () => {
+  it('el DM tira a todos con el bono de su hoja; los ocultos van en secreto y todos reciben el aviso', async () => {
+    const { app, gm, ana, campaign, gmC, anaC, bobC } = await setup();
+    const req = (cookie: string, method: 'POST' | 'PATCH', url: string, payload: object) => app.inject({ method, url: `/api${url}`, headers: { cookie }, payload });
+    const sceneId: string = campaign.activeSceneId;
+    // Ana (DES 18 → +4), un ogro (DES 8 → −1), un goblin escondido en la capa del DM y un token sin hoja.
+    const { character: hero } = (await req(gm.cookie, 'POST', `/campaigns/${campaign.id}/characters`, { name: 'Ana la Pícara', controlledBy: [ana.user.id] })).json();
+    await req(gm.cookie, 'PATCH', `/characters/${hero.id}`, { values: { des: 18 } });
+    const { character: ogre } = (await req(gm.cookie, 'POST', `/campaigns/${campaign.id}/compendium/ogro`, {})).json();
+    const { character: gob } = (await req(gm.cookie, 'POST', `/campaigns/${campaign.id}/compendium/goblin`, {})).json();
+    ok(await call(gmC.c, 'scene:view', { sceneId }));
+    const add = (item: object) => call(gmC.c, 'item:create', { sceneId, item: { layer: 'token', x: 0, y: 0, width: 70, height: 70, ...item } }).then(ok);
+    await add({ characterId: hero.id, ownerIds: [ana.user.id] });
+    await add({ characterId: hero.id, ownerIds: [ana.user.id], x: 70 }); // segundo token del mismo personaje: tira una vez
+    await add({ characterId: ogre.id, ai: null });
+    await add({ characterId: gob.id, layer: 'gm' });
+    await add({ name: 'Barril' });
+    await add({ drawing: { type: 'text', text: 'Aquí' } });
+
+    // Los jugadores no pueden tirar a todos.
+    expect((await call(anaC.c, 'initiative:action', { campaignId: campaign.id, type: 'rollAll', scope: 'all' })).ok).toBe(false);
+    const announced = new Promise((r) => bobC.c.once('initiative:announce', r));
+    const state = ok(await call<InitiativeState>(gmC.c, 'initiative:action', { campaignId: campaign.id, type: 'rollAll', scope: 'all' }));
+    await announced;
+    expect(state.entries).toHaveLength(4);
+    const byName = Object.fromEntries(state.entries.map((e) => [e.name, e]));
+    expect(byName['Ana la Pícara']).toMatchObject({ bonus: 4 });
+    expect(byName['Ana la Pícara']!.value).toBe(byName['Ana la Pícara']!.die! + 4);
+    expect(byName['Ogro']).toMatchObject({ bonus: -1 });
+    expect(byName['Goblin']).toMatchObject({ bonus: 2, hidden: true });
+    expect(byName['Barril']).toMatchObject({ bonus: 0 });
+    // Ordenado: total y, a igualdad, bono.
+    for (let i = 1; i < state.entries.length; i++) {
+      const [a, b] = [state.entries[i - 1]!, state.entries[i]!];
+      expect(a.value > b.value || (a.value === b.value && a.bonus! >= b.bonus!)).toBe(true);
+    }
+    await tick();
+    // El resumen público no menciona al goblin escondido; el DM recibe además el secreto.
+    const pub = bobC.inbox.filter((m) => m.kind === 'system');
+    expect(pub).toHaveLength(1);
+    expect(pub[0]!.text).toMatch(/Ana la Pícara \d+/);
+    expect(pub[0]!.text).not.toMatch(/Goblin/);
+    expect(gmC.inbox.filter((m) => m.kind === 'system').map((m) => m.secret)).toEqual([false, true]);
+
+    // Volver a tirar no duplica; "los que faltan" no hay ninguno.
+    const again = ok(await call<InitiativeState>(gmC.c, 'initiative:action', { campaignId: campaign.id, type: 'rollAll', scope: 'npcs' }));
+    expect(again.entries).toHaveLength(4);
+    expect((await call(gmC.c, 'initiative:action', { campaignId: campaign.id, type: 'rollAll', scope: 'missing' })).ok).toBe(false);
+
+    // La jugadora tira la de sus personajes.
+    ok(await call(gmC.c, 'initiative:action', { campaignId: campaign.id, type: 'clear' }));
+    const mine = ok(await call<InitiativeState>(anaC.c, 'initiative:action', { campaignId: campaign.id, type: 'rollMine' }));
+    expect(mine.entries.map((e) => e.name)).toEqual(['Ana la Pícara']);
+    expect((await call(bobC.c, 'initiative:action', { campaignId: campaign.id, type: 'rollMine' })).ok).toBe(false);
+  });
+});
+

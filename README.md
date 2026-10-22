@@ -77,7 +77,9 @@ Ejemplos de fórmulas: `floor((fue - 10) / 2)`, `if(sigilo_comp, competencia, 0)
 
 - **Chat** (pestaña por defecto): escribe normal o usa comandos: `/r 1d20+5 Ataque`, `/gr 1d20` (secreta para el DM), `/w Ana texto` (susurro), `/em se esconde`. Con ↑ recuperas lo último que enviaste, y el selector permite hablar como tu personaje.
 - Todas las tiradas (de la hoja o del chat) quedan guardadas en el chat.
-- **Iniciativa**: el DM añade tokens (los de la capa DM entran ocultos) y pulsa *Empezar*. Los jugadores entran tirando *Iniciativa* desde su hoja. El token al que le toca se resalta en el tablero, y cada jugador puede terminar su propio turno.
+- **Iniciativa automática**: el DM pulsa **🎲 Tirar a todos** y se tira 1d20 + el bono de iniciativa de la hoja de cada token de la escena (sin hoja, 1d20). La lista se ordena sola; a igualdad, gana el bono más alto. También puede tirar solo *los que faltan* o solo los *enemigos*. Los de la capa DM entran ocultos y su tirada solo la ve el DM.
+- Al tirar, **todos ven el orden en grande** en el centro de la pantalla, con el dado y el bono de cada uno (y el resumen queda en el chat). Los jugadores que aún no estén en la lista tienen **🎲 Tirar mi iniciativa** (o la tiran desde su hoja).
+- Con el combate empezado, arriba aparece **de quién es el turno y quién va después** (y *¡Es tu turno!* cuando te toca). El token al que le toca se resalta en el tablero y cada jugador puede terminar su propio turno. El DM puede seguir añadiendo tokens a mano y corregir valores.
 
 ## Música y ambiente
 
