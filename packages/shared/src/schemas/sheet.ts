@@ -97,11 +97,23 @@ export const combatMappingSchema = z.object({
   hpTemp: z.string().max(64).default(''),
   /** Fórmula o campo con la velocidad, en las unidades de la escena (pies). */
   speed: z.string().max(200).default(''),
-  /** Tabla de ataques: columnas con el nombre, la tirada de ataque y la de daño. */
+  /**
+   * Tabla de ataques: columnas con el nombre, la tirada de ataque y la de daño, y opcionalmente
+   * el daño extra (p. ej. "1d6 fuego") y desde qué número del d20 es crítico (20 por defecto).
+   */
   attacks: z
-    .object({ list: keySchema, name: keySchema, attack: keySchema, damage: keySchema })
+    .object({ list: keySchema, name: keySchema, attack: keySchema, damage: keySchema, extra: keySchema.optional(), crit: keySchema.optional() })
     .nullable()
     .default(null),
+  /** Tabla de conjuros: nombre, nivel (0 = truco) y tirada de efecto. Al lanzarlos se gasta un espacio. */
+  spells: z.object({ list: keySchema, name: keySchema, level: keySchema, effect: keySchema }).nullable().optional(),
+  /**
+   * Espacios de conjuro por nivel: claves con {n} para el nivel ("espacios_{n}_max"). `pact` es una
+   * casilla que, marcada, hace que los espacios se recuperen también con un descanso corto (brujo).
+   */
+  slots: z.object({ max: z.string().max(64), used: z.string().max(64), pact: z.string().max(64).default('') }).nullable().optional(),
+  /** Tabla de recursos con usos (furia, ki, canalizar divinidad…): usos que quedan, máximo y cuándo se recargan. */
+  resources: z.object({ list: keySchema, name: keySchema, uses: keySchema, max: keySchema, recharge: keySchema }).nullable().optional(),
 });
 export type CombatMapping = z.infer<typeof combatMappingSchema>;
 

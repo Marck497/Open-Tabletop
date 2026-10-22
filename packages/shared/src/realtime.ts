@@ -39,6 +39,19 @@ export interface PointerAuthor {
   color: string;
 }
 
+export type SheetAction =
+  | { kind: 'attack'; rowId: string }
+  /** `slot`: nivel del espacio que se gasta (por defecto, el más bajo libre). */
+  | { kind: 'cast'; rowId: string; slot?: number }
+  | { kind: 'use'; rowId: string }
+  | { kind: 'rest'; rest: 'short' | 'long' };
+
+export interface SheetActionRequest {
+  characterId: string;
+  action: SheetAction;
+  secret?: boolean;
+}
+
 export interface RollRequest {
   campaignId: string;
   expression: string;
@@ -116,6 +129,8 @@ export interface ClientToServerEvents {
   /** Señala un punto. Con `focus` (solo DM) centra la vista de todos en él. */
   'board:ping': (payload: { sceneId: string; x: number; y: number; focus?: boolean }) => void;
   'roll': (payload: RollRequest, ack: Ack<ChatMessage>) => void;
+  /** Botones de la hoja: atacar, lanzar un conjuro, gastar un uso o descansar. */
+  'sheet:action': (payload: SheetActionRequest, ack: Ack<ChatMessage>) => void;
   'chat:send': (payload: { campaignId: string; text: string; asCharacterId?: string | null }, ack: Ack<ChatMessage>) => void;
   'initiative:get': (payload: { campaignId: string }, ack: Ack<InitiativeState>) => void;
   /** Acciones sobre el orden de iniciativa (las de gestión, solo el DM). */

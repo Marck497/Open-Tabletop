@@ -1,18 +1,22 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import {
+  actionsOf,
   assetUrl,
   computeAll,
   createResolver,
   evaluate,
+  slotsOf,
   type CampaignMember,
   type Character,
   type SheetField,
   type SheetRow,
   type SheetTemplate,
+  type SheetAction,
   type SheetValue,
   type UpdateCharacterInput,
 } from '@vtt/shared';
 import { api } from '../../core/api';
+import { emitAck } from '../../core/socket';
 import { roll } from '../dice/roll';
 import { AssetPicker } from '../board/AssetPicker';
 import { addCharacterToken } from './tokens';
@@ -36,6 +40,40 @@ export function CharacterSheet({ character, template, isGm, meId, members, index
   const [settings, setSettings] = useState(false);
   const [picker, setPicker] = useState(false);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const actions = useMemo(() => actionsOf(template), [template]);
+  const slots = useMemo(() => slotsOf(template, character.values), [template, character.values]);
+
+  /** Botones de acción: el servidor tira, gasta y lo cuenta en el chat. */
+  const act = (action: SheetAction) => void emitAck('sheet:action', { characterId: character.id, action }).catch((e: Error) => alert(e.message));
+  const rest = (kind: 'short' | 'long') => {
+    const what = kind === 'long' ? 'un descanso largo (PG, espacios de conjuro y recursos)' : 'un descanso corto (recursos de descanso corto y espacios de pacto)';
+    if (confirm(`¿${character.name} hace ${what}?`)) act({ kind: 'rest', rest: kind });
+  };
+  const num = (v: unknown) => (typeof v === 'number' ? v : Number(v) || 0);
+
+  /** Botón de cada fila en las tablas de ataques, conjuros y recursos. */
+  const rowAction = (listKey: string): ((row: SheetRow) => ReactNode) | undefined => {
+    if (!canEdit) return undefined;
+    if (actions.attacks?.list === listKey)
+      return (row) => (
+        <button className="ghost small action-btn" title="Atacar: tirada de ataque y de daño (crítico incluido)" onClick={() => act({ kind: 'attack', rowId: row._id })}>
+          ⚔
+        </button>
+      );
+    if (actions.spells?.list === listKey) {
+      const sp = actions.spells;
+      return (row) => <CastButton level={Math.round(num(row[sp.level]))} slots={slots} onCast={(slot) => act({ kind: 'cast', rowId: row._id, slot })} />;
+    }
+    if (actions.resources?.list === listKey) {
+      const r = actions.resources;
+      return (row) => (
+        <button className="ghost small action-btn" disabled={num(row[r.uses]) <= 0} title="Usar (gasta un uso)" onClick={() => act({ kind: 'use', rowId: row._id })}>
+          ▶
+        </button>
+      );
+    }
+    return undefined;
+  };
 
   const save = (patch: UpdateCharacterInput) => api.patch(`/characters/${character.id}`, patch).catch((e: Error) => alert(e.message));
   const setValue = (key: string, value: SheetValue) => {
@@ -70,6 +108,16 @@ export function CharacterSheet({ character, template, isGm, meId, members, index
           readOnly={!canEdit}
           onBlur={(e) => e.target.value.trim() && e.target.value !== character.name && void save({ name: e.target.value.trim() })}
         />
+        {canEdit && (actions.hp || actions.slots || actions.resources) && (
+          <>
+            <button className="ghost small" onClick={() => rest('short')} title="Descanso corto: recursos de descanso corto y espacios de pacto">
+              ☾
+            </button>
+            <button className="ghost small" onClick={() => rest('long')} title="Descanso largo: PG, espacios de conjuro y recursos">
+              ☀
+            </button>
+          </>
+        )}
         {isGm && (
           <button className="ghost small" onClick={() => setSettings((v) => !v)} title="Permisos y opciones">
             ⚙
@@ -102,6 +150,7 @@ export function CharacterSheet({ character, template, isGm, meId, members, index
                       values={character.values}
                       onChange={(rows) => setValue(f.key, rows)}
                       onRoll={(col, row) => doRoll(col, { listKey: f.key, row })}
+                      rowAction={rowAction(f.key)}
                     />
                   ) : (
                     <SheetFieldView
@@ -181,10 +230,12 @@ interface ListProps {
   values: Character['values'];
   onChange: (rows: SheetRow[]) => void;
   onRoll: (col: SheetField, row: SheetRow) => void;
+  /** Botón de acción al principio de cada fila (atacar, lanzar, usar). */
+  rowAction?: (row: SheetRow) => ReactNode;
 }
 
 /** Tabla de filas repetibles (ataques, conjuros, inventario...). */
-function ListField({ field, rows, readOnly, template, values, onChange, onRoll }: ListProps) {
+function ListField({ field, rows, readOnly, template, values, onChange, onRoll, rowAction }: ListProps) {
   const cols = field.columns ?? [];
   const addRow = () => {
     const row: SheetRow = { _id: newRowId() };
@@ -207,6 +258,7 @@ function ListField({ field, rows, readOnly, template, values, onChange, onRoll }
       <table>
         <thead>
           <tr>
+            {rowAction && <th />}
             {cols.map((c) => (
               <th key={c.key}>{c.label}</th>
             ))}
@@ -216,6 +268,7 @@ function ListField({ field, rows, readOnly, template, values, onChange, onRoll }
         <tbody>
           {rows.map((row) => (
             <tr key={row._id}>
+              {rowAction && <td className="action-cell">{rowAction(row)}</td>}
               {cols.map((c) => (
                 <td key={c.key}>
                   <SheetFieldView
@@ -246,5 +299,35 @@ function ListField({ field, rows, readOnly, template, values, onChange, onRoll }
         </button>
       )}
     </div>
+  );
+}
+
+/** Lanzar un conjuro: los trucos sin más; los demás, con el espacio elegido (por defecto, el más bajo libre). */
+function CastButton({ level, slots, onCast }: { level: number; slots: { level: number; max: number; used: number }[]; onCast: (slot?: number) => void }) {
+  const usable = slots.filter((s) => s.level >= level && s.max > 0);
+  const firstFree = usable.find((s) => s.used < s.max)?.level;
+  const [slot, setSlot] = useState<number | undefined>(undefined);
+  const chosen = slot ?? firstFree;
+  if (level <= 0)
+    return (
+      <button className="ghost small action-btn" title="Lanzar (truco)" onClick={() => onCast()}>
+        ✨
+      </button>
+    );
+  return (
+    <span className="cast">
+      <button className="ghost small action-btn" disabled={!chosen} title={chosen ? `Lanzar con un espacio de nivel ${chosen}` : 'No te quedan espacios'} onClick={() => onCast(chosen)}>
+        ✨
+      </button>
+      {usable.length > 1 && (
+        <select className="slot-pick" value={chosen ?? ''} onChange={(e) => setSlot(Number(e.target.value))} title="Nivel del espacio">
+          {usable.map((s) => (
+            <option key={s.level} value={s.level} disabled={s.used >= s.max}>
+              {s.level} ({s.max - s.used}/{s.max})
+            </option>
+          ))}
+        </select>
+      )}
+    </span>
   );
 }

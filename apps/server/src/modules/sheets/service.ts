@@ -9,6 +9,7 @@ import {
   monsterValues,
   sheetTemplateSchema,
   updateCharacterSchema,
+  upgradeDnd5e,
   type CampaignRole,
   type Character,
   type CreateCharacterInput,
@@ -42,7 +43,12 @@ export function createSheetService(ctx: AppContext) {
 
   function getTemplate(campaignId: string): SheetTemplate {
     const row = db.select().from(sheetTemplates).where(eq(sheetTemplates.campaignId, campaignId)).get();
-    if (row) return row.definition;
+    if (row) {
+      // Plantillas de 5e de versiones anteriores: se les añade lo nuevo (una sola vez).
+      const upgraded = upgradeDnd5e(row.definition);
+      if (upgraded !== row.definition) db.update(sheetTemplates).set({ definition: upgraded }).where(eq(sheetTemplates.campaignId, campaignId)).run();
+      return upgraded;
+    }
     // Partidas sin plantilla todavía: se crea a partir del sistema de la partida.
     const c = db.select({ systemId: campaigns.systemId }).from(campaigns).where(eq(campaigns.id, campaignId)).get();
     if (!c) throw notFound('Partida no encontrada');

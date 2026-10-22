@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { and, desc, eq, lt } from 'drizzle-orm';
-import { checkSyntax, type CampaignRole, type ChatMessage, type PublicUser } from '@vtt/shared';
+import { splitRoll, type CampaignRole, type ChatMessage, type PublicUser } from '@vtt/shared';
 import type { AppContext } from '../../core/module.js';
 import { badRequest } from '../../core/errors.js';
 import { chatMessages } from '../../db/schema.js';
@@ -134,15 +134,4 @@ export function createChatService(ctx: AppContext) {
   return { history, clear, roll, send, insert };
 }
 
-/**
- * Separa "1d20+5 Ataque con espada" en tirada y etiqueta: la tirada es el
- * principio más largo que es una expresión válida.
- */
-export function splitRoll(rest: string): { expression: string; label: string } {
-  const words = rest.trim().split(/\s+/).filter(Boolean);
-  for (let n = words.length; n > 0; n--) {
-    const expression = words.slice(0, n).join(' ');
-    if (!checkSyntax(expression)) return { expression, label: words.slice(n).join(' ') };
-  }
-  return { expression: '', label: '' };
-}
+export { splitRoll };

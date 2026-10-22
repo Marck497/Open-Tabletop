@@ -284,10 +284,11 @@ function CombatEditor({ template, update }: { template: SheetTemplate; update: (
   );
   const list = lists.find((l) => l.key === combat.attacks?.list);
   const cols = list?.columns ?? [];
-  const col = (key: 'name' | 'attack' | 'damage', label: string) => (
+  const col = (key: 'name' | 'attack' | 'damage' | 'extra' | 'crit', label: string, optional = false) => (
     <label>
       {label}
-      <select value={combat.attacks?.[key] ?? ''} onChange={(e) => set({ attacks: { ...combat.attacks!, [key]: e.target.value } })}>
+      <select value={combat.attacks?.[key] ?? ''} onChange={(e) => set({ attacks: { ...combat.attacks!, [key]: e.target.value || undefined } })}>
+        {optional && <option value="">—</option>}
         {cols.map((c) => (
           <option key={c.key} value={c.key}>
             {c.label} ({c.key})
@@ -298,8 +299,8 @@ function CombatEditor({ template, update }: { template: SheetTemplate; update: (
   );
   return (
     <details className="help">
-      <summary>Combate, barras de vida e IA de enemigos</summary>
-      <p className="muted hint">Qué campos usan los enemigos con IA para atacar y para saber a quién le queda poca vida.</p>
+      <summary>Combate, barras de vida, botones de acción e IA de enemigos</summary>
+      <p className="muted hint">Qué campos usan los enemigos con IA para atacar y para saber a quién le queda poca vida, y los botones de atacar, lanzar, usar y descansar de las hojas.</p>
       <div className="field-row">
         {pick('ac', 'Defensa (CA)')}
         {pick('speed', 'Velocidad')}
@@ -328,13 +329,120 @@ function CombatEditor({ template, update }: { template: SheetTemplate; update: (
         </select>
       </label>
       {combat.attacks && list && (
-        <div className="field-row three">
-          {col('name', 'Nombre')}
-          {col('attack', 'Tirada de ataque')}
-          {col('damage', 'Daño')}
+        <>
+          <div className="field-row three">
+            {col('name', 'Nombre')}
+            {col('attack', 'Tirada de ataque')}
+            {col('damage', 'Daño')}
+          </div>
+          <div className="field-row">
+            {col('extra', 'Daño extra (opcional)', true)}
+            {col('crit', 'Crítico con (opcional)', true)}
+          </div>
+        </>
+      )}
+      <TableMapping
+        label="Tabla de conjuros (✨ Lanzar)"
+        lists={lists}
+        value={combat.spells ?? null}
+        columns={[
+          ['name', 'Nombre'],
+          ['level', 'Nivel (0 = truco)'],
+          ['effect', 'Tirada de efecto'],
+        ]}
+        onChange={(spells) => set({ spells: spells as CombatMapping['spells'] })}
+      />
+      <div className="field-row three">
+        <label>
+          Espacios máx. ({'{n}'} = nivel)
+          <input value={combat.slots?.max ?? ''} placeholder="espacios_{n}_max" onChange={(e) => set({ slots: e.target.value ? { max: e.target.value, used: combat.slots?.used ?? '', pact: combat.slots?.pact ?? '' } : null })} />
+        </label>
+        <label>
+          Espacios gastados
+          <input value={combat.slots?.used ?? ''} placeholder="espacios_{n}_usados" disabled={!combat.slots} onChange={(e) => set({ slots: { ...combat.slots!, used: e.target.value } })} />
+        </label>
+        <label>
+          Casilla de pacto
+          <select value={combat.slots?.pact ?? ''} disabled={!combat.slots} onChange={(e) => set({ slots: { ...combat.slots!, pact: e.target.value } })}>
+            <option value="">—</option>
+            {fields
+              .filter((f) => f.type === 'checkbox')
+              .map((f) => (
+                <option key={f.key} value={f.key}>
+                  {f.label} ({f.key})
+                </option>
+              ))}
+          </select>
+        </label>
+      </div>
+      <TableMapping
+        label="Tabla de recursos con usos (▶ Usar y descansos)"
+        lists={lists}
+        value={combat.resources ?? null}
+        columns={[
+          ['name', 'Nombre'],
+          ['uses', 'Usos que quedan'],
+          ['max', 'Máximo'],
+          ['recharge', 'Recarga ("corto" o "largo")'],
+        ]}
+        onChange={(resources) => set({ resources: resources as CombatMapping['resources'] })}
+      />
+    </details>
+  );
+}
+
+/** Elegir una tabla de la hoja y qué columna es cada cosa. */
+function TableMapping({
+  label,
+  lists,
+  value,
+  columns,
+  onChange,
+}: {
+  label: string;
+  lists: SheetField[];
+  value: Record<string, string> | null;
+  columns: [string, string][];
+  onChange: (v: Record<string, string> | null) => void;
+}) {
+  const list = lists.find((l) => l.key === value?.list);
+  return (
+    <>
+      <label>
+        {label}
+        <select
+          value={value?.list ?? ''}
+          onChange={(e) => {
+            const l = lists.find((x) => x.key === e.target.value);
+            const first = l?.columns?.[0]?.key ?? '';
+            onChange(l ? { list: l.key, ...Object.fromEntries(columns.map(([k]) => [k, l.columns?.find((c) => c.key === value?.[k])?.key ?? first])) } : null);
+          }}
+        >
+          <option value="">Ninguna</option>
+          {lists.map((f) => (
+            <option key={f.key} value={f.key}>
+              {f.label} ({f.key})
+            </option>
+          ))}
+        </select>
+      </label>
+      {value && list && (
+        <div className={`field-row ${columns.length === 3 ? 'three' : ''}`}>
+          {columns.map(([k, l]) => (
+            <label key={k}>
+              {l}
+              <select value={value[k] ?? ''} onChange={(e) => onChange({ ...value, [k]: e.target.value })}>
+                {(list.columns ?? []).map((c) => (
+                  <option key={c.key} value={c.key}>
+                    {c.label} ({c.key})
+                  </option>
+                ))}
+              </select>
+            </label>
+          ))}
         </div>
       )}
-    </details>
+    </>
   );
 }
 

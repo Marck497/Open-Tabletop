@@ -400,3 +400,11 @@ body.fx-shake .table-main { animation: fx-shake 0.6s cubic-bezier(.36,.07,.19,.9
 .compendium .tabs { margin-bottom: 4px; }
 .compendium .row select, .creator .row select { width: auto; }
 .compendium label.switch { white-space: nowrap; margin-bottom: 0; }
+
+/* Botones de acción de la hoja y tiradas con varias partes */
+.action-cell { white-space: nowrap; width: 1%; }
+.action-btn { padding: 2px 6px; font-size: 0.95rem; }
+.cast { display: inline-flex; align-items: center; gap: 2px; }
+.cast .slot-pick { width: auto; padding: 1px 2px; font-size: 0.75rem; }
+.roll-part { border-top: 1px dashed var(--border); margin-top: 4px; padding-top: 2px; }
+.roll-part .roll-label { color: var(--text); font-size: 0.82rem; }
