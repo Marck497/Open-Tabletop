@@ -6,6 +6,8 @@ import {
   createResolver,
   evaluate,
   ExprError,
+  fxForHomebrew,
+  fxForRow,
   restPatch,
   spendSlot,
   spendUse,
@@ -14,6 +16,8 @@ import {
   type ChatMessage,
   type ChatRollPart,
   type DiceRoll,
+  type FxCue,
+  type FxTarget,
   type HomebrewEntry,
   type PublicUser,
   type SheetRow,
@@ -24,6 +28,7 @@ import { badRequest, forbidden, notFound } from '../../core/errors.js';
 import { secureRng } from '../dice/service.js';
 import { canEditCharacter, createSheetService } from '../sheets/service.js';
 import { createHomebrewEffects } from '../homebrew/effects.js';
+import { fxTargetSchema } from '../fx/service.js';
 import { canSeeHomebrew, createHomebrewService } from '../homebrew/service.js';
 import { createChatService } from './service.js';
 
@@ -31,6 +36,7 @@ const id = z.string().min(1).max(64);
 const actionSchema = z.object({
   characterId: id,
   secret: z.boolean().optional(),
+  fx: fxTargetSchema.optional(),
   action: z.discriminatedUnion('kind', [
     z.object({ kind: z.literal('attack'), rowId: id }),
     z.object({ kind: z.literal('cast'), rowId: id, slot: z.number().int().min(1).max(9).optional() }),
@@ -50,6 +56,8 @@ export interface ActionResult {
   after: Character | null;
   /** Estado que hay que poner a los tokens del personaje (concentración…). */
   selfStatus?: string;
+  /** Animación para el tablero y dónde (si la acción la tiene y el cliente la pidió). */
+  fx?: { cue: FxCue; target: FxTarget } | null;
 }
 
 /** Botones de acción de las hojas. Las tiradas, como todas, se hacen en el servidor. */
@@ -104,6 +112,7 @@ export function createSheetActions(ctx: AppContext) {
     let patch: SheetValues | null = null;
     let message: ChatMessage;
     let selfStatus = '';
+    let cue: FxCue | null = null;
     const action = req.action;
     /** Filas enlazadas a una creación: hacen lo que diga la creación (si aún existe). */
     const linked = (row: SheetRow) => (typeof row._ref === 'string' ? homebrew.find(character.campaignId, row._ref) : null);
@@ -112,6 +121,7 @@ export function createSheetActions(ctx: AppContext) {
       message = used.message;
       patch = used.patch;
       selfStatus = used.selfStatus;
+      cue = fxForHomebrew(entry, !!used.message.roll?.crit);
     };
 
     try {
@@ -139,6 +149,7 @@ export function createSheetActions(ctx: AppContext) {
           const extra = a.attacks.extra ? rollText(String(row[a.attacks.extra] ?? ''), resolve, crit) : null;
           if (extra) parts.push({ ...extra, label: `Extra${extra.note ? ` (${extra.note})` : ''}` });
           const verdict = crit ? ' — ¡crítico!' : natural === 1 ? ' — pifia' : '';
+          cue = fxForRow('attack', name, String(row[a.attacks.damage] ?? ''), crit);
           if (attack) {
             message = chat.insert({ ...base, kind: 'roll', text: '', roll: { label: `${name}${verdict}`, expression: attack.expression, total: attack.total, rolls: attack.rolls, parts, crit } });
           } else if (parts.length) {
@@ -164,6 +175,7 @@ export function createSheetActions(ctx: AppContext) {
             how = `espacio de nivel ${spent.slot}, quedan ${spent.left}/${spent.max}`;
           }
           const effect = rollText(String(row[a.spells.effect] ?? ''), createResolver(template, values, row));
+          cue = fxForRow('cast', name, String(row[a.spells.effect] ?? ''));
           message = effect
             ? chat.insert({ ...base, kind: 'roll', text: '', roll: { label: `${name} (${how})${effect.note ? `: ${effect.note}` : ''}`, expression: effect.expression, total: effect.total, rolls: effect.rolls } })
             : chat.insert({ ...base, kind: 'emote', text: `lanza ${name} (${how}).`, roll: null });
@@ -201,7 +213,7 @@ export function createSheetActions(ctx: AppContext) {
       throw e;
     }
     const after = patch ? sheets.update(character.id, user.id, { values: patch }).after : null;
-    return { message: message!, before: character, after, selfStatus };
+    return { message: message!, before: character, after, selfStatus, fx: cue && req.fx ? { cue, target: req.fx } : null };
   }
 
   return { run };

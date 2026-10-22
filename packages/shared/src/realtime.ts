@@ -4,6 +4,7 @@
  */
 import type { BoardItem, CreateItemInput, Fog, Scene, SceneState, UpdateItemInput } from './schemas/board.js';
 import type { Measure } from './schemas/measure.js';
+import type { BoardFx } from './fx.js';
 import type { WallInput } from './schemas/walls.js';
 import type { AiSettings } from './schemas/ai.js';
 import type { Character } from './schemas/character.js';
@@ -48,10 +49,19 @@ export type SheetAction =
   /** Usar una creación (hechizo, ataque u objeto) con esta hoja; `slot` como en `cast`. */
   | { kind: 'homebrew'; entryId: string; slot?: number };
 
+/** Dónde animar un ataque o un hechizo: la escena abierta, los objetivos marcados y la plantilla de área. */
+export interface FxTarget {
+  sceneId: string;
+  targetIds: string[];
+  area?: Measure | null;
+}
+
 export interface SheetActionRequest {
   characterId: string;
   action: SheetAction;
   secret?: boolean;
+  /** Si se indica, se anima en el tablero (desde el token del personaje). */
+  fx?: FxTarget;
 }
 
 export interface RollRequest {
@@ -88,6 +98,8 @@ export interface ServerToClientEvents {
   /** Regla o plantilla de área de otro usuario (null = la ha quitado). */
   'board:measure': (payload: { sceneId: string } & PointerAuthor & { measure: Measure | null }) => void;
   'board:ping': (payload: { sceneId: string } & PointerAuthor & { x: number; y: number; focus: boolean }) => void;
+  /** Animación de un ataque o un hechizo (ya filtrada por lo que ve cada uno). */
+  'board:fx': (payload: { sceneId: string; fx: BoardFx }) => void;
   // Hojas
   'template:updated': (payload: { campaignId: string }) => void;
   'character:upserted': (payload: { character: Character }) => void;

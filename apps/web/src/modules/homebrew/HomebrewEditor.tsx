@@ -5,7 +5,11 @@ import {
   AREA_SHAPES,
   ATTACK_KIND_LABELS,
   ATTACK_KINDS,
+  autoFxStyle,
   DAMAGE_TYPE_SUGGESTIONS,
+  fxForHomebrew,
+  FX_STYLE_LABELS,
+  FX_STYLES,
   HOMEBREW_KIND_ICONS,
   HOMEBREW_KIND_LABELS,
   HOMEBREW_KINDS,
@@ -16,6 +20,7 @@ import {
   statusesOf,
   type AreaShape,
   type AttackKind,
+  type FxStyle,
   type HomebrewData,
   type HomebrewEntry,
   type HomebrewKind,
@@ -58,6 +63,10 @@ export function HomebrewEditor({ campaignId, template, isGm, draft: initial, onC
   const set = (patch: Partial<HomebrewData>) => setDraft((x) => ({ ...x, data: { ...x.data, ...patch } }));
 
   const saves = useMemo(() => (template ? saveOptions(template) : []), [template]);
+  // Las creaciones de antes de las animaciones no traen `fx`.
+  const fx = (d.fx as HomebrewData['fx'] | undefined) ?? { style: 'auto', color: '' };
+  const autoStyle = autoFxStyle(draft.kind, d);
+  const cue = fxForHomebrew({ kind: draft.kind, data: { ...d, fx: { ...fx, style: fx.style === 'none' ? 'auto' : fx.style } } });
   const statuses = useMemo(() => statusesOf(template), [template]);
   // Sugerencias de fórmulas: campos numéricos y calculados de la hoja.
   const refs = useMemo(() => (template ? allFields(template).filter((f) => f.type === 'computed' || f.type === 'number') : []), [template]);
@@ -351,6 +360,38 @@ export function HomebrewEditor({ campaignId, template, isGm, draft: initial, onC
             </label>
           )}
         </div>
+      </fieldset>
+
+      <fieldset className="hb-group">
+        <legend>Animación en el tablero</legend>
+        <div className="field-row">
+          <label>
+            Estilo
+            <select value={fx.style} onChange={(e) => set({ fx: { ...fx, style: e.target.value as FxStyle } })}>
+              {FX_STYLES.map((s) => (
+                <option key={s} value={s}>
+                  {s === 'auto' ? `Automática (${autoStyle ? FX_STYLE_LABELS[autoStyle].replace(/^\S+ /, '').toLowerCase() : 'ninguna'})` : FX_STYLE_LABELS[s]}
+                </option>
+              ))}
+            </select>
+          </label>
+          {fx.style !== 'none' && (
+            <label>
+              Color
+              <span className="row">
+                <input type="color" value={cue?.color ?? '#ffffff'} onChange={(e) => set({ fx: { ...fx, color: e.target.value } })} />
+                {fx.color ? (
+                  <button className="ghost small" onClick={() => set({ fx: { ...fx, color: '' } })} title="Usar el color del tipo de daño">
+                    Automático
+                  </button>
+                ) : (
+                  <span className="muted">según el tipo de daño</span>
+                )}
+              </span>
+            </label>
+          )}
+        </div>
+        <p className="muted hint">Se ve sobre el tablero al usarlo, desde el token de quien lo usa hacia los objetivos marcados (Alt+clic en un token) o la plantilla de área.</p>
       </fieldset>
 
       <fieldset className="hb-group">

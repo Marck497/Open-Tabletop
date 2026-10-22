@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { checkSyntax } from '../expr.js';
+import { FX_STYLES } from '../fx.js';
 
 /**
  * Creaciones de la mesa: hechizos, ataques y objetos hechos (o copiados del SRD y retocados)
@@ -76,6 +77,13 @@ export const homebrewDataSchema = z
     /** Usos (0 = sin límite) y cuándo se recargan. */
     uses: z.number().int().min(0).max(99).default(0),
     recharge: z.enum(RECHARGES).default('largo'),
+    /** Animación en el tablero al usarla: estilo ("auto" se deduce) y color ('' = el del tipo de daño). */
+    fx: z
+      .object({
+        style: z.enum(FX_STYLES).default('auto'),
+        color: z.string().regex(/^(#[0-9a-fA-F]{6})?$/).default(''),
+      })
+      .prefault({}),
   })
   .superRefine((d, ctx) => {
     const check = (value: string, path: (string | number)[], what: string) => {

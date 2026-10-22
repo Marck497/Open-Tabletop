@@ -16,6 +16,7 @@ import {
   type SheetValue,
   type UpdateCharacterInput,
 } from '@vtt/shared';
+import { currentFxTarget } from '../fx/target';
 import { api } from '../../core/api';
 import { emitAck } from '../../core/socket';
 import { roll } from '../dice/roll';
@@ -47,7 +48,8 @@ export function CharacterSheet({ character, template, isGm, meId, members, index
   const homebrew = useHomebrew((s) => s.entries);
 
   /** Botones de acción: el servidor tira, gasta y lo cuenta en el chat. */
-  const act = (action: SheetAction) => void emitAck('sheet:action', { characterId: character.id, action }).catch((e: Error) => alert(e.message));
+  const act = (action: SheetAction) =>
+    void emitAck('sheet:action', { characterId: character.id, action, fx: action.kind === 'rest' || action.kind === 'use' ? undefined : currentFxTarget() }).catch((e: Error) => alert(e.message));
   const rest = (kind: 'short' | 'long') => {
     const what = kind === 'long' ? 'un descanso largo (PG, espacios de conjuro y recursos)' : 'un descanso corto (recursos de descanso corto y espacios de pacto)';
     if (confirm(`¿${character.name} hace ${what}?`)) act({ kind: 'rest', rest: kind });

@@ -12,24 +12,26 @@ interface FxSettings {
   enabled: boolean;
   /** Con sonido (usa el volumen general de la música). */
   sound: boolean;
-  set: (patch: Partial<Pick<FxSettings, 'enabled' | 'sound'>>) => void;
+  /** Animaciones de ataques y hechizos sobre el tablero. */
+  board: boolean;
+  set: (patch: Partial<Pick<FxSettings, 'enabled' | 'sound' | 'board'>>) => void;
 }
 
 function readFx() {
   try {
     const v = JSON.parse(localStorage.getItem(FX_KEY) ?? 'null');
-    if (v && typeof v.enabled === 'boolean') return { enabled: v.enabled, sound: !!v.sound };
+    if (v && typeof v.enabled === 'boolean') return { enabled: v.enabled, sound: !!v.sound, board: v.board !== false };
   } catch {
     /* sin almacenamiento */
   }
-  return { enabled: true, sound: true };
+  return { enabled: true, sound: true, board: true };
 }
 
 export const useFx = create<FxSettings>((set) => ({
   ...readFx(),
   set: (patch) =>
     set((s) => {
-      const next = { enabled: patch.enabled ?? s.enabled, sound: patch.sound ?? s.sound };
+      const next = { enabled: patch.enabled ?? s.enabled, sound: patch.sound ?? s.sound, board: patch.board ?? s.board };
       try {
         localStorage.setItem(FX_KEY, JSON.stringify(next));
       } catch {
@@ -160,7 +162,7 @@ export function CritFx({ campaignId }: { campaignId: string }) {
 
 /** Opciones de los efectos en este dispositivo (pestaña Mesa). */
 export function FxPanel() {
-  const { enabled, sound, set } = useFx();
+  const { enabled, sound, board, set } = useFx();
   return (
     <div className="panel">
       <h3>Efectos</h3>
@@ -174,6 +176,11 @@ export function FxPanel() {
           Con sonido
         </label>
       )}
+      <label className="switch">
+        <input type="checkbox" checked={board} onChange={(e) => set({ board: e.target.checked })} />
+        Animaciones de ataques y hechizos en el tablero
+      </label>
+      <p className="muted hint">Para apuntar: Alt+clic en un token (o clic en uno que no sea tuyo) antes de atacar. </p>
       <p className="muted hint">Solo en este dispositivo: cada jugador lo elige.</p>
     </div>
   );

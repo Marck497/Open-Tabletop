@@ -32,6 +32,8 @@ interface BoardState {
   scene: Scene | null;
   items: Record<string, BoardItem>;
   selectedId: string | null;
+  /** Tokens marcados como objetivo (solo en este navegador): a ellos van los ataques y hechizos. */
+  targets: string[];
   tool: Tool;
   /** Capa en la que trabaja el DM (los elementos de otras capas no se pueden seleccionar). */
   activeLayer: BoardLayer;
@@ -66,6 +68,8 @@ interface BoardState {
   remove: (id: string) => void;
   setMoving: (id: string, pos: { x: number; y: number } | null) => void;
   select: (id: string | null) => void;
+  toggleTarget: (id: string) => void;
+  clearTargets: () => void;
   setTool: (tool: Tool) => void;
   setActiveLayer: (layer: BoardLayer) => void;
   setViewCenter: (c: { x: number; y: number }) => void;
@@ -90,6 +94,7 @@ export const useBoard = create<BoardState>((set) => ({
   scene: null,
   items: {},
   selectedId: null,
+  targets: [],
   tool: 'select',
   activeLayer: 'token',
   moving: {},
@@ -107,13 +112,14 @@ export const useBoard = create<BoardState>((set) => ({
 
   load: ({ scene, items }) =>
     set((s) => ({
-      ...(s.scene?.id !== scene.id ? { remoteMeasures: {}, myMeasure: null, pings: [] } : {}),
+      ...(s.scene?.id !== scene.id ? { remoteMeasures: {}, myMeasure: null, pings: [], targets: [] } : {}),
       scene,
       items: Object.fromEntries(items.map((i) => [i.id, i])),
       moving: {},
       selectedId: items.some((i) => i.id === s.selectedId) ? s.selectedId : null,
+      targets: s.targets.filter((id) => items.some((i) => i.id === id)),
     })),
-  clear: () => set({ scene: null, items: {}, selectedId: null, moving: {}, remoteMeasures: {}, myMeasure: null, pings: [] }),
+  clear: () => set({ scene: null, items: {}, selectedId: null, targets: [], moving: {}, remoteMeasures: {}, myMeasure: null, pings: [] }),
   setScene: (scene) => set((s) => (s.scene?.id === scene.id ? { scene } : {})),
   setFog: (fog) => set((s) => (s.scene ? { scene: { ...s.scene, fog } } : {})),
   upsert: (item) =>
@@ -124,7 +130,7 @@ export const useBoard = create<BoardState>((set) => ({
   remove: (id) =>
     set((s) => {
       const { [id]: _, ...items } = s.items;
-      return { items, selectedId: s.selectedId === id ? null : s.selectedId };
+      return { items, selectedId: s.selectedId === id ? null : s.selectedId, targets: s.targets.filter((t) => t !== id) };
     }),
   setMoving: (id, pos) =>
     set((s) => {
@@ -132,6 +138,8 @@ export const useBoard = create<BoardState>((set) => ({
       return { moving: pos ? { ...rest, [id]: pos } : rest };
     }),
   select: (selectedId) => set({ selectedId }),
+  toggleTarget: (id) => set((s) => ({ targets: s.targets.includes(id) ? s.targets.filter((t) => t !== id) : [...s.targets, id].slice(-20) })),
+  clearTargets: () => set({ targets: [] }),
   setTool: (tool) => set({ tool, selectedId: null, templatePreset: null }),
   setActiveLayer: (activeLayer) => set({ activeLayer, selectedId: null }),
   setViewCenter: (viewCenter) => set({ viewCenter }),

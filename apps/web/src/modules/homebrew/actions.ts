@@ -2,6 +2,7 @@ import { homebrewRows, itemsInArea, type Character, type ChatEffect, type Homebr
 import { api } from '../../core/api';
 import { emitAck } from '../../core/socket';
 import { useBoard } from '../board/store';
+import { currentFxTarget } from '../fx/target';
 import { newRowId } from '../sheets/SheetField';
 import { useSheets } from '../sheets/store';
 
@@ -21,7 +22,7 @@ export async function addToSheet(c: Character, template: SheetTemplate, entry: H
 
 /** Usa la creación con una hoja (el servidor tira, gasta y lo cuenta en el chat). */
 export function runEntry(characterId: string, entryId: string, slot?: number) {
-  return emitAck('sheet:action', { characterId, action: { kind: 'homebrew', entryId, slot } });
+  return emitAck('sheet:action', { characterId, action: { kind: 'homebrew', entryId, slot }, fx: currentFxTarget() });
 }
 
 /** Activa la plantilla de área con el tamaño del efecto: el siguiente clic en el tablero la coloca. */

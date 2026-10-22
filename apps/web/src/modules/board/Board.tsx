@@ -9,6 +9,7 @@ import { useActiveItemId } from '../initiative/store';
 import { emitAck, getSocket } from '../../core/socket';
 import { clearMeasure, fixedTemplateEnd, sendPing, setMeasure, snapPoint, snapTemplateEnd } from './measure';
 import { MeasuresLayer } from './Measures';
+import { FxLayer } from '../fx/FxLayer';
 import { DrawingShape, fillOf, textBox } from './Drawing';
 import { useBoard } from './store';
 import { DoorButtons, newWallId, saveWalls, snapWallPoint, useEyes, VisionMask, WallLines } from './Walls';
@@ -37,6 +38,7 @@ export function Board({ isGm, meId }: Props) {
   const itemsById = useBoard((s) => s.items);
   const moving = useBoard((s) => s.moving);
   const selectedId = useBoard((s) => s.selectedId);
+  const targets = useBoard((s) => s.targets);
   const tool = useBoard((s) => s.tool);
   const activeLayer = useBoard((s) => s.activeLayer);
   const select = useBoard((s) => s.select);
@@ -123,6 +125,7 @@ export function Board({ isGm, meId }: Props) {
       const { selectedId, scene, myMeasure, items } = useBoard.getState();
       if (e.key === 'Escape') {
         select(null);
+        useBoard.getState().clearTargets();
         clearMeasure(isGm);
       }
       // Espacio mientras se mide con la regla: añade un punto intermedio.
@@ -360,6 +363,9 @@ export function Board({ isGm, meId }: Props) {
     turn: item.id === activeItemId,
     onSelect: () => select(item.id),
     onDragPath: setDragMeasure,
+    // Objetivos: Alt+clic en cualquier token, o clic en uno que no puedes mover.
+    canTarget: freeTool && !item.drawing && item.layer !== 'map',
+    targeted: targets.includes(item.id),
   });
 
   return (
@@ -452,6 +458,7 @@ export function Board({ isGm, meId }: Props) {
           {mapTool && mapPointer.overlay}
           <MeasuresLayer scene={scene} scale={view.scale} dragMeasure={dragMeasure} />
         </Layer>
+        <FxLayer scene={scene} scale={view.scale} />
       </Stage>
       {eyes && !eyes.length && !isGm && <div className="board-notice">Visión activada: no tienes ningún token en esta escena, así que no ves nada.</div>}
       {notice && <div className="board-notice">{notice}</div>}
@@ -536,9 +543,12 @@ interface ItemNodeProps {
   onSelect: () => void;
   /** Recorrido mientras se arrastra (null al soltar). */
   onDragPath: (m: Measure | null) => void;
+  /** Se puede marcar como objetivo y si ya lo está. */
+  canTarget: boolean;
+  targeted: boolean;
 }
 
-function ItemNode({ item, isGm, scene, selected, interactive, ghost, transformable, turn, onSelect, onDragPath }: ItemNodeProps) {
+function ItemNode({ item, isGm, scene, selected, interactive, ghost, transformable, turn, onSelect, onDragPath, canTarget, targeted }: ItemNodeProps) {
   const groupRef = useRef<Konva.Group>(null);
   const trRef = useRef<Konva.Transformer>(null);
   const lastEmit = useRef(0);
@@ -622,6 +632,12 @@ function ItemNode({ item, isGm, scene, selected, interactive, ghost, transformab
     });
   }
 
+  function toggleTarget() {
+    useBoard.getState().toggleTarget(item.id);
+    const label = name || 'el token';
+    useBoard.getState().showNotice(useBoard.getState().targets.includes(item.id) ? `🎯 Objetivo: ${label} (Esc para quitar todos)` : `Ya no apuntas a ${label}`);
+  }
+
   const initials = name
     .split(/\s+/)
     .map((p) => p[0])
@@ -640,14 +656,26 @@ function ItemNode({ item, isGm, scene, selected, interactive, ghost, transformab
         rotation={item.rotation}
         opacity={ghost ? 0.6 : 1}
         draggable={interactive}
-        listening={interactive}
+        listening={interactive || canTarget}
         onMouseDown={(e) => {
+          if (!interactive || (canTarget && e.evt.altKey)) return;
           e.cancelBubble = true;
           onSelect();
         }}
         onTouchStart={(e) => {
+          if (!interactive) return;
           e.cancelBubble = true;
           onSelect();
+        }}
+        onClick={(e) => canTarget && (e.evt.altKey || !interactive) && toggleTarget()}
+        onTap={() => canTarget && !interactive && toggleTarget()}
+        onMouseEnter={(e) => {
+          const c = e.target.getStage()?.container();
+          if (c && canTarget && !interactive) c.style.cursor = 'crosshair';
+        }}
+        onMouseLeave={(e) => {
+          const c = e.target.getStage()?.container();
+          if (c) c.style.cursor = '';
         }}
         onDblClick={() => character && useSheets.getState().openSheet(character.id)}
         onDblTap={() => character && useSheets.getState().openSheet(character.id)}
@@ -677,6 +705,7 @@ function ItemNode({ item, isGm, scene, selected, interactive, ghost, transformab
         {turn && (
           <Circle x={w / 2} y={h / 2} radius={Math.max(w, h) / 2 + 6} stroke="#d6a84a" strokeWidth={4} dash={[10, 6]} shadowColor="#d6a84a" shadowBlur={12} listening={false} />
         )}
+        {targeted && <TargetRing w={w} h={h} />}
         {item.stats && <StatsOverlay item={item} gm={isGm} />}
         {bars.map((b, i) => (
           <Group key={i} y={-8 - (i + (item.stats?.ratio !== undefined ? 1 : 0)) * 8} listening={false}>
@@ -724,6 +753,20 @@ function ItemNode({ item, isGm, scene, selected, interactive, ghost, transformab
         />
       )}
     </>
+  );
+}
+
+/** Mira roja alrededor de un token marcado como objetivo. */
+function TargetRing({ w, h }: { w: number; h: number }) {
+  const r = Math.max(w, h) / 2 + 4;
+  const t = Math.max(6, r * 0.35);
+  return (
+    <Group x={w / 2} y={h / 2} listening={false}>
+      <Circle radius={r} stroke="#ff4d4d" strokeWidth={3} shadowColor="#000" shadowBlur={4} />
+      {[0, 90, 180, 270].map((a) => (
+        <Line key={a} rotation={a} points={[r - t / 2, 0, r + t, 0]} stroke="#ff4d4d" strokeWidth={3} lineCap="round" />
+      ))}
+    </Group>
   );
 }
 
