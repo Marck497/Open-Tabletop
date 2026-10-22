@@ -16,6 +16,7 @@ import { RollToasts } from '../dice/RollToasts';
 import { DiceTray } from '../dice3d/DiceTray';
 import { Shortcuts } from '../shortcuts/Shortcuts';
 import { CritFx, FxPanel } from '../dice/CritFx';
+import { SfxListener } from '../sfx/SfxListener';
 import { InitiativeAnnounce, InitiativeTracker, TurnBanner } from '../initiative/InitiativeTracker';
 import { useInitiativeSync } from '../initiative/useInitiativeSync';
 import { HandoutWindow } from '../journal/HandoutWindow';
@@ -167,6 +168,7 @@ export function CampaignPage() {
         <DiceTray campaignId={campaign.id} />
         <Shortcuts campaignId={campaign.id} isGm={isGm} meId={me.id} />
         <CritFx campaignId={campaign.id} />
+        <SfxListener campaignId={campaign.id} />
       </section>
       <aside className="table-side">
         {isGm && hasSelection && <ItemPanel campaignId={campaign.id} members={campaign.members} />}
