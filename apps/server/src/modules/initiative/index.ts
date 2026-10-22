@@ -51,6 +51,7 @@ export const initiativeModule: ServerModule = {
           state = svc.apply(z.string().parse(campaignId), socket.data.user.id, action as never);
           await broadcastInitiative(ctx, state);
         }
+        if (['next', 'start'].includes(action.type) && state.active) ctx.events.emit('initiative:advanced', { campaignId, state });
         if (['next', 'prev', 'start'].includes(action.type) && state.active) {
           ctx.events.emit('initiative:turnStarted', { campaignId, userId: socket.data.user.id, state });
         }

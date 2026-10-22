@@ -223,6 +223,8 @@ export const boardItemFields = {
   drawing: drawingSchema.nullable(),
   /** Estados marcados (ids de los estados de la plantilla). */
   statuses: z.array(z.string().max(40)).max(30),
+  /** Rondas que le quedan a cada estado (los que no están, duran hasta que se quiten a mano). */
+  statusRounds: z.record(z.string().max(40), z.number().int().min(1).max(1000)),
   /** IA del enemigo (solo la ve el DM). */
   ai: tokenAiSchema.nullable(),
   /** Quién ve la vida de la hoja vinculada (null = automático: ver hpViewOf). */
@@ -249,6 +251,7 @@ export const createItemSchema = z.object({
   characterId: boardItemFields.characterId.default(null),
   ai: boardItemFields.ai.default(null),
   statuses: boardItemFields.statuses.default([]),
+  statusRounds: boardItemFields.statusRounds.default({}),
   drawing: boardItemFields.drawing.default(null),
   hpView: boardItemFields.hpView.default(null),
   acView: boardItemFields.acView.default(null),
@@ -278,6 +281,7 @@ export interface BoardItem {
   characterId: string | null;
   ai: TokenAi | null;
   statuses: string[];
+  statusRounds: Record<string, number>;
   drawing: Drawing | null;
   hpView: HpView | null;
   acView: AcView | null;
