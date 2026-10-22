@@ -162,6 +162,8 @@ export function createHomebrewEffects(ctx: AppContext) {
       .from(boardItems)
       .where(and(inArray(boardItems.id, ids), inArray(boardItems.sceneId, scenes)))
       .all();
+    // En el orden pedido (el del resumen del chat), no en el de la base de datos.
+    found.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
     return found.map((f) => board.itemsOf(f.sceneId).items.find((i) => i.id === f.id)!).filter(Boolean);
   }
 
