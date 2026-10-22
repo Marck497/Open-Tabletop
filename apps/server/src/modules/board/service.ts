@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { and, asc, eq, max } from 'drizzle-orm';
+import { and, asc, eq, inArray, max } from 'drizzle-orm';
 import {
   createItemSchema,
   createSceneSchema,
@@ -7,6 +7,7 @@ import {
   fogSchema,
   updateItemSchema,
   updateSceneSchema,
+  movePlayersSchema,
   canMoveStraight,
   hasLineOfSight,
   isDoor,
@@ -20,6 +21,7 @@ import {
   type Fog,
   type FogOp,
   type Scene,
+  type SceneFolder,
   type SceneState,
   type UpdateItemInput,
   type UpdateSceneInput,
@@ -28,7 +30,7 @@ import {
 } from '@vtt/shared';
 import type { AppContext } from '../../core/module.js';
 import { badRequest, forbidden, notFound } from '../../core/errors.js';
-import { assets, boardItems, campaigns, characters, scenes } from '../../db/schema.js';
+import { assets, boardItems, campaignMembers, campaigns, characters, sceneFolders, scenes } from '../../db/schema.js';
 import { createCampaignService } from '../campaigns/service.js';
 import { createStatsDecorator } from './stats.js';
 import { canSeeItem, eyesOf, forViewer, isEye, PLAYER_DRAWING_FIELDS, PLAYER_EDITABLE_FIELDS, sceneFor } from './visibility.js';
@@ -66,7 +68,7 @@ export function createBoardService(ctx: AppContext) {
     const row = sceneRow(sceneId);
     const role = campaignsSvc.getRole(row.campaignId, userId);
     if (!role) throw notFound('Escena no encontrada');
-    if (role !== 'gm' && activeSceneId(row.campaignId) !== sceneId) throw forbidden('El DM no ha abierto esta escena');
+    if (role !== 'gm' && campaignsSvc.sceneOf(row.campaignId, userId) !== sceneId) throw forbidden('El DM no ha abierto esta escena');
     return { scene: toScene(row), viewer: { userId, role } };
   }
 
@@ -82,17 +84,24 @@ export function createBoardService(ctx: AppContext) {
     return db.select({ id: scenes.id }).from(scenes).where(eq(scenes.campaignId, campaignId)).all().map((r) => r.id);
   }
 
-  function listScenes(campaignId: string, userId: string): { scenes: Scene[]; activeSceneId: string | null } {
+  function listScenes(campaignId: string, userId: string): { scenes: Scene[]; folders: SceneFolder[]; activeSceneId: string | null } {
     const role = campaignsSvc.requireMember(campaignId, userId);
-    const active = activeSceneId(campaignId);
+    const active = role === 'gm' ? activeSceneId(campaignId) : campaignsSvc.sceneOf(campaignId, userId);
     const rows = db.select().from(scenes).where(eq(scenes.campaignId, campaignId)).orderBy(asc(scenes.sortOrder), asc(scenes.createdAt)).all();
     const visible = role === 'gm' ? rows : rows.filter((r) => r.id === active);
-    return { scenes: visible.map((r) => sceneFor(toScene(r), role)), activeSceneId: active };
+    const folders =
+      role === 'gm'
+        ? db.select().from(sceneFolders).where(eq(sceneFolders.campaignId, campaignId)).orderBy(asc(sceneFolders.sortOrder)).all().map(({ createdAt: _c, ...f }) => f)
+        : [];
+    return { scenes: visible.map((r) => sceneFor(toScene(r), role)), folders, activeSceneId: active };
   }
 
   function createScene(campaignId: string, userId: string, input: CreateSceneInput): Scene {
     campaignsSvc.requireGm(campaignId, userId);
     const data = createSceneSchema.parse(input);
+    if (data.folderId && db.select({ c: sceneFolders.campaignId }).from(sceneFolders).where(eq(sceneFolders.id, data.folderId)).get()?.c !== campaignId) {
+      throw notFound('Carpeta no encontrada');
+    }
     const order = db.select({ m: max(scenes.sortOrder) }).from(scenes).where(eq(scenes.campaignId, campaignId)).get()?.m ?? -1;
     const id = randomUUID();
     db.insert(scenes).values({ id, campaignId, ...data, sortOrder: order + 1 }).run();
@@ -115,6 +124,8 @@ export function createBoardService(ctx: AppContext) {
     const wasActive = activeSceneId(scene.campaignId) === sceneId;
     db.transaction((tx) => {
       if (wasActive) tx.update(campaigns).set({ activeSceneId: null }).where(eq(campaigns.id, scene.campaignId)).run();
+      // Quien estuviera aparte en esta escena vuelve con la party.
+      tx.update(campaignMembers).set({ sceneId: null }).where(and(eq(campaignMembers.campaignId, scene.campaignId), eq(campaignMembers.sceneId, sceneId))).run();
       tx.delete(scenes).where(eq(scenes.id, sceneId)).run();
     });
     return { campaignId: scene.campaignId, wasActive };
@@ -124,8 +135,31 @@ export function createBoardService(ctx: AppContext) {
     campaignsSvc.requireGm(campaignId, userId);
     if (sceneId && sceneRow(sceneId).campaignId !== campaignId) throw notFound('Escena no encontrada');
     const previous = activeSceneId(campaignId);
-    db.update(campaigns).set({ activeSceneId: sceneId }).where(eq(campaigns.id, campaignId)).run();
+    // "Toda la party": también vuelven los que estaban aparte.
+    db.transaction((tx) => {
+      tx.update(campaigns).set({ activeSceneId: sceneId }).where(eq(campaigns.id, campaignId)).run();
+      tx.update(campaignMembers).set({ sceneId: null }).where(eq(campaignMembers.campaignId, campaignId)).run();
+    });
     return { previous };
+  }
+
+  /** Lleva a unos jugadores a una escena; el resto se queda donde está. Volver a la de la party los junta de nuevo. */
+  function movePlayers(campaignId: string, userId: string, input: unknown): void {
+    campaignsSvc.requireGm(campaignId, userId);
+    const { sceneId, userIds } = movePlayersSchema.parse(input);
+    if (sceneRow(sceneId).campaignId !== campaignId) throw notFound('Escena no encontrada');
+    const players = db
+      .select({ id: campaignMembers.userId })
+      .from(campaignMembers)
+      .where(and(eq(campaignMembers.campaignId, campaignId), eq(campaignMembers.role, 'player'), inArray(campaignMembers.userId, userIds)))
+      .all()
+      .map((r) => r.id);
+    if (players.length !== new Set(userIds).size) throw badRequest('Alguno no es jugador de la partida');
+    const own = sceneId === activeSceneId(campaignId) ? null : sceneId;
+    db.update(campaignMembers)
+      .set({ sceneId: own })
+      .where(and(eq(campaignMembers.campaignId, campaignId), inArray(campaignMembers.userId, players)))
+      .run();
   }
 
   // ---------- Estado visible ----------
@@ -329,6 +363,7 @@ export function createBoardService(ctx: AppContext) {
     updateScene,
     deleteScene,
     setActiveScene,
+    movePlayers,
     activeSceneId,
     access,
     view,

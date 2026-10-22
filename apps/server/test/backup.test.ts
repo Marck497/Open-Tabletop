@@ -35,7 +35,7 @@ describe('copias de seguridad', () => {
     const gm = await registerUser(app, 'eldm');
     const pl = await registerUser(app, 'jugador');
     const other = await registerUser(app, 'otro');
-    const req = (cookie: string, method: 'GET' | 'POST' | 'PATCH', url: string, payload?: object) => app.inject({ method, url: `/api${url}`, headers: { cookie }, payload });
+    const req = (cookie: string, method: 'GET' | 'POST' | 'PATCH' | 'PUT', url: string, payload?: object) => app.inject({ method, url: `/api${url}`, headers: { cookie }, payload });
     const { campaign } = (await req(gm.cookie, 'POST', '/campaigns', { name: 'La Mina' })).json();
     await req(pl.cookie, 'POST', '/campaigns/join', { inviteCode: campaign.inviteCode });
     const sceneId: string = campaign.activeSceneId;
@@ -46,6 +46,9 @@ describe('copias de seguridad', () => {
     const { character } = (await req(gm.cookie, 'POST', `/campaigns/${campaign.id}/compendium/goblin`, {})).json();
     await req(gm.cookie, 'PATCH', `/characters/${character.id}`, { avatarAssetId: asset.id, controlledBy: [pl.user.id] });
     await req(gm.cookie, 'PATCH', `/scenes/${sceneId}`, { name: 'Cueva', vision: true });
+    const act = (await req(gm.cookie, 'POST', `/campaigns/${campaign.id}/scene-folders`, { name: 'Acto 1' })).json().folder;
+    const sub = (await req(gm.cookie, 'POST', `/campaigns/${campaign.id}/scene-folders`, { name: 'Cuevas', parentId: act.id })).json().folder;
+    await req(gm.cookie, 'PUT', `/campaigns/${campaign.id}/scene-tree`, { scenes: [{ id: sceneId, folderId: sub.id, sortOrder: 0 }] });
     const gmC: Client = connect(server.url, { transports: ['websocket'], extraHeaders: { cookie: gm.cookie }, reconnection: false });
     clients.push(gmC);
     ok(await call(gmC, 'scene:view', { sceneId }));
@@ -77,8 +80,12 @@ describe('copias de seguridad', () => {
     expect(summary).toMatchObject({ scenes: 1, items: 1, characters: 1, handouts: 1, macros: 1, assets: 1, skippedAssets: 0 });
     expect(summary.campaignId).not.toBe(campaign.id);
 
-    const { scenes, activeSceneId } = (await req(other.cookie, 'GET', `/campaigns/${summary.campaignId}/scenes`)).json();
+    const { scenes, activeSceneId, folders } = (await req(other.cookie, 'GET', `/campaigns/${summary.campaignId}/scenes`)).json();
     expect(scenes).toHaveLength(1);
+    // Carpetas con ids nuevos y bien enlazadas.
+    const cuevas = folders.find((f: { name: string }) => f.name === 'Cuevas');
+    expect(folders.find((f: { id: string }) => f.id === cuevas.parentId).name).toBe('Acto 1');
+    expect(scenes[0].folderId).toBe(cuevas.id);
     expect(scenes[0]).toMatchObject({ name: 'Cueva', vision: true, walls: [{ id: 'w1', kind: 'door', locked: true }], terrain: 'w'.repeat(600) });
     expect(activeSceneId).toBe(scenes[0].id);
 

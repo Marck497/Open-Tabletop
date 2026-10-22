@@ -40,8 +40,13 @@ export const backupSchema = z.object({
         fog: fogSchema.optional(),
         walls: wallsSchema.default([]),
         terrain: terrainSchema.default(''),
+        folderId: id.nullable().default(null),
       }),
     )
+    .max(500)
+    .default([]),
+  sceneFolders: z
+    .array(z.object({ id, name: z.string().trim().min(1).max(80), parentId: id.nullable().default(null), sortOrder: z.number().int().default(0) }))
     .max(500)
     .default([]),
   items: z
