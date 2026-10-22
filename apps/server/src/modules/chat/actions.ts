@@ -14,14 +14,17 @@ import {
   type ChatMessage,
   type ChatRollPart,
   type DiceRoll,
+  type HomebrewEntry,
   type PublicUser,
   type SheetRow,
   type SheetValues,
 } from '@vtt/shared';
 import type { AppContext } from '../../core/module.js';
-import { badRequest, forbidden } from '../../core/errors.js';
+import { badRequest, forbidden, notFound } from '../../core/errors.js';
 import { secureRng } from '../dice/service.js';
 import { canEditCharacter, createSheetService } from '../sheets/service.js';
+import { createHomebrewEffects } from '../homebrew/effects.js';
+import { canSeeHomebrew, createHomebrewService } from '../homebrew/service.js';
 import { createChatService } from './service.js';
 
 const id = z.string().min(1).max(64);
@@ -33,6 +36,7 @@ const actionSchema = z.object({
     z.object({ kind: z.literal('cast'), rowId: id, slot: z.number().int().min(1).max(9).optional() }),
     z.object({ kind: z.literal('use'), rowId: id }),
     z.object({ kind: z.literal('rest'), rest: z.enum(['short', 'long']) }),
+    z.object({ kind: z.literal('homebrew'), entryId: id, slot: z.number().int().min(1).max(9).optional() }),
   ]),
 });
 
@@ -44,12 +48,16 @@ export interface ActionResult {
   before: Character;
   /** La hoja cambiada (espacios, usos, PG), si cambió. */
   after: Character | null;
+  /** Estado que hay que poner a los tokens del personaje (concentración…). */
+  selfStatus?: string;
 }
 
 /** Botones de acción de las hojas. Las tiradas, como todas, se hacen en el servidor. */
 export function createSheetActions(ctx: AppContext) {
   const sheets = createSheetService(ctx);
   const chat = createChatService(ctx);
+  const homebrew = createHomebrewService(ctx);
+  const effects = createHomebrewEffects(ctx);
 
   /** Tira una expresión de la hoja; con `crit`, añade otra vez los dados (doble de dados en 5e). */
   function rollText(text: string, resolve: (name: string) => unknown, crit = false): (ChatRollPart & { note: string }) | null {
@@ -95,13 +103,27 @@ export function createSheetActions(ctx: AppContext) {
     };
     let patch: SheetValues | null = null;
     let message: ChatMessage;
+    let selfStatus = '';
     const action = req.action;
+    /** Filas enlazadas a una creación: hacen lo que diga la creación (si aún existe). */
+    const linked = (row: SheetRow) => (typeof row._ref === 'string' ? homebrew.find(character.campaignId, row._ref) : null);
+    const useEntry = (entry: HomebrewEntry, row?: SheetRow, slot?: number) => {
+      const used = effects.use(user, character, template, entry, { row, slot, secret: req.secret });
+      message = used.message;
+      patch = used.patch;
+      selfStatus = used.selfStatus;
+    };
 
     try {
       switch (action.kind) {
         case 'attack': {
           if (!a.attacks) throw badRequest('Esta hoja no tiene tabla de ataques');
           const row = rowOf(a.attacks.list, action.rowId);
+          const entry = linked(row);
+          if (entry) {
+            useEntry(entry, row);
+            break;
+          }
           const resolve = createResolver(template, values, row);
           const name = String(row[a.attacks.name] || 'Ataque');
           // Ataque (si el bono es un número o una fórmula; un "CD 13 DES" no se tira).
@@ -128,6 +150,11 @@ export function createSheetActions(ctx: AppContext) {
         case 'cast': {
           if (!a.spells) throw badRequest('Esta hoja no tiene tabla de conjuros');
           const row = rowOf(a.spells.list, action.rowId);
+          const entry = linked(row);
+          if (entry) {
+            useEntry(entry, row, action.slot);
+            break;
+          }
           const name = String(row[a.spells.name] || 'Conjuro');
           const level = Math.max(0, Math.round(num(row[a.spells.level])));
           let how = 'truco';
@@ -148,6 +175,14 @@ export function createSheetActions(ctx: AppContext) {
           message = chat.insert({ ...base, kind: 'emote', text: `usa ${used.name || 'un recurso'} (quedan ${used.left}/${used.max}).`, roll: null });
           break;
         }
+        case 'homebrew': {
+          const entry = homebrew.find(character.campaignId, action.entryId);
+          // Se puede usar si la ves o si está en la hoja (el DM te la puso aunque no la compartiera).
+          const onSheet = Object.values(values).some((v) => Array.isArray(v) && (v as SheetRow[]).some((r) => r._ref === action.entryId));
+          if (!entry || (!canSeeHomebrew(entry, role, user.id) && !onSheet)) throw notFound('Creación no encontrada');
+          useEntry(entry, undefined, action.slot);
+          break;
+        }
         case 'rest': {
           const rest = restPatch(template, values, action.rest);
           patch = Object.keys(rest.patch).length ? rest.patch : null;
@@ -166,7 +201,7 @@ export function createSheetActions(ctx: AppContext) {
       throw e;
     }
     const after = patch ? sheets.update(character.id, user.id, { values: patch }).after : null;
-    return { message, before: character, after };
+    return { message: message!, before: character, after, selfStatus };
   }
 
   return { run };

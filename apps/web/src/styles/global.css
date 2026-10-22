@@ -424,3 +424,25 @@ body.fx-shake .table-main { animation: fx-shake 0.6s cubic-bezier(.36,.07,.19,.9
 .scene-switcher-backdrop { position: fixed; inset: 0; z-index: 40; }
 .scene-switcher-menu { position: absolute; top: calc(100% + 6px); left: 0; z-index: 41; width: min(460px, 90vw); max-height: 70vh; overflow-y: auto; padding: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); display: flex; flex-direction: column; gap: 8px; }
 .scene-switcher > button { position: relative; z-index: 42; }
+/* Creaciones: editor de hechizos, ataques y objetos, y su tarjeta en el chat */
+.hb-editor { display: flex; flex-direction: column; gap: 8px; }
+.hb-editor label { margin-bottom: 6px; }
+.hb-editor label.switch { margin-bottom: 0; }
+.hb-group { border: 1px solid var(--border); border-radius: var(--radius); padding: 6px 10px 8px; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.hb-group legend { color: var(--gold); font-size: 0.85rem; padding: 0 4px; }
+.hb-group .hint { margin: 0; }
+.hb-inline { flex-direction: row; align-items: center; align-self: end; }
+.hb-damage { flex-wrap: nowrap; }
+.hb-damage input:first-child { flex: 2; }
+.hb-damage input:nth-child(2) { flex: 1; min-width: 0; }
+.hb-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.hb-chips button { padding: 2px 8px; font-size: 0.8rem; }
+.hb-summary { color: var(--gold); font-size: 0.9rem; margin: 0; }
+.roll-text { white-space: pre-line; font-size: 0.85rem; margin-top: 4px; }
+.effect-card { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-top: 6px; padding-top: 4px; border-top: 1px dashed var(--border); }
+.effect-chip { font-size: 0.75rem; padding: 1px 8px; border-radius: 99px; background: var(--bg-elev-2); border: 1px solid var(--border); }
+.effect-actions { display: inline-flex; gap: 4px; margin-left: auto; }
+.effect-actions button { padding: 2px 8px; font-size: 0.8rem; }
+@media (max-width: 640px) {
+  .hb-damage { flex-wrap: wrap; }
+}

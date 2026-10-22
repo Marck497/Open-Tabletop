@@ -1,6 +1,11 @@
 import { useMemo, useState } from 'react';
 import {
+  actionsOf,
   computeAll,
+  homebrewDataSchema,
+  homebrewFromSrdItem,
+  homebrewFromSrdSpell,
+  type CreateHomebrewInput,
   spellEffect,
   spellNotes,
   weaponAttack,
@@ -12,6 +17,7 @@ import {
   type SrdSpell,
 } from '@vtt/shared';
 import { api } from '../../core/api';
+import type { HomebrewDraft } from '../homebrew/HomebrewEditor';
 import { newRowId } from '../sheets/SheetField';
 import { useSheets } from '../sheets/store';
 import { norm, useSrd } from './useSrd';
@@ -26,7 +32,7 @@ const TABS: { id: Tab; label: string }[] = [
 const LIMIT = 150;
 
 /** Compendio de reglas del SRD: conjuros, objetos, clases y especies, con "añadir a la hoja". */
-export function SrdBrowser({ isGm, meId, onClose }: { isGm: boolean; meId: string; onClose: () => void }) {
+export function SrdBrowser({ isGm, meId, onClose, onCopy }: { isGm: boolean; meId: string; onClose: () => void; onCopy?: (draft: HomebrewDraft) => void }) {
   const { data, error } = useSrd();
   const [tab, setTab] = useState<Tab>('spells');
   const [query, setQuery] = useState('');
@@ -37,6 +43,7 @@ export function SrdBrowser({ isGm, meId, onClose }: { isGm: boolean; meId: strin
   const [targetId, setTargetId] = useState<string>('');
   const target = characters[targetId] ?? editable[0];
   const [message, setMessage] = useState<string | null>(null);
+  const template = useSheets((s) => s.template);
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
@@ -72,8 +79,8 @@ export function SrdBrowser({ isGm, meId, onClose }: { isGm: boolean; meId: strin
         {message && <p className="muted">{message}</p>}
         {error && <p className="error">{error}</p>}
         {!data && !error && <p className="muted">Cargando el SRD…</p>}
-        {data && tab === 'spells' && <SpellList data={data} query={query} target={target} onAdded={setMessage} />}
-        {data && tab === 'items' && <ItemList data={data} query={query} target={target} onAdded={setMessage} />}
+        {data && tab === 'spells' && <SpellList data={data} query={query} target={target} onAdded={setMessage} onCopy={onCopy && ((s) => onCopy(draftOf(homebrewFromSrdSpell(s, template && actionsOf(template)), isGm)))} />}
+        {data && tab === 'items' && <ItemList data={data} query={query} target={target} onAdded={setMessage} onCopy={onCopy && ((it) => onCopy(draftOf(homebrewFromSrdItem(it, template), isGm)))} />}
         {data && tab === 'classes' && <ClassList data={data} query={query} />}
         {data && tab === 'races' && <RaceList data={data} query={query} />}
         <p className="muted hint">
@@ -83,6 +90,9 @@ export function SrdBrowser({ isGm, meId, onClose }: { isGm: boolean; meId: strin
     </div>
   );
 }
+
+/** Borrador del editor de creaciones a partir de una copia del SRD (el DM la comparte de serie). */
+const draftOf = (c: CreateHomebrewInput, isGm: boolean): HomebrewDraft => ({ kind: c.kind, name: c.name, shared: isGm, data: homebrewDataSchema.parse(c.data ?? {}) });
 
 /** Añade filas a una lista de la hoja (conjuros, inventario, ataques). */
 async function appendRows(c: Character, rows: Record<string, Omit<SheetRow, '_id'>>) {
@@ -95,7 +105,7 @@ async function appendRows(c: Character, rows: Record<string, Omit<SheetRow, '_id
   useSheets.getState().upsert(character);
 }
 
-function SpellList({ data, query, target, onAdded }: { data: SrdData; query: string; target?: Character; onAdded: (m: string) => void }) {
+function SpellList({ data, query, target, onAdded, onCopy }: { data: SrdData; query: string; target?: Character; onAdded: (m: string) => void; onCopy?: (s: SrdSpell) => void }) {
   const [classId, setClassId] = useState('');
   const [level, setLevel] = useState(-1);
   const [open, setOpen] = useState<string | null>(null);
@@ -159,6 +169,11 @@ function SpellList({ data, query, target, onAdded }: { data: SrdData; query: str
                   + Hoja
                 </button>
               )}
+              {onCopy && (
+                <button className="ghost small" onClick={() => onCopy(s)} title="Copiar a ⚗ Creaciones para editarlo (daño, salvación, área…)">
+                  ✎
+                </button>
+              )}
             </div>
             {open === s.id && <SpellDetails s={s} />}
           </li>
@@ -202,7 +217,7 @@ const ITEM_FILTERS = [
   { id: 'mágico', label: 'Mágicos' },
 ];
 
-function ItemList({ data, query, target, onAdded }: { data: SrdData; query: string; target?: Character; onAdded: (m: string) => void }) {
+function ItemList({ data, query, target, onAdded, onCopy }: { data: SrdData; query: string; target?: Character; onAdded: (m: string) => void; onCopy?: (it: SrdItem) => void }) {
   const [cat, setCat] = useState('');
   const [open, setOpen] = useState<string | null>(null);
   const list = useMemo(() => {
@@ -247,6 +262,11 @@ function ItemList({ data, query, target, onAdded }: { data: SrdData; query: stri
               {target && (
                 <button className="ghost small" onClick={() => void add(it)} title={`Añadir a ${target.name}`}>
                   + Hoja
+                </button>
+              )}
+              {onCopy && (
+                <button className="ghost small" onClick={() => onCopy(it)} title="Copiar a ⚗ Creaciones para editarlo (ataque, daño, usos…)">
+                  ✎
                 </button>
               )}
             </div>

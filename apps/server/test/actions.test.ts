@@ -54,9 +54,14 @@ async function setup() {
 }
 
 describe('botones de acción de la hoja', () => {
-  it('ataque: tirada, daño y daño extra; con "crítico con 2" siempre es crítico y dobla los dados', async () => {
+  it('ataque: tirada, daño y daño extra; con "crítico con 2" es crítico salvo con un 1 natural y dobla los dados', async () => {
     const { character, plC } = await setup();
-    const m = ok(await act(plC, { characterId: character.id, action: { kind: 'attack', rowId: 'a1' } }));
+    // Un 1 natural nunca es crítico (pifia): se repite hasta que no salga (1 de cada 20 veces).
+    let m = ok(await act(plC, { characterId: character.id, action: { kind: 'attack', rowId: 'a1' } }));
+    for (let i = 0; i < 10 && m.roll?.label.endsWith('pifia'); i++) {
+      expect(m.roll.crit).toBe(false);
+      m = ok(await act(plC, { characterId: character.id, action: { kind: 'attack', rowId: 'a1' } }));
+    }
     expect(m.kind).toBe('roll');
     expect(m.roll).toMatchObject({ label: expect.stringMatching(/^Hacha/), expression: '1d20 + @{bono}', crit: true });
     const [dmg, extra] = m.roll!.parts!;

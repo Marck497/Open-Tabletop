@@ -62,3 +62,16 @@ export function snapTemplateEnd(origin: Point, raw: Point, gridSize: number, sha
   const snapped = Math.round(len / gridSize) * gridSize;
   return { x: origin.x + (dx / len) * snapped, y: origin.y + (dy / len) * snapped };
 }
+
+/**
+ * Final de una plantilla de tamaño fijo: misma dirección que el puntero, con el largo justo
+ * (el cubo crece hacia la esquina en la que está el puntero).
+ */
+export function fixedTemplateEnd(origin: Point, raw: Point, length: number, shape: Measure['shape']): Point {
+  const dx = raw.x - origin.x;
+  const dy = raw.y - origin.y;
+  if (shape === 'square') return { x: origin.x + (dx < 0 ? -length : length), y: origin.y + (dy < 0 ? -length : length) };
+  const len = Math.hypot(dx, dy);
+  if (len < 1) return { x: origin.x + length, y: origin.y };
+  return { x: origin.x + (dx / len) * length, y: origin.y + (dy / len) * length };
+}

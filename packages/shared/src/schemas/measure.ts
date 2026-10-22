@@ -151,6 +151,22 @@ export function cellsInArea(m: Measure, scene: Pick<Scene, 'gridSize' | 'widthCe
   return cells;
 }
 
+/**
+ * Tokens alcanzados por una plantilla: los que tienen dentro el centro de alguna de sus casillas
+ * (o su centro, si son más pequeños que una casilla).
+ */
+export function itemsInArea<T extends { x: number; y: number; width: number; height: number }>(m: Measure, items: T[], gridSize: number): T[] {
+  if (m.shape === 'ruler') return [];
+  return items.filter((it) => {
+    const cols = Math.max(1, Math.round(it.width / gridSize));
+    const rows = Math.max(1, Math.round(it.height / gridSize));
+    const cw = it.width / cols;
+    const ch = it.height / rows;
+    for (let c = 0; c < cols; c++) for (let r = 0; r < rows; r++) if (isInArea(m, { x: it.x + (c + 0.5) * cw, y: it.y + (r + 0.5) * ch }, gridSize)) return true;
+    return false;
+  });
+}
+
 /** Color estable para cada usuario (reglas y pings). */
 export function userColor(userId: string): string {
   let h = 0;

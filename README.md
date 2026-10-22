@@ -177,6 +177,24 @@ Cuando alguien saca un **20 natural** en un d20, toda la mesa ve un destello dor
 - **Idioma**: los nombres están en español, pero las descripciones largas siguen en el inglés original del SRD.
 - **Licencia**: contenido del *System Reference Document 5.1* de D&D, © Wizards of the Coast, bajo licencia [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/). Los datos salen de [5e-bits/5e-database](https://github.com/5e-bits/5e-database) (MIT). Se regeneran con `node scripts/srd/build.mjs`, y las traducciones están en `scripts/srd/es-*.mjs`.
 
+## Creaciones: hechizos, ataques y objetos propios
+
+- En *Personajes*, **⚗ Creaciones** abre la lista de hechizos, ataques y objetos de la mesa, con buscador. El DM los ve todos; cada jugador, los suyos y los que el DM marca como *Compartida*.
+- **+ Hechizo / + Ataque / + Objeto** abre el editor, donde se cambia todo:
+  - **Ficha**: nivel, escuela, tiempo, alcance, componentes, duración, concentración y ritual (hechizos); categoría, rareza, peso, precio, sintonización y *consumible* (objetos).
+  - **Tirada de ataque** (cuerpo a cuerpo o a distancia) con su bono y desde qué número es crítico.
+  - **Salvación**: característica, CD y si se recibe la mitad del daño al salvar.
+  - **Daños** de varios tipos, **curación** y, en los hechizos, los dados que se suman por cada nivel de espacio superior.
+  - **Área** (esfera, cono, línea o cubo y su tamaño), **estados** que pone a los objetivos y estado del lanzador (concentración).
+  - **Usos** y si vuelven con descanso corto o largo.
+  - Las fórmulas aceptan números o campos de la hoja de quien lo use, como `@{conj_cd}` o `@{competencia} + @{fue_mod}`.
+- En **📚 Reglas**, el botón **✎** de un conjuro u objeto lo copia a Creaciones para retocarlo (daño, salvación, área y mejora por nivel ya vienen rellenos).
+- **+ Hoja** la añade a un personaje: a sus conjuros, ataques o inventario, y a *Recursos* si tiene usos. Esas filas quedan **enlazadas**: los botones ⚔, ✨ y ▶ de la hoja hacen lo que diga la creación (también después de editarla), gastan el espacio, el uso o la poción, y la IA de enemigos usa su ataque. **▶** en la lista la usa al momento con el personaje elegido.
+- En el chat, el mensaje trae la salvación, el área y los estados:
+  - **📐 Plantilla** pone en el tablero la plantilla de área con su tamaño: clic donde empieza y arrastra para orientarla.
+  - **🎯 Aplicar** (DM) se lo aplica a los tokens de esa plantilla o, si no hay, al seleccionado. Los ataques se comparan con la CA; las salvaciones se tiran con la hoja de cada uno (mitad o nada al salvar). Luego se resta el daño (primero los PG temporales), se suma la curación y se ponen los estados. Si algún objetivo está en la capa del DM, el resumen solo lo ve el DM.
+- Las creaciones entran en la copia de seguridad (las compartidas y las del DM).
+
 ## Compendio de monstruos
 
 - En *Personajes*, el DM tiene **📖 Compendio**: 45 monstruos del SRD 5.1 (goblins, orcos, esqueletos, ogros, trols, un dragón rojo joven…). Busca por nombre en español o en inglés, o filtra por VD.

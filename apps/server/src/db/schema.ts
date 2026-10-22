@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm';
 import { index, integer, primaryKey, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
-import type { AiSettings, BoardLayer, Drawing, JukeboxTrack, ChatRoll, TokenAi, Fog, InitiativeEntry, SheetTemplate, SheetValues, Wall } from '@vtt/shared';
+import type { AiSettings, BoardLayer, Drawing, HomebrewData, JukeboxTrack, ChatRoll, TokenAi, Fog, InitiativeEntry, SheetTemplate, SheetValues, Wall } from '@vtt/shared';
 
 const timestamps = {
   createdAt: text('created_at').notNull().default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ','now'))`),
@@ -251,6 +251,27 @@ export const macros = sqliteTable(
     ...timestamps,
   },
   (t) => [index('macros_campaign_idx').on(t.campaignId)],
+);
+
+/** Creaciones de la mesa: hechizos, ataques y objetos (los datos van en JSON). */
+export const homebrew = sqliteTable(
+  'homebrew',
+  {
+    id: text('id').primaryKey(),
+    campaignId: text('campaign_id')
+      .notNull()
+      .references(() => campaigns.id, { onDelete: 'cascade' }),
+    ownerId: text('owner_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    shared: integer('shared', { mode: 'boolean' }).notNull().default(false),
+    kind: text('kind', { enum: ['spell', 'attack', 'item'] }).notNull(),
+    name: text('name').notNull(),
+    data: text('data', { mode: 'json' }).$type<HomebrewData>().notNull(),
+    ...timestamps,
+    updatedAt: text('updated_at').notNull().default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ','now'))`),
+  },
+  (t) => [index('homebrew_campaign_idx').on(t.campaignId)],
 );
 
 export const jukebox = sqliteTable('jukebox', {

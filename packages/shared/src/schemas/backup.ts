@@ -4,12 +4,13 @@ import { terrainSchema } from './terrain.js';
 import { updateCharacterSchema } from './character.js';
 import { handoutInputSchema } from './journal.js';
 import { macroInputSchema } from './macro.js';
+import { createHomebrewSchema } from './homebrew.js';
 import { sheetTemplateSchema } from './sheet.js';
 import { wallsSchema } from './walls.js';
 
 /**
  * Copia de seguridad de una partida: un JSON (comprimido con gzip) con escenas, tokens,
- * hojas, diario, macros, música y, si se pide, los archivos subidos. Las referencias a
+ * hojas, diario, macros, creaciones, música y, si se pide, los archivos subidos. Las referencias a
  * usuarios no se guardan (al restaurar en otro servidor no existen): quien la restaura
  * queda como DM y vuelve a invitar a los jugadores.
  */
@@ -73,6 +74,11 @@ export const backupSchema = z.object({
     .array(macroInputSchema.partial().extend({ id, name: macroInputSchema.shape.name, command: macroInputSchema.shape.command }))
     .max(2000)
     .default([]),
+  /** Creaciones (hechizos, ataques, objetos): las compartidas y las del DM. */
+  homebrew: z
+    .array(createHomebrewSchema.extend({ id }))
+    .max(5000)
+    .default([]),
   jukebox: z
     .array(z.object({ id, assetId: id, name: z.string().max(200), volume: z.number().min(0).max(1), loop: z.boolean() }))
     .max(100)
@@ -101,6 +107,7 @@ export interface ImportSummary {
   characters: number;
   handouts: number;
   macros: number;
+  homebrew: number;
   assets: number;
   /** Archivos que no se pudieron restaurar (formato no válido o faltaban). */
   skippedAssets: number;

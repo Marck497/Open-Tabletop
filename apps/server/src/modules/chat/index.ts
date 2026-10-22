@@ -5,6 +5,7 @@ import { handleAck } from '../../core/socket-utils.js';
 import { requireUser } from '../auth/index.js';
 import { createCampaignService } from '../campaigns/service.js';
 import { broadcastCharacter } from '../sheets/index.js';
+import { createHomebrewEffects } from '../homebrew/effects.js';
 import { createSheetActions } from './actions.js';
 import { canSeeMessage, createChatService } from './service.js';
 
@@ -46,6 +47,7 @@ export const chatModule: ServerModule = {
   socket(socket, ctx) {
     const chat = createChatService(ctx);
     const actions = createSheetActions(ctx);
+    const effects = createHomebrewEffects(ctx);
 
     socket.on('chat:send', (payload, ack) =>
       handleAck(ack, async () => {
@@ -58,9 +60,10 @@ export const chatModule: ServerModule = {
 
     socket.on('sheet:action', (payload, ack) =>
       handleAck(ack, async () => {
-        const { message, before, after } = actions.run(socket.data.user, payload);
+        const { message, before, after, selfStatus } = actions.run(socket.data.user, payload);
         if (after) await broadcastCharacter(ctx, before, after);
         await broadcastMessage(ctx, message);
+        if (selfStatus) await effects.markCaster(before.campaignId, before.id, selfStatus);
         return message;
       }),
     );

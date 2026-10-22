@@ -115,6 +115,11 @@ export const dnd5eTemplate: SheetTemplateInput = {
     spells: { list: 'conjuros', name: 'nombre', level: 'nivel', effect: 'efecto' },
     slots: { max: 'espacios_{n}_max', used: 'espacios_{n}_usados', pact: 'espacios_pacto' },
     resources: { list: 'recursos', name: 'nombre', uses: 'usos', max: 'max', recharge: 'recarga' },
+    inventory: { list: 'inventario', name: 'objeto', qty: 'cantidad', weight: 'peso' },
+    saves: 'sv_{a}',
+    spellAttack: 'conj_ataque',
+    spellDc: 'conj_cd',
+    spellMod: 'conj_mod',
   },
   sections: [
     {

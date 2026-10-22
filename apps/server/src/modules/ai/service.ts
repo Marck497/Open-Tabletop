@@ -32,6 +32,7 @@ import { boardItems, campaignMembers, campaigns, characters, users } from '../..
 import { createBoardBroadcaster } from '../board/broadcast.js';
 import { createBoardService } from '../board/service.js';
 import { createCampaignService } from '../campaigns/service.js';
+import { createHomebrewService } from '../homebrew/service.js';
 import { broadcastMessage } from '../chat/index.js';
 import { createChatService } from '../chat/service.js';
 import { secureRng } from '../dice/service.js';
@@ -60,6 +61,7 @@ export function createAiService(ctx: AppContext) {
   const sheets = createSheetService(ctx);
   const chat = createChatService(ctx);
   const campaignsSvc = createCampaignService(ctx);
+  const homebrew = createHomebrewService(ctx);
 
   function activeSceneId(campaignId: string) {
     return db.select({ id: campaigns.activeSceneId }).from(campaigns).where(eq(campaigns.id, campaignId)).get()?.id ?? null;
@@ -135,6 +137,20 @@ export function createAiService(ctx: AppContext) {
     const rows = character.values[list];
     if (!Array.isArray(rows) || !rows.length) return null;
     const row = (rows[ai.attackIndex] ?? rows[0]) as SheetRow;
+    // Fila enlazada a una creación con tirada de ataque: se usa la creación.
+    const entry = typeof row._ref === 'string' ? homebrew.find(character.campaignId, row._ref) : null;
+    const d = entry?.data;
+    if (entry && d && d.attack !== 'none' && d.attackBonus.trim()) {
+      const dice = d.damage.map((p) => p.dice.trim()).filter(Boolean);
+      return {
+        name: entry.name,
+        attack: `1d20 + (${d.attackBonus})`,
+        damage: dice[0] ?? '0',
+        extra: dice.length > 1 ? dice.slice(1).join(' + ') : undefined,
+        critFrom: d.critFrom,
+        resolve: createResolver(template, character.values, row),
+      };
+    }
     const columns = allFields(template).find((f) => f.key === list)?.columns ?? [];
     const rollOf = (key: string) => columns.find((c) => c.key === key)?.roll || `@{${key}}`;
     return {

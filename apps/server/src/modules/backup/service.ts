@@ -3,10 +3,10 @@ import path from 'node:path';
 import zlib from 'node:zlib';
 import { randomUUID } from 'node:crypto';
 import { asc, eq } from 'drizzle-orm';
-import { BACKUP_FORMAT, BACKUP_VERSION, backupSchema, type BackupInput, type ImportSummary } from '@vtt/shared';
+import { BACKUP_FORMAT, BACKUP_VERSION, backupSchema, type BackupInput, type ImportSummary, type SheetValues } from '@vtt/shared';
 import type { AppContext } from '../../core/module.js';
 import { badRequest } from '../../core/errors.js';
-import { assets, boardItems, campaignMembers, campaigns, characters, handouts, jukebox, macros, sceneFolders, scenes, sheetTemplates } from '../../db/schema.js';
+import { assets, boardItems, campaignMembers, campaigns, characters, handouts, homebrew, jukebox, macros, sceneFolders, scenes, sheetTemplates } from '../../db/schema.js';
 import { createAssetService } from '../assets/service.js';
 import { createCampaignService } from '../campaigns/service.js';
 
@@ -62,6 +62,13 @@ export function createBackupService(ctx: AppContext) {
         .all()
         .filter((m) => m.shared || m.ownerId === userId)
         .map(({ campaignId: _c, createdAt: _t, ownerId: _o, ...m }) => m),
+      homebrew: db
+        .select()
+        .from(homebrew)
+        .where(eq(homebrew.campaignId, campaignId))
+        .all()
+        .filter((h) => h.shared || h.ownerId === userId)
+        .map(({ id, kind, name, shared, data }) => ({ id, kind, name, shared, data })),
       jukebox: (db.select().from(jukebox).where(eq(jukebox.campaignId, campaignId)).get()?.tracks ?? []).map(({ id, assetId, name, volume, loop }) => ({
         id,
         assetId,
@@ -147,7 +154,7 @@ export function createBackupService(ctx: AppContext) {
       }
     }
 
-    const summary: ImportSummary = { campaignId, scenes: 0, items: 0, characters: 0, handouts: 0, macros: 0, assets: backup.assets.length - skippedAssets, skippedAssets };
+    const summary: ImportSummary = { campaignId, scenes: 0, items: 0, characters: 0, handouts: 0, macros: 0, homebrew: 0, assets: backup.assets.length - skippedAssets, skippedAssets };
     db.transaction((tx) => {
       if (backup.template) {
         tx.insert(sheetTemplates)
@@ -173,9 +180,23 @@ export function createBackupService(ctx: AppContext) {
         tx.insert(scenes).values({ ...s, terrain: fits ? s.terrain : '', id: fresh(id), campaignId, folderId: ref(folderId) }).run();
         summary.scenes++;
       }
+      // Las creaciones antes que las hojas: sus filas enlazadas (_ref) apuntan a los ids nuevos.
+      for (const { id, ...h } of backup.homebrew) {
+        tx.insert(homebrew)
+          .values({ ...h, id: fresh(id), campaignId, ownerId: userId })
+          .run();
+        summary.homebrew++;
+      }
+      const relink = (values: SheetValues): SheetValues =>
+        Object.fromEntries(
+          Object.entries(values).map(([k, v]) => [
+            k,
+            Array.isArray(v) ? v.map((r) => (typeof r._ref === 'string' ? { ...r, _ref: ref(r._ref) ?? '' } : r)) : v,
+          ]),
+        );
       for (const { id, ...ch } of backup.characters) {
         tx.insert(characters)
-          .values({ id: fresh(id), campaignId, name: ch.name, avatarAssetId: ref(ch.avatarAssetId), visibleToAll: ch.visibleToAll, values: ch.values, controlledBy: [] })
+          .values({ id: fresh(id), campaignId, name: ch.name, avatarAssetId: ref(ch.avatarAssetId), visibleToAll: ch.visibleToAll, values: relink(ch.values), controlledBy: [] })
           .run();
         summary.characters++;
       }
