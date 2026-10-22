@@ -71,6 +71,13 @@
       "when": 1792626583284,
       "tag": "0009_macros",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1792626776401,
+      "tag": "0010_jukebox",
+      "breakpoints": true
     }
   ]
 }

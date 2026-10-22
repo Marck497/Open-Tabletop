@@ -35,10 +35,23 @@ export const assetsModule: ServerModule = {
 
     app.get('/assets/:assetId', async (req, reply) => {
       const { assetId } = z.object({ assetId: z.string() }).parse(req.params);
-      const { absPath, mime } = assets.fileFor(assetId, requireUser(req).id);
+      const { absPath, mime, size } = assets.fileFor(assetId, requireUser(req).id);
       // Los assets no cambian nunca (id nuevo en cada subida): caché larga en el navegador.
       reply.header('Cache-Control', 'private, max-age=31536000, immutable');
       reply.header('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'");
+      reply.header('Accept-Ranges', 'bytes');
+      // Peticiones por rangos: el audio las necesita para saltar al punto en que va la canción.
+      const range = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range ?? '');
+      if (range && (range[1] || range[2])) {
+        let start = range[1] ? Number(range[1]) : size - Number(range[2]);
+        let end = range[1] && range[2] ? Number(range[2]) : size - 1;
+        start = Math.max(0, start);
+        end = Math.min(end, size - 1);
+        if (start > end) return reply.code(416).header('Content-Range', `bytes */${size}`).send();
+        reply.code(206).header('Content-Range', `bytes ${start}-${end}/${size}`).header('Content-Length', end - start + 1);
+        return reply.type(mime).send(fs.createReadStream(absPath, { start, end }));
+      }
+      reply.header('Content-Length', size);
       return reply.type(mime).send(fs.createReadStream(absPath));
     });
 
