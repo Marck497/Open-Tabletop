@@ -19,3 +19,4 @@ export * from './systems/index.js';
 export * from './systems/tokenStats.js';
 export * from './compendium/monsters.js';
 export * from './realtime.js';
+export * from './srd/index.js';

@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { assetUrl, type Character } from '@vtt/shared';
 import { api } from '../../core/api';
 import { CompendiumWindow } from '../compendium/CompendiumWindow';
+import { CharacterCreator } from '../srd/CharacterCreator';
+import { SrdBrowser } from '../srd/SrdBrowser';
 import { useSheets } from './store';
 
 /** Lista de personajes que el usuario puede ver ("diario" en Roll20). */
@@ -10,6 +12,8 @@ export function CharactersPanel({ campaignId, isGm, meId, onEditTemplate }: { ca
   const openSheet = useSheets((s) => s.openSheet);
   const list = Object.values(characters).sort((a, b) => a.name.localeCompare(b.name));
   const [compendium, setCompendium] = useState(false);
+  const [creator, setCreator] = useState(false);
+  const [rules, setRules] = useState(false);
 
   async function create() {
     const name = prompt(isGm ? 'Nombre del personaje o PNJ' : 'Nombre de tu personaje');
@@ -29,10 +33,18 @@ export function CharactersPanel({ campaignId, isGm, meId, onEditTemplate }: { ca
               📖 Compendio
             </button>
           )}
-          <button className="ghost small" onClick={() => void create()}>
+          <button className="ghost small" onClick={() => void create()} title="Hoja en blanco">
             + Nuevo
           </button>
         </span>
+      </div>
+      <div className="row">
+        <button className="small" onClick={() => setCreator(true)} title="Especie, clase, características, equipo y conjuros del SRD 5e: la hoja sale rellena">
+          ✨ Crear personaje 5e
+        </button>
+        <button className="ghost small" onClick={() => setRules(true)} title="Conjuros, objetos, clases y especies del SRD 5e">
+          📚 Reglas
+        </button>
       </div>
       {list.length === 0 && <p className="muted hint">{isGm ? 'Crea los PJ y PNJ de la partida.' : 'Crea tu personaje o pide al DM que te asigne uno.'}</p>}
       <ul className="character-list">
@@ -58,6 +70,8 @@ export function CharactersPanel({ campaignId, isGm, meId, onEditTemplate }: { ca
           ⚙ Editar plantilla de hoja
         </button>
       )}
+      {creator && <CharacterCreator campaignId={campaignId} onClose={() => setCreator(false)} />}
+      {rules && <SrdBrowser isGm={isGm} meId={meId} onClose={() => setRules(false)} />}
       {compendium && <CompendiumWindow campaignId={campaignId} onClose={() => setCompendium(false)} />}
     </div>
   );

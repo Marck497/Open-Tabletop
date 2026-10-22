@@ -375,3 +375,28 @@ body.fx-shake .table-main { animation: fx-shake 0.6s cubic-bezier(.36,.07,.19,.9
 .map-stamps { display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; }
 .map-stamps .stamp { padding: 3px 0; font-size: 1.25rem; background: transparent; border: 1px solid transparent; }
 .map-stamps .stamp.active { border-color: var(--accent); background: rgba(214,168,74,0.15); }
+
+/* Creador de personajes y reglas del SRD */
+.modal.creator { width: min(860px, 100%); display: flex; flex-direction: column; gap: 10px; }
+.creator-steps { display: flex; flex-wrap: wrap; gap: 4px; }
+.creator-body { display: flex; flex-direction: column; gap: 10px; min-height: 280px; }
+.creator-body label { display: flex; flex-direction: column; gap: 4px; }
+.creator-choices { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px; }
+.creator-choices button { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; }
+.creator-choices button small { color: var(--muted); font-size: 0.75rem; }
+.creator-choices button.active small { color: #fff; opacity: 0.85; }
+.creator-picker { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.creator-equip { border-left: 2px solid var(--border); padding-left: 10px; display: flex; flex-direction: column; gap: 6px; }
+.creator-spells { max-height: 340px; overflow-y: auto; }
+.creator-spells input[type=checkbox] { width: auto; }
+.ability-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+.ability-cell { display: flex; flex-direction: column; gap: 4px; padding: 8px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-elev-2); }
+.ability-cell b { color: var(--text); font-size: 1.1rem; }
+.srd-traits { display: flex; flex-direction: column; gap: 2px; }
+.srd-traits details, .compendium-list details { padding: 2px 0; }
+.srd-traits summary, .compendium-list summary { cursor: pointer; }
+.srd-traits .srd-desc { margin: 4px 0 8px 16px; }
+.srd-desc { white-space: pre-line; font-size: 0.88rem; line-height: 1.4; }
+.compendium .tabs { margin-bottom: 4px; }
+.compendium .row select, .creator .row select { width: auto; }
+.compendium label.switch { white-space: nowrap; margin-bottom: 0; }
