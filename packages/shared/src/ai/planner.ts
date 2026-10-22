@@ -34,6 +34,10 @@ export interface PlanInput {
   /** Coste de moverse en diagonal (1 en 5e). */
   diagonalCost: number;
   rng?: () => number;
+  /** ¿Hay una pared entre estas dos casillas vecinas? (sin paredes, nunca) */
+  blocked?: (from: Cell, to: Cell) => boolean;
+  /** ¿Ve al objetivo desde esa casilla? Sin línea de visión no puede atacarle. */
+  sees?: (from: Cell, target: PlanCreature) => boolean;
 }
 
 export type PlanMode = 'attack' | 'approach' | 'flee' | 'hold' | 'none';
@@ -119,7 +123,7 @@ function explore(input: PlanInput) {
     const row = (i - col) / cols;
     for (const [dx, dy] of NEIGHBORS) {
       const n = { col: col + dx, row: row + dy };
-      if (!passable(n)) continue;
+      if (!passable(n) || input.blocked?.({ col, row }, n)) continue;
       // Una pizca de coste extra en diagonal para que, a igualdad, prefiera caminos rectos (más naturales).
       const nc = c + (dx && dy ? diagonalCost + 1e-4 : 1);
       const ni = idx(n);
@@ -212,7 +216,7 @@ export function planTurn(input: PlanInput): Plan {
   // Guardián: espera hasta que alguien entra en su radio.
   let candidates = targets;
   if (ai.behavior === 'guard') {
-    candidates = targets.filter((t) => distTo(self.cell, t) <= ai.guardRadius);
+    candidates = targets.filter((t) => distTo(self.cell, t) <= ai.guardRadius && (input.sees?.(self.cell, t) ?? true));
     if (!candidates.length) return none('vigila su posición', 'hold');
   }
 
@@ -220,7 +224,7 @@ export function planTurn(input: PlanInput): Plan {
   const ranged = ai.behavior === 'ranged';
   const inRange = (c: Cell) => {
     const d = distTo(c, target);
-    return ranged ? d <= ai.range : d <= ai.reach;
+    return (ranged ? d <= ai.range : d <= ai.reach) && (input.sees?.(c, target) ?? true);
   };
   const attackFrom = (path: Cell[], reason: string): Plan => ({ path, targetId: target.id, attack: true, mode: 'attack', reason });
 

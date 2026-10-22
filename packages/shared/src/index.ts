@@ -4,6 +4,7 @@ export * from './schemas/auth.js';
 export * from './schemas/campaign.js';
 export * from './schemas/board.js';
 export * from './schemas/measure.js';
+export * from './schemas/walls.js';
 export * from './schemas/ai.js';
 export * from './schemas/journal.js';
 export * from './schemas/macro.js';

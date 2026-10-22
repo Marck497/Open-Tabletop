@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm';
 import { index, integer, primaryKey, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
-import type { AiSettings, BoardLayer, Drawing, JukeboxTrack, ChatRoll, TokenAi, Fog, InitiativeEntry, SheetTemplate, SheetValues } from '@vtt/shared';
+import type { AiSettings, BoardLayer, Drawing, JukeboxTrack, ChatRoll, TokenAi, Fog, InitiativeEntry, SheetTemplate, SheetValues, Wall } from '@vtt/shared';
 
 const timestamps = {
   createdAt: text('created_at').notNull().default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ','now'))`),
@@ -93,6 +93,9 @@ export const scenes = sqliteTable(
     diagonalRule: text('diagonal_rule', { enum: ['5e', 'alt', 'euclid'] }).notNull().default('5e'),
     sortOrder: integer('sort_order').notNull().default(0),
     fog: text('fog', { mode: 'json' }).$type<Fog>().notNull().default({ enabled: false, ops: [] }),
+    walls: text('walls', { mode: 'json' }).$type<Wall[]>().notNull().default([]),
+    vision: integer('vision', { mode: 'boolean' }).notNull().default(false),
+    visionRange: integer('vision_range').notNull().default(0),
     ...timestamps,
   },
   (t) => [index('scenes_campaign_idx').on(t.campaignId)],

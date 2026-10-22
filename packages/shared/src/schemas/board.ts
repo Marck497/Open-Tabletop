@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { DIAGONAL_RULES, type DiagonalRule } from './measure.js';
 import { tokenAiSchema, type TokenAi } from './ai.js';
+import type { Wall } from './walls.js';
 
 /**
  * Capas del tablero (como en Roll20):
@@ -56,6 +57,10 @@ export const sceneInputSchema = z.object({
   cellDistance: z.number().positive().max(10000),
   distanceUnit: z.string().trim().max(16),
   diagonalRule: z.enum(DIAGONAL_RULES),
+  /** Visión dinámica: cada jugador solo ve lo que ven sus tokens (las paredes tapan). */
+  vision: z.boolean(),
+  /** Hasta dónde ven los tokens, en casillas (0 = sin límite). */
+  visionRange: z.number().int().min(0).max(1000),
 });
 export const createSceneSchema = sceneInputSchema.partial().extend({ name: z.string().trim().min(1).max(80) });
 export const updateSceneSchema = sceneInputSchema.partial();
@@ -75,8 +80,11 @@ export interface Scene {
   cellDistance: number;
   distanceUnit: string;
   diagonalRule: DiagonalRule;
+  vision: boolean;
+  visionRange: number;
   sortOrder: number;
   fog: Fog;
+  walls: Wall[];
 }
 
 /** Dibujos sobre el tablero: trazos a mano alzada, líneas, rectángulos, elipses y textos. */

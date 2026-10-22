@@ -7,6 +7,10 @@ import {
   fogSchema,
   updateItemSchema,
   updateSceneSchema,
+  canMoveStraight,
+  hasLineOfSight,
+  isDoor,
+  wallsSchema,
   type BoardItem,
   type CampaignRole,
   type CreateItemInput,
@@ -17,12 +21,14 @@ import {
   type SceneState,
   type UpdateItemInput,
   type UpdateSceneInput,
+  type Wall,
+  type WallInput,
 } from '@vtt/shared';
 import type { AppContext } from '../../core/module.js';
 import { badRequest, forbidden, notFound } from '../../core/errors.js';
 import { assets, boardItems, campaigns, characters, scenes } from '../../db/schema.js';
 import { createCampaignService } from '../campaigns/service.js';
-import { canSeeItem, forViewer, PLAYER_DRAWING_FIELDS, PLAYER_EDITABLE_FIELDS } from './visibility.js';
+import { canSeeItem, eyesOf, forViewer, isEye, PLAYER_DRAWING_FIELDS, PLAYER_EDITABLE_FIELDS, sceneFor } from './visibility.js';
 
 type SceneRow = typeof scenes.$inferSelect;
 type ItemRow = typeof boardItems.$inferSelect;
@@ -76,7 +82,7 @@ export function createBoardService(ctx: AppContext) {
     const active = activeSceneId(campaignId);
     const rows = db.select().from(scenes).where(eq(scenes.campaignId, campaignId)).orderBy(asc(scenes.sortOrder), asc(scenes.createdAt)).all();
     const visible = role === 'gm' ? rows : rows.filter((r) => r.id === active);
-    return { scenes: visible.map(toScene), activeSceneId: active };
+    return { scenes: visible.map((r) => sceneFor(toScene(r), role)), activeSceneId: active };
   }
 
   function createScene(campaignId: string, userId: string, input: CreateSceneInput): Scene {
@@ -120,11 +126,11 @@ export function createBoardService(ctx: AppContext) {
   }
 
   function stateFor(scene: Scene, viewer: Viewer): SceneState {
+    const items = allItems(scene.id);
+    const eyes = scene.vision && viewer.role !== 'gm' ? eyesOf(items, viewer.userId) : undefined;
     return {
-      scene,
-      items: allItems(scene.id)
-        .filter((i) => canSeeItem(i, scene, viewer.role, viewer.userId))
-        .map((i) => forViewer(i, viewer.role)),
+      scene: sceneFor(scene, viewer.role),
+      items: items.filter((i) => canSeeItem(i, scene, viewer.role, viewer.userId, eyes)).map((i) => forViewer(i, viewer.role)),
     };
   }
 
@@ -179,7 +185,10 @@ export function createBoardService(ctx: AppContext) {
     const { scene, viewer } = access(sceneId, userId);
     const data = updateItemSchema.parse(patch);
     const before = toItem(itemRow(sceneId, itemId));
-    if (viewer.role !== 'gm') assertPlayerCanEdit(before, scene, viewer, Object.keys(data));
+    if (viewer.role !== 'gm') {
+      assertPlayerCanEdit(before, scene, viewer, Object.keys(data));
+      assertNoWallInTheWay(before, scene, data.x ?? before.x, data.y ?? before.y);
+    }
     checkAsset(data.assetId, scene.campaignId);
     checkCharacter(data.characterId, scene.campaignId);
     if (Object.keys(data).length) db.update(boardItems).set(data).where(eq(boardItems.id, itemId)).run();
@@ -206,6 +215,14 @@ export function createBoardService(ctx: AppContext) {
     }
     const allowed = item.drawing ? PLAYER_DRAWING_FIELDS : PLAYER_EDITABLE_FIELDS;
     if (keys.some((k) => !allowed.has(k))) throw forbidden('Solo puedes mover tus tokens');
+  }
+
+  /** Los jugadores no pueden atravesar paredes ni puertas cerradas con sus tokens. */
+  function assertNoWallInTheWay(item: BoardItem, scene: Scene, x: number, y: number) {
+    if (!isEye(item) || !scene.walls.length || (x === item.x && y === item.y)) return;
+    const from = { x: item.x + item.width / 2, y: item.y + item.height / 2 };
+    const to = { x: x + item.width / 2, y: y + item.height / 2 };
+    if (!canMoveStraight(from, to, scene.walls)) throw forbidden('Hay una pared en medio');
   }
 
   /** Comprueba que puede arrastrar el token (para el movimiento en vivo, que no se guarda). */
@@ -248,6 +265,37 @@ export function createBoardService(ctx: AppContext) {
     return setFog(sceneId, userId, { ...scene.fog, ops });
   }
 
+  // ---------- Paredes y puertas ----------
+
+  function setWalls(sceneId: string, userId: string, input: WallInput[]): Scene {
+    requireGmScene(sceneId, userId);
+    const walls = wallsSchema.parse(input);
+    if (new Set(walls.map((w) => w.id)).size !== walls.length) throw badRequest('Paredes repetidas');
+    db.update(scenes).set({ walls }).where(eq(scenes.id, sceneId)).run();
+    return toScene(sceneRow(sceneId));
+  }
+
+  /** Abrir/cerrar una puerta (y, el DM, echarle la llave). Los jugadores necesitan verla. */
+  function toggleDoor(sceneId: string, userId: string, wallId: string, patch: { open?: boolean; locked?: boolean }): Scene {
+    const { scene, viewer } = access(sceneId, userId);
+    const door = scene.walls.find((w) => w.id === wallId);
+    if (!door || !isDoor(door)) throw notFound('Puerta no encontrada');
+    if (viewer.role !== 'gm') {
+      if (door.kind !== 'door' || patch.locked !== undefined) throw forbidden('Solo el DM puede hacer esto');
+      if (door.locked && patch.open !== door.open) throw forbidden('Está cerrada con llave');
+      if (scene.vision && !playerSeesWall(scene, door, userId)) throw forbidden('No ves esa puerta');
+    }
+    const walls: Wall[] = scene.walls.map((w) => (w.id === wallId ? { ...w, ...patch } : w));
+    db.update(scenes).set({ walls }).where(eq(scenes.id, sceneId)).run();
+    return toScene(sceneRow(sceneId));
+  }
+
+  function playerSeesWall(scene: Scene, wall: Wall, userId: string) {
+    const mid = { x: (wall.x1 + wall.x2) / 2, y: (wall.y1 + wall.y2) / 2 };
+    const range = scene.visionRange * scene.gridSize;
+    return eyesOf(allItems(scene.id), userId).some((e) => (!range || Math.hypot(e.x - mid.x, e.y - mid.y) <= range) && hasLineOfSight(e, mid, scene.walls, wall.id));
+  }
+
   return {
     sceneIdsOf,
     listScenes,
@@ -267,6 +315,8 @@ export function createBoardService(ctx: AppContext) {
     deleteItem,
     setFog,
     addFogOp,
+    setWalls,
+    toggleDoor,
   };
 }
 

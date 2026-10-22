@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { BOARD_LAYERS, MEASURE_LABELS, MEASURE_SHAPES, type DrawingType, type MeasureShape } from '@vtt/shared';
+import { BOARD_LAYERS, MEASURE_LABELS, MEASURE_SHAPES, WALL_COLORS, WALL_KINDS, WALL_LABELS, type DrawingType, type MeasureShape, type UpdateSceneInput } from '@vtt/shared';
+import { api } from '../../core/api';
 import { emitAck } from '../../core/socket';
 import { addImageItem, addItem } from './actions';
 import { AssetPicker } from './AssetPicker';
+import { saveWalls } from './Walls';
 import { LAYER_LABELS, useBoard, type Tool } from './store';
 
 const MEASURE_ICONS: Record<MeasureShape, string> = { ruler: '📏', circle: '◯', cone: '◺', line: '━', square: '▢' };
@@ -34,7 +36,9 @@ export function Toolbar({ campaignId, isGm }: { campaignId: string; isGm: boolea
   const activeLayer = useBoard((s) => s.activeLayer);
   const measureShape = useBoard((s) => s.measureShape);
   const draw = useBoard((s) => s.draw);
-  const { setTool, setActiveLayer, setMeasureShape, setDraw } = useBoard.getState();
+  const wallMode = useBoard((s) => s.wallMode);
+  const previewVision = useBoard((s) => s.previewVision);
+  const { setTool, setActiveLayer, setMeasureShape, setDraw, setWallMode, setPreviewVision } = useBoard.getState();
   const [picker, setPicker] = useState(false);
 
   if (!scene) return null;
@@ -42,6 +46,7 @@ export function Toolbar({ campaignId, isGm }: { campaignId: string; isGm: boolea
   const w = scene.widthCells * scene.gridSize;
   const h = scene.heightCells * scene.gridSize;
   const setFog = (next: typeof fog) => void emitAck('fog:set', { sceneId: scene.id, fog: next });
+  const saveScene = (patch: UpdateSceneInput) => void api.patch(`/scenes/${scene.id}`, patch).catch((e: Error) => useBoard.getState().showNotice(e.message));
 
   const tools = (
     <div className="tool-group" role="group" aria-label="Herramientas">
@@ -146,6 +151,60 @@ export function Toolbar({ campaignId, isGm }: { campaignId: string; isGm: boolea
             <button className="ghost small" onClick={() => setFog({ enabled: true, ops: [] })}>
               Tapar todo
             </button>
+          </>
+        )}
+      </div>
+
+      <div className="tool-group" role="group" aria-label="Paredes y visión">
+        <button
+          className={`small ${tool === 'walls' ? 'active' : ''}`}
+          title="Paredes y puertas: arrastra para trazar (se ajusta a la cuadrícula; Alt, libre). Clic en una pared para cambiarle el tipo."
+          onClick={() => setTool(tool === 'walls' ? 'select' : 'walls')}
+        >
+          🧱 Paredes
+        </button>
+        {tool === 'walls' && (
+          <>
+            {WALL_KINDS.map((k) => (
+              <button key={k} className={`small ${wallMode === k ? 'active' : ''}`} style={{ borderBottom: `3px solid ${WALL_COLORS[k]}` }} onClick={() => setWallMode(k)}>
+                {WALL_LABELS[k]}
+              </button>
+            ))}
+            <button className={`small ${wallMode === 'erase' ? 'active' : ''}`} title="Clic en una pared para quitarla" onClick={() => setWallMode('erase')}>
+              🧽 Borrar
+            </button>
+            {scene.walls.length > 0 && (
+              <button className="ghost small" onClick={() => confirm(`¿Quitar las ${scene.walls.length} paredes de la escena?`) && void saveWalls(scene, [])}>
+                Quitar todas
+              </button>
+            )}
+          </>
+        )}
+        <label className="switch" title="Cada jugador solo ve lo que ven sus tokens; las paredes tapan la vista">
+          <input type="checkbox" checked={scene.vision} onChange={(e) => saveScene({ vision: e.target.checked })} />
+          Visión
+        </label>
+        {scene.vision && (
+          <>
+            <label className="switch" title="Hasta dónde ven los tokens, en casillas (0 = sin límite)">
+              Alcance
+              <input
+                key={scene.visionRange}
+                type="number"
+                className="tiny-number"
+                min={0}
+                max={1000}
+                defaultValue={scene.visionRange}
+                onBlur={(e) => {
+                  const v = Math.max(0, Math.min(1000, Math.round(Number(e.target.value) || 0)));
+                  if (v !== scene.visionRange) saveScene({ visionRange: v });
+                }}
+              />
+            </label>
+            <label className="switch" title="Oscurece el tablero como lo ven los jugadores (con todos sus tokens)">
+              <input type="checkbox" checked={previewVision} onChange={(e) => setPreviewVision(e.target.checked)} />
+              Ver como jugadores
+            </label>
           </>
         )}
       </div>

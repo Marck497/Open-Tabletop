@@ -7,8 +7,11 @@ import {
   evaluate,
   ExprError,
   formatDistance,
+  blocksMove,
   planTurn,
+  seesRect,
   statusesOf,
+  wallGrid,
   type AiTurnResult,
   type BoardItem,
   type Character,
@@ -230,11 +233,26 @@ export function createAiService(ctx: AppContext) {
       }
     }
 
+    // Paredes: no las atraviesa al moverse y necesita ver a su objetivo para atacarle.
+    const centerOf = (c: { col: number; row: number }, size: number) => ({ x: (c.col + size / 2) * g, y: (c.row + size / 2) * g });
+    const crossesWall = wallGrid(scene.walls, g, blocksMove);
+    const selfSize = sizeOf(item);
+    const walls = scene.walls.length
+      ? {
+          blocked: (a: { col: number; row: number }, b: { col: number; row: number }) => crossesWall(centerOf(a, selfSize), centerOf(b, selfSize)),
+          sees: (c: { col: number; row: number }, t: PlanCreature) => {
+            const it = targets.find((x) => x.id === t.id)?.item;
+            return !it || seesRect([centerOf(c, selfSize)], it, scene.walls);
+          },
+        }
+      : {};
+
     const speedUnits = ai.speed ?? self.speed ?? 30;
     const plan = planTurn({
+      ...walls,
       cols: scene.widthCells,
       rows: scene.heightCells,
-      self: { id: item.id, name, cell: cellOf(item), size: sizeOf(item), hp: self.hp, hpMax: self.hpMax },
+      self: { id: item.id, name, cell: cellOf(item), size: selfSize, hp: self.hp, hpMax: self.hpMax },
       speed: speedUnits / scene.cellDistance,
       ai,
       targets,

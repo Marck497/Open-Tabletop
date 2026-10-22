@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Circle, Group, Image as KImage, Layer, Rect, Shape, Stage, Text, Transformer } from 'react-konva';
+import { Circle, Group, Image as KImage, Layer, Line, Rect, Shape, Stage, Text, Transformer } from 'react-konva';
 import type Konva from 'konva';
 import useImage from 'use-image';
 import { assetUrl, createResolver, statusesOf, type BoardItem, type BoardLayer, type Fog, type Measure, type Point, type Scene } from '@vtt/shared';
@@ -11,6 +11,7 @@ import { clearMeasure, sendPing, setMeasure, snapPoint, snapTemplateEnd } from '
 import { MeasuresLayer } from './Measures';
 import { DrawingShape, fillOf, textBox } from './Drawing';
 import { useBoard } from './store';
+import { DoorButtons, newWallId, saveWalls, snapWallPoint, useEyes, VisionMask, WallLines } from './Walls';
 
 interface Props {
   isGm: boolean;
@@ -49,6 +50,10 @@ export function Board({ isGm, meId }: Props) {
   /** Distancia que recorre el token que estoy arrastrando (solo la veo yo). */
   const [dragMeasure, setDragMeasure] = useState<Measure | null>(null);
   const focus = useBoard((s) => s.focus);
+  /** Pared que se está trazando. */
+  const [wallDraft, setWallDraft] = useState<{ a: Point; b: Point } | null>(null);
+  const previewVision = useBoard((s) => s.previewVision);
+  const notice = useBoard((s) => s.notice);
 
   // Tamaño del lienzo = tamaño del contenedor.
   useLayoutEffect(() => {
@@ -116,6 +121,7 @@ export function Board({ isGm, meId }: Props) {
     return list.sort((a, b) => a.z - b.z);
   }, [itemsById, moving]);
   const byLayer = (layer: BoardLayer) => items.filter((i) => i.layer === layer);
+  const eyes = useEyes(scene, itemsById, meId, isGm, previewVision);
 
   const onWheel = useCallback((e: Konva.KonvaEventObject<WheelEvent>) => {
     e.evt.preventDefault();
@@ -137,7 +143,8 @@ export function Board({ isGm, meId }: Props) {
   const measureTool = tool === 'measure';
   const pingTool = tool === 'ping';
   const drawTool = tool === 'draw';
-  const freeTool = !fogTool && !measureTool && !pingTool && !drawTool;
+  const wallTool = isGm && tool === 'walls';
+  const freeTool = !fogTool && !measureTool && !pingTool && !drawTool && !wallTool;
 
   function pointerInScene(stage: Konva.Stage) {
     return stage.getRelativePointerPosition()!;
@@ -172,6 +179,12 @@ export function Board({ isGm, meId }: Props) {
       setDrawDraft([p.x, p.y, p.x, p.y]);
       return;
     }
+    if (wallTool) {
+      if (useBoard.getState().wallMode === 'erase') return;
+      const p = snapWallPoint(pointerInScene(stage), scene!, view.scale, 'altKey' in e.evt && e.evt.altKey);
+      setWallDraft({ a: p, b: p });
+      return;
+    }
     if (fogTool) {
       const p = pointerInScene(stage);
       setFogDraft({ x0: p.x, y0: p.y, x1: p.x, y1: p.y });
@@ -200,12 +213,27 @@ export function Board({ isGm, meId }: Props) {
       } else setDrawDraft([drawDraft[0]!, drawDraft[1]!, p.x, p.y]);
       return;
     }
+    if (wallDraft) {
+      const b = snapWallPoint(pointerInScene(e.target.getStage()!), scene!, view.scale, 'altKey' in e.evt && e.evt.altKey);
+      if (b.x !== wallDraft.b.x || b.y !== wallDraft.b.y) setWallDraft({ ...wallDraft, b });
+      return;
+    }
     if (!fogDraft) return;
     const p = pointerInScene(e.target.getStage()!);
     setFogDraft({ ...fogDraft, x1: p.x, y1: p.y });
   }
 
   function onStageMouseUp() {
+    if (wallDraft) {
+      const { a, b } = wallDraft;
+      setWallDraft(null);
+      const kind = useBoard.getState().wallMode;
+      if (Math.hypot(b.x - a.x, b.y - a.y) < 4 || kind === 'erase') return;
+      void saveWalls(scene!, [...scene!.walls, { id: newWallId(), x1: a.x, y1: a.y, x2: b.x, y2: b.y, kind, open: false, locked: false }]).catch((e: Error) =>
+        useBoard.getState().showNotice(e.message),
+      );
+      return;
+    }
     if (drawDraft) {
       const pts = drawDraft;
       setDrawDraft(null);
@@ -333,11 +361,27 @@ export function Board({ isGm, meId }: Props) {
             <ItemNode {...itemProps(i)} />
           ))}
         </Layer>
+        {eyes && (
+          <Layer listening={false} opacity={isGm ? 0.7 : 1}>
+            <VisionMask scene={scene} eyes={eyes} />
+          </Layer>
+        )}
         <Layer listening={false} opacity={isGm ? 0.45 : 1}>
           {scene.fog.enabled && <FogShape fog={scene.fog} width={sceneW} height={sceneH} />}
         </Layer>
         <Layer>
           {isGm && byLayer('gm').map((i) => <ItemNode {...itemProps(i)} />)}
+          {isGm && (wallTool || scene.walls.length > 0) && <WallLines scene={scene} scale={view.scale} editing={wallTool} />}
+          {wallDraft && (
+            <Line
+              points={[wallDraft.a.x, wallDraft.a.y, wallDraft.b.x, wallDraft.b.y]}
+              stroke="#fff"
+              strokeWidth={4 / view.scale}
+              dash={[8 / view.scale, 6 / view.scale]}
+              listening={false}
+            />
+          )}
+          <DoorButtons scene={scene} scale={view.scale} isGm={isGm} eyes={eyes} />
           {fogDraft && (
             <Rect
               {...rectProps(normRect(fogDraft))}
@@ -352,6 +396,8 @@ export function Board({ isGm, meId }: Props) {
           <MeasuresLayer scene={scene} scale={view.scale} dragMeasure={dragMeasure} />
         </Layer>
       </Stage>
+      {eyes && !eyes.length && !isGm && <div className="board-notice">Visión activada: no tienes ningún token en esta escena, así que no ves nada.</div>}
+      {notice && <div className="board-notice">{notice}</div>}
     </div>
   );
 }
@@ -486,9 +532,10 @@ function ItemNode({ item, scene, selected, interactive, ghost, transformable, tu
     const x = snap(e.target.x() - w / 2, free);
     const y = snap(e.target.y() - h / 2, free);
     e.target.position({ x: x + w / 2, y: y + h / 2 });
-    void emitAck('item:update', { sceneId: scene.id, id: item.id, patch: { x, y } }).catch(() => {
-      // Si el servidor lo rechaza, volver a la posición guardada.
+    void emitAck('item:update', { sceneId: scene.id, id: item.id, patch: { x, y } }).catch((err: Error) => {
+      // Si el servidor lo rechaza (p. ej. hay una pared en medio), volver a la posición guardada.
       e.target.position({ x: item.x + w / 2, y: item.y + h / 2 });
+      useBoard.getState().showNotice(err.message);
     });
   }
 
