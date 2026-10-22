@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { DIAGONAL_RULES, type DiagonalRule } from './measure.js';
+import { tokenAiSchema, type TokenAi } from './ai.js';
 
 /**
  * Capas del tablero (como en Roll20):
@@ -95,6 +96,8 @@ export const boardItemFields = {
   ownerIds: z.array(z.string()).max(50),
   /** Personaje vinculado (su hoja da nombre, imagen y barras al token). */
   characterId: z.string().nullable(),
+  /** IA del enemigo (solo la ve el DM). */
+  ai: tokenAiSchema.nullable(),
 };
 
 export const createItemSchema = z.object({
@@ -107,6 +110,7 @@ export const createItemSchema = z.object({
   showName: boardItemFields.showName.default(false),
   ownerIds: boardItemFields.ownerIds.default([]),
   characterId: boardItemFields.characterId.default(null),
+  ai: boardItemFields.ai.default(null),
 });
 export const updateItemSchema = z.object(boardItemFields).partial();
 export type CreateItemInput = z.input<typeof createItemSchema>;
@@ -128,6 +132,7 @@ export interface BoardItem {
   showName: boolean;
   ownerIds: string[];
   characterId: string | null;
+  ai: TokenAi | null;
 }
 
 /** Lo que recibe un cliente al abrir una escena (ya filtrado según su rol). */

@@ -1,4 +1,5 @@
 import type { DiceRoll } from '../expr.js';
+import type { AiSettings } from './ai.js';
 
 export type ChatKind = 'text' | 'emote' | 'roll' | 'system';
 
@@ -45,6 +46,8 @@ export interface InitiativeState {
   turn: number;
   round: number;
   active: boolean;
+  /** Ajustes de la IA de enemigos. */
+  ai: AiSettings;
 }
 
 export const CHAT_HELP = [

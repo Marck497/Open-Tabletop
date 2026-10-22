@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { and, eq } from 'drizzle-orm';
-import type { CampaignRole, InitiativeAction, InitiativeEntry, InitiativeState } from '@vtt/shared';
+import { DEFAULT_AI_SETTINGS, type CampaignRole, type InitiativeAction, type InitiativeEntry, type InitiativeState } from '@vtt/shared';
 import { z } from 'zod';
 import type { AppContext } from '../../core/module.js';
 import { badRequest, forbidden } from '../../core/errors.js';
@@ -34,7 +34,7 @@ export function createInitiativeService(ctx: AppContext) {
 
   function load(campaignId: string): InitiativeState {
     const row = db.select().from(initiative).where(eq(initiative.campaignId, campaignId)).get();
-    return row ?? { campaignId, entries: [], turn: 0, round: 1, active: false };
+    return row ?? { campaignId, entries: [], turn: 0, round: 1, active: false, ai: DEFAULT_AI_SETTINGS };
   }
 
   function save(state: InitiativeState): InitiativeState {
@@ -42,7 +42,7 @@ export function createInitiativeService(ctx: AppContext) {
     const next = { ...state, turn };
     db.insert(initiative)
       .values(next)
-      .onConflictDoUpdate({ target: initiative.campaignId, set: { entries: next.entries, turn: next.turn, round: next.round, active: next.active } })
+      .onConflictDoUpdate({ target: initiative.campaignId, set: { entries: next.entries, turn: next.turn, round: next.round, active: next.active, ai: next.ai } })
       .run();
     return next;
   }
@@ -79,12 +79,7 @@ export function createInitiativeService(ctx: AppContext) {
         if (!isGm && !(action.type === 'next' && current?.characterId && ownsCharacter(campaignId, userId, current.characterId))) {
           throw forbidden('Solo el DM puede cambiar el turno');
         }
-        if (!state.entries.length) return state;
-        let turn = state.turn + (action.type === 'next' ? 1 : -1);
-        let round = state.round;
-        if (turn >= state.entries.length) [turn, round] = [0, round + 1];
-        if (turn < 0) [turn, round] = [state.entries.length - 1, Math.max(1, round - 1)];
-        return save({ ...state, turn, round, active: true });
+        return step(state, action.type === 'next' ? 1 : -1);
       }
       default:
         if (!isGm) throw forbidden('Solo el DM gestiona la iniciativa');
@@ -115,9 +110,27 @@ export function createInitiativeService(ctx: AppContext) {
       case 'end':
         return save({ ...state, active: false });
       case 'clear':
-        return save({ campaignId, entries: [], turn: 0, round: 1, active: false });
+        return save({ ...state, entries: [], turn: 0, round: 1, active: false });
+      case 'aiSettings': {
+        const settings = z.object({ auto: z.boolean(), applyDamage: z.boolean() }).partial().parse(action.settings);
+        return save({ ...state, ai: { ...state.ai, ...settings } });
+      }
     }
     return state;
+  }
+
+  function step(state: InitiativeState, dir: 1 | -1): InitiativeState {
+    if (!state.entries.length) return state;
+    let turn = state.turn + dir;
+    let round = state.round;
+    if (turn >= state.entries.length) [turn, round] = [0, round + 1];
+    if (turn < 0) [turn, round] = [state.entries.length - 1, Math.max(1, round - 1)];
+    return save({ ...state, turn, round, active: true });
+  }
+
+  /** Pasa al siguiente turno sin comprobar permisos (lo usa la IA al acabar su turno). */
+  function advance(campaignId: string): InitiativeState {
+    return step(load(campaignId), 1);
   }
 
   /** Mantiene el turno actual al insertar una entrada en su sitio por valor. */
@@ -157,5 +170,5 @@ export function createInitiativeService(ctx: AppContext) {
     return r?.campaignId === campaignId && r.controlledBy.includes(userId);
   }
 
-  return { get, apply, fromRoll };
+  return { get, load, apply, advance, fromRoll };
 }

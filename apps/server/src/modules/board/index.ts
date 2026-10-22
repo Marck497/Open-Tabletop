@@ -5,6 +5,7 @@ import { handleAck } from '../../core/socket-utils.js';
 import { requireUser } from '../auth/index.js';
 import { createBoardBroadcaster } from './broadcast.js';
 import { createBoardService } from './service.js';
+import { forViewer } from './visibility.js';
 
 const campaignParams = z.object({ id: z.string() });
 const sceneParams = z.object({ sceneId: z.string() });
@@ -117,7 +118,7 @@ export const boardModule: ServerModule = {
       handleAck(ack, async () => {
         const { scene, before, after } = board.updateItem(payload.sceneId, payload.id, userId(), payload.patch);
         await broadcast.itemChanged(scene, before, after);
-        return after;
+        return forViewer(after, board.access(payload.sceneId, userId()).viewer.role);
       }),
     );
 

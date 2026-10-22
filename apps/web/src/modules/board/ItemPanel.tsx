@@ -5,6 +5,7 @@ import { updateSelected } from './actions';
 import { AssetPicker } from './AssetPicker';
 import { LAYER_LABELS, useBoard } from './store';
 import { useSheets } from '../sheets/store';
+import { AiPanel } from '../ai/AiPanel';
 
 /** Propiedades del elemento seleccionado (solo DM). */
 export function ItemPanel({ campaignId, members }: { campaignId: string; members: CampaignMember[] }) {
@@ -91,6 +92,8 @@ export function ItemPanel({ campaignId, members }: { campaignId: string; members
           Abrir hoja
         </button>
       )}
+
+      {item.layer !== 'map' && <AiPanel item={item} hasSheet={!!item.characterId} />}
 
       {players.length > 0 && (
         <fieldset className="owners">

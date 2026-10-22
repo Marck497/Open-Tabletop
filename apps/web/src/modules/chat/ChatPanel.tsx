@@ -143,7 +143,7 @@ function Message({ m, meId, nameOf }: { m: ChatMessage; meId: string; nameOf: (i
     );
   if (m.kind === 'emote')
     return (
-      <div className="chat-msg emote" title={time}>
+      <div className={`chat-msg emote ${m.secret ? 'secret' : ''}`} title={time}>
         <em>
           {who} {m.text}
         </em>

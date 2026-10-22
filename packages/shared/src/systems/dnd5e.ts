@@ -66,6 +66,13 @@ export const dnd5eTemplate: SheetTemplateInput = {
   name: 'D&D 5e',
   version: 1,
   bars: [{ value: 'pg_actuales', max: 'pg_max', color: '#c0392b' }],
+  combat: {
+    ac: 'ca',
+    hp: 'pg_actuales',
+    hpMax: 'pg_max',
+    speed: 'velocidad',
+    attacks: { list: 'ataques', name: 'nombre', attack: 'bono', damage: 'dano' },
+  },
   sections: [
     {
       id: 'cabecera',

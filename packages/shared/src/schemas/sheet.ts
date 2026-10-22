@@ -82,6 +82,27 @@ export const tokenBarSchema = z.object({
   color: z.string().max(32).default('#c0392b'),
 });
 
+/**
+ * Qué campos de la hoja usa el combate automático (IA de enemigos): CA, PG,
+ * velocidad y la tabla de ataques. Son datos de la plantilla, así que sirven
+ * para cualquier sistema.
+ */
+export const combatMappingSchema = z.object({
+  /** Fórmula o campo con la defensa a superar (CA en 5e). */
+  ac: z.string().max(200).default(''),
+  /** Campo numérico de vida actual: al recibir daño se le resta. */
+  hp: z.string().max(64).default(''),
+  hpMax: z.string().max(200).default(''),
+  /** Fórmula o campo con la velocidad, en las unidades de la escena (pies). */
+  speed: z.string().max(200).default(''),
+  /** Tabla de ataques: columnas con el nombre, la tirada de ataque y la de daño. */
+  attacks: z
+    .object({ list: keySchema, name: keySchema, attack: keySchema, damage: keySchema })
+    .nullable()
+    .default(null),
+});
+export type CombatMapping = z.infer<typeof combatMappingSchema>;
+
 export const sheetTemplateSchema = z
   .object({
     name: z.string().trim().min(1).max(80),
@@ -89,6 +110,7 @@ export const sheetTemplateSchema = z
     sections: z.array(sheetSectionSchema).max(50),
     /** Barras que se dibujan sobre los tokens vinculados (p. ej. puntos de golpe). */
     bars: z.array(tokenBarSchema).max(3).default([]),
+    combat: combatMappingSchema.optional(),
   })
   .superRefine((t, ctx) => {
     const seen = new Set<string>();

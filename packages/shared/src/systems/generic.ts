@@ -5,6 +5,7 @@ export const genericTemplate: SheetTemplateInput = {
   name: 'Genérico',
   version: 1,
   bars: [{ value: 'vida', max: 'vida_max', color: '#c0392b' }],
+  combat: { ac: 'defensa', hp: 'vida', hpMax: 'vida_max', speed: '', attacks: null },
   sections: [
     {
       id: 'basico',
