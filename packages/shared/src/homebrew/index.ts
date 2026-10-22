@@ -61,6 +61,8 @@ export interface HomebrewRoll {
   parts: ChatRollPart[];
   damage: number;
   damageTypes: string[];
+  /** Daño de cada parte con su tipo. */
+  damageParts: { type: string; amount: number }[];
   heal: number;
   /** CD de la salvación ya calculada. */
   dc: number | null;
@@ -97,12 +99,14 @@ export function rollHomebrew(d: HomebrewData, opts: { resolve: (name: string) =>
   const parts: ChatRollPart[] = [];
   let damage = 0;
   const damageTypes: string[] = [];
+  const damageParts: HomebrewRoll['damageParts'] = [];
   d.damage.forEach((p, i) => {
     if (!p.dice.trim()) return;
     const expression = i === 0 ? upcastExpression(p.dice, d.upcast, steps) : p.dice;
     const part = rollPart(expression, `Daño${p.type ? ` de ${p.type}` : ''}${crit ? ' ×2 dados' : ''}`, crit);
     parts.push(part);
     damage += part.total;
+    damageParts.push({ type: p.type, amount: part.total });
     if (p.type && !damageTypes.includes(p.type)) damageTypes.push(p.type);
   });
   let heal = 0;
@@ -113,7 +117,7 @@ export function rollHomebrew(d: HomebrewData, opts: { resolve: (name: string) =>
     heal = part.total;
   }
   const dc = d.save ? formulaValue(d.saveDc, resolve) : null;
-  return { attack, parts, damage, damageTypes, heal, dc };
+  return { attack, parts, damage, damageTypes, damageParts, heal, dc };
 }
 
 export type NewSheetRow = Omit<SheetRow, '_id'>;

@@ -26,3 +26,4 @@ export * from './systems/actions.js';
 export * from './schemas/homebrew.js';
 export * from './homebrew/index.js';
 export * from './fx.js';
+export * from './systems/defenses.js';
