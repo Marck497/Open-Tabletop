@@ -69,6 +69,17 @@ export function createBoardBroadcaster(ctx: AppContext, board: BoardService) {
     }
   }
 
+  /** Lo explorado no es secreto (solo dice dónde han estado): va igual a toda la escena. */
+  function exploredChanged(scene: Scene) {
+    ctx.io?.to(sceneRoom(scene.id)).emit('explored:updated', { sceneId: scene.id, explored: scene.explored });
+  }
+
+  /** Suma a lo explorado lo que ven ahora los tokens de los jugadores y lo envía si cambia. */
+  function explore(sceneId: string) {
+    const next = board.explore(sceneId);
+    if (next) exploredChanged(next);
+  }
+
   /**
    * Tras cambiar la escena (o sus paredes): el DM recibe la escena; los jugadores, el estado
    * completo refiltrado (las paredes y la visión cambian lo que ven). `listChanged` avisa
@@ -128,5 +139,5 @@ export function createBoardBroadcaster(ctx: AppContext, board: BoardService) {
     return (await socketsWithRole(scene)).map((v) => ({ ...v, sees: (item: BoardItem) => canSeeItem(item, scene, v.role, v.userId, eyes(v.userId)) }));
   }
 
-  return { characterChanged, itemChanged, itemMoving, fogChanged, sceneUpdated, syncPlayerRooms, relay, viewers };
+  return { characterChanged, itemChanged, itemMoving, fogChanged, exploredChanged, explore, sceneUpdated, syncPlayerRooms, relay, viewers };
 }

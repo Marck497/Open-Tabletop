@@ -1,16 +1,23 @@
 import { z } from 'zod';
-import { campaignRoom, measureSchema, pingSchema, sceneRoom, userColor } from '@vtt/shared';
+import { campaignRoom, measureSchema, pingSchema, sceneRoom, userColor, type BoardItem } from '@vtt/shared';
 import type { ServerModule } from '../../core/module.js';
 import { handleAck } from '../../core/socket-utils.js';
 import { requireUser } from '../auth/index.js';
 import { createBoardBroadcaster } from './broadcast.js';
 import { createSceneFolderService } from './folders.js';
 import { createBoardService } from './service.js';
-import { forViewer } from './visibility.js';
+import { forViewer, isEye } from './visibility.js';
 
 const campaignParams = z.object({ id: z.string() });
 const sceneParams = z.object({ sceneId: z.string() });
 const folderParams = z.object({ folderId: z.string() });
+
+/** ¿Cambia lo que ven los tokens de los jugadores? (aparece, se va, se mueve o cambia de dueño) */
+function movesPlayerEye(before: BoardItem | null, after: BoardItem | null): boolean {
+  if (![before, after].some((i) => i && isEye(i) && i.ownerIds.length > 0)) return false;
+  if (!before || !after) return true;
+  return (['x', 'y', 'width', 'height', 'layer', 'ownerIds'] as const).some((k) => JSON.stringify(before[k]) !== JSON.stringify(after[k]));
+}
 
 /** Tablero: escenas, tokens, capas y niebla de guerra. */
 export const boardModule: ServerModule = {
@@ -106,6 +113,7 @@ export const boardModule: ServerModule = {
       const { sceneId } = sceneParams.parse(req.params);
       const scene = board.updateScene(sceneId, requireUser(req).id, req.body as never);
       await broadcast.sceneUpdated(scene);
+      broadcast.explore(sceneId);
       return { scene };
     });
 
@@ -155,6 +163,7 @@ export const boardModule: ServerModule = {
       handleAck(ack, async () => {
         const { scene, item } = board.createItem(payload.sceneId, userId(), payload.item);
         await broadcast.itemChanged(scene, null, item);
+        if (movesPlayerEye(null, item)) broadcast.explore(scene.id);
         const { role } = board.access(payload.sceneId, userId()).viewer;
         return board.statsFor(scene.campaignId)(forViewer(item, role), role, userId());
       }),
@@ -164,6 +173,7 @@ export const boardModule: ServerModule = {
       handleAck(ack, async () => {
         const { scene, before, after } = board.updateItem(payload.sceneId, payload.id, userId(), payload.patch);
         await broadcast.itemChanged(scene, before, after);
+        if (movesPlayerEye(before, after)) broadcast.explore(scene.id);
         const { role } = board.access(payload.sceneId, userId()).viewer;
         return board.statsFor(scene.campaignId)(forViewer(after, role), role, userId());
       }),
@@ -214,6 +224,7 @@ export const boardModule: ServerModule = {
       handleAck(ack, async () => {
         const { sceneId, walls } = z.object({ sceneId: z.string(), walls: z.array(z.unknown()) }).parse(payload);
         await broadcast.sceneUpdated(board.setWalls(sceneId, userId(), walls as never), false);
+        broadcast.explore(sceneId);
         return undefined;
       }),
     );
@@ -232,6 +243,7 @@ export const boardModule: ServerModule = {
           .object({ sceneId: z.string(), wallId: z.string(), open: z.boolean().optional(), locked: z.boolean().optional() })
           .parse(payload);
         await broadcast.sceneUpdated(board.toggleDoor(sceneId, userId(), wallId, patch), false);
+        broadcast.explore(sceneId);
         return undefined;
       }),
     );
@@ -239,6 +251,14 @@ export const boardModule: ServerModule = {
     socket.on('fog:set', (payload, ack) =>
       handleAck(ack, async () => {
         await broadcast.fogChanged(board.setFog(payload.sceneId, userId(), payload.fog));
+        return undefined;
+      }),
+    );
+
+    socket.on('explored:reset', (payload, ack) =>
+      handleAck(ack, async () => {
+        const { sceneId } = sceneParams.parse(payload);
+        broadcast.exploredChanged(board.resetExplored(sceneId, userId()));
         return undefined;
       }),
     );

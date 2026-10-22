@@ -61,6 +61,8 @@ export const sceneInputSchema = z.object({
   vision: z.boolean(),
   /** Hasta dónde ven los tokens, en casillas (0 = sin límite). */
   visionRange: z.number().int().min(0).max(1000),
+  /** Con la visión dinámica, lo ya explorado se queda a la vista, en penumbra. */
+  exploration: z.boolean(),
 });
 export const createSceneSchema = sceneInputSchema.partial().extend({ name: z.string().trim().min(1).max(80), folderId: z.string().min(1).max(64).nullable().optional() });
 export const updateSceneSchema = sceneInputSchema.partial();
@@ -82,6 +84,9 @@ export interface Scene {
   diagonalRule: DiagonalRule;
   vision: boolean;
   visionRange: number;
+  exploration: boolean;
+  /** Zonas exploradas por los jugadores (ver explored.ts); '' = nada. */
+  explored: string;
   sortOrder: number;
   /** Carpeta en la lista de escenas del DM (null = fuera de carpetas). */
   folderId: string | null;

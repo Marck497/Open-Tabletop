@@ -35,6 +35,7 @@ export function useSceneSync(sceneId: string | null) {
       'item:removed': (p) => p.sceneId === sceneId && board().remove(p.id),
       'item:moving': (p) => p.sceneId === sceneId && board().setMoving(p.id, { x: p.x, y: p.y }),
       'fog:updated': (p) => p.sceneId === sceneId && board().setFog(p.fog),
+      'explored:updated': (p) => p.sceneId === sceneId && board().setExplored(p.explored),
       'scene:sync': (p) => p.scene.id === sceneId && board().load(p),
       'scene:updated': (p) => p.scene.id === sceneId && board().setScene(p.scene),
       'board:measure': ({ sceneId: sid, measure, ...author }) => sid === sceneId && board().setRemoteMeasure(author, measure),

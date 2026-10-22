@@ -407,6 +407,41 @@ describe('paredes y visión', () => {
     expect((await sync).items.map((i) => i.id)).toEqual([hero.id]);
   });
 
+  it('recuerda lo explorado por escena sin enseñar los tokens que hay ahí, y el DM lo olvida', async () => {
+    const { app, gm, pl, sceneId, gmC, plC, token } = await setup();
+    const hero = await token('token', { x: 0, y: 140, ownerIds: [pl.user.id] });
+    const orc = await token('token', { x: 280, y: 140 });
+    ok(await call(gmC, 'walls:set', { sceneId, walls: [{ id: 'd1', x1: 210, y1: 0, x2: 210, y2: 1400, kind: 'door' }] }));
+    // Al activar la visión se marca lo que ve el héroe (solo su lado de la puerta).
+    let explored = next(plC, 'explored:updated');
+    await app.inject({ method: 'PATCH', url: `/api/scenes/${sceneId}`, headers: { cookie: gm.cookie }, payload: { vision: true } });
+    const first = (await explored).explored;
+    expect(first).not.toBe('');
+    // Abre la puerta, pasa y vuelve: lo explorado crece y se queda, pero el orco ya no le llega.
+    explored = next(plC, 'explored:updated');
+    ok(await call(plC, 'door:toggle', { sceneId, wallId: 'd1', open: true }));
+    const second = (await explored).explored;
+    expect(second).not.toBe(first);
+    let sync = next(plC, 'scene:sync');
+    ok(await call(gmC, 'door:toggle', { sceneId, wallId: 'd1', open: false }));
+    const state = await sync;
+    expect(state.scene.explored).toBe(second);
+    expect(state.items.map((i) => i.id)).toEqual([hero.id]);
+    expect(orc.id).toBeTruthy();
+    // Sigue guardado al volver a abrir la escena.
+    expect(ok(await call<SceneState>(plC, 'scene:view', { sceneId })).scene.explored).toBe(second);
+    // Solo el DM lo olvida; queda lo que se ve ahora.
+    expect((await call(plC, 'explored:reset', { sceneId })).ok).toBe(false);
+    explored = next(plC, 'explored:updated');
+    ok(await call(gmC, 'explored:reset', { sceneId }));
+    expect((await explored).explored).toBe(first);
+    // Desactivado: ya no se apunta nada nuevo.
+    await app.inject({ method: 'PATCH', url: `/api/scenes/${sceneId}`, headers: { cookie: gm.cookie }, payload: { exploration: false } });
+    sync = next(plC, 'scene:sync');
+    ok(await call(gmC, 'door:toggle', { sceneId, wallId: 'd1', open: true }));
+    expect((await sync).scene.explored).toBe(first);
+  });
+
   it('visión sin tokens propios: el jugador no ve los tokens ajenos', async () => {
     const { app, gm, sceneId, plC, token } = await setup();
     await token('token', { x: 280, y: 140 });

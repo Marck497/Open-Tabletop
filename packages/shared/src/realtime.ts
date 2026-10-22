@@ -95,6 +95,8 @@ export interface ServerToClientEvents {
   /** Movimiento en curso mientras se arrastra (no se guarda). */
   'item:moving': (payload: { sceneId: string; id: string; x: number; y: number }) => void;
   'fog:updated': (payload: { sceneId: string; fog: Fog }) => void;
+  /** Han cambiado las zonas exploradas (visión dinámica). */
+  'explored:updated': (payload: { sceneId: string; explored: string }) => void;
   /** Regla o plantilla de área de otro usuario (null = la ha quitado). */
   'board:measure': (payload: { sceneId: string } & PointerAuthor & { measure: Measure | null }) => void;
   'board:ping': (payload: { sceneId: string } & PointerAuthor & { x: number; y: number; focus: boolean }) => void;
@@ -140,6 +142,8 @@ export interface ClientToServerEvents {
   'door:toggle': (payload: { sceneId: string; wallId: string; open?: boolean; locked?: boolean }, ack: Ack) => void;
   'fog:set': (payload: { sceneId: string; fog: Fog }, ack: Ack) => void;
   'fog:add': (payload: { sceneId: string; op: Fog['ops'][number] }, ack: Ack) => void;
+  /** El DM borra lo explorado de una escena. */
+  'explored:reset': (payload: { sceneId: string }, ack: Ack) => void;
   /** Comparte la medición en curso (null = quitarla). `gmOnly`: solo la ven los DM. */
   'board:measure': (payload: { sceneId: string; measure: Measure | null; gmOnly?: boolean }) => void;
   /** Señala un punto. Con `focus` (solo DM) centra la vista de todos en él. */
