@@ -1,37 +1,21 @@
-import { useEffect, useState } from 'react';
-import { DIAGONAL_LABELS, DIAGONAL_RULES, type DiagonalRule, type Scene, type UpdateSceneInput } from '@vtt/shared';
+import { useState } from 'react';
+import { DIAGONAL_LABELS, DIAGONAL_RULES, type CampaignMember, type DiagonalRule, type Scene, type UpdateSceneInput } from '@vtt/shared';
 import { api } from '../../core/api';
-import { getSocket } from '../../core/socket';
+import { newFolder, newScene, SceneTree, useSceneList } from './SceneTree';
 
 interface Props {
   campaignId: string;
   activeSceneId: string | null;
   viewingId: string | null;
+  members: CampaignMember[];
   onView: (sceneId: string) => void;
 }
 
-/** Lista de escenas del DM: abrir, crear, configurar y llevar a los jugadores. */
-export function ScenesPanel({ campaignId, activeSceneId, viewingId, onView }: Props) {
-  const [scenes, setScenes] = useState<Scene[]>([]);
+/** Lista de escenas del DM: abrir, crear, ordenar en carpetas, configurar y llevar a los jugadores. */
+export function ScenesPanel({ campaignId, activeSceneId, viewingId, members, onView }: Props) {
+  const { scenes, folders } = useSceneList(campaignId);
   const [editing, setEditing] = useState(false);
-
-  useEffect(() => {
-    const load = () => api.get<{ scenes: Scene[] }>(`/campaigns/${campaignId}/scenes`).then((r) => setScenes(r.scenes));
-    void load();
-    const onChanged = (p: { campaignId: string }) => p.campaignId === campaignId && void load();
-    const socket = getSocket();
-    socket.on('scenes:changed', onChanged);
-    return () => void socket.off('scenes:changed', onChanged);
-  }, [campaignId]);
-
   const viewing = scenes.find((s) => s.id === viewingId);
-
-  async function create() {
-    const name = prompt('Nombre de la escena', `Escena ${scenes.length + 1}`);
-    if (!name) return;
-    const { scene } = await api.post<{ scene: Scene }>(`/campaigns/${campaignId}/scenes`, { name });
-    onView(scene.id);
-  }
 
   async function remove(scene: Scene) {
     if (!confirm(`¿Borrar la escena "${scene.name}" y todo lo que contiene?`)) return;
@@ -42,32 +26,16 @@ export function ScenesPanel({ campaignId, activeSceneId, viewingId, onView }: Pr
     <div className="panel">
       <div className="row spread">
         <h3>Escenas</h3>
-        <button className="ghost small" onClick={() => void create()}>
-          + Nueva
-        </button>
+        <span className="row">
+          <button className="ghost small" onClick={() => void newFolder(campaignId)}>
+            + Carpeta
+          </button>
+          <button className="ghost small" onClick={() => void newScene(campaignId, scenes.length).then((s) => s && onView(s.id))}>
+            + Nueva
+          </button>
+        </span>
       </div>
-      <ul className="scene-list">
-        {scenes.map((s) => (
-          <li key={s.id} className={s.id === viewingId ? 'viewing' : ''}>
-            <button className="ghost scene-name" onClick={() => onView(s.id)} title="Abrir (solo tú)">
-              {s.name}
-            </button>
-            {s.id === activeSceneId ? (
-              <span className="badge gm" title="Los jugadores están aquí">
-                Jugadores
-              </span>
-            ) : (
-              <button
-                className="ghost small"
-                title="Llevar a los jugadores a esta escena"
-                onClick={() => void api.put(`/campaigns/${campaignId}/active-scene`, { sceneId: s.id })}
-              >
-                Llevar aquí
-              </button>
-            )}
-          </li>
-        ))}
-      </ul>
+      <SceneTree campaignId={campaignId} scenes={scenes} folders={folders} members={members} partySceneId={activeSceneId} viewingId={viewingId} onView={onView} />
       {viewing && (
         <>
           <button className="ghost small" onClick={() => setEditing((e) => !e)}>

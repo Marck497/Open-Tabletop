@@ -4,11 +4,13 @@ import type { ServerModule } from '../../core/module.js';
 import { handleAck } from '../../core/socket-utils.js';
 import { requireUser } from '../auth/index.js';
 import { createBoardBroadcaster } from './broadcast.js';
+import { createSceneFolderService } from './folders.js';
 import { createBoardService } from './service.js';
 import { forViewer } from './visibility.js';
 
 const campaignParams = z.object({ id: z.string() });
 const sceneParams = z.object({ sceneId: z.string() });
+const folderParams = z.object({ folderId: z.string() });
 
 /** Tablero: escenas, tokens, capas y niebla de guerra. */
 export const boardModule: ServerModule = {
@@ -53,9 +55,50 @@ export const boardModule: ServerModule = {
     app.put('/campaigns/:id/active-scene', async (req) => {
       const { id } = campaignParams.parse(req.params);
       const { sceneId } = z.object({ sceneId: z.string().nullable() }).parse(req.body);
-      const { previous } = board.setActiveScene(id, requireUser(req).id, sceneId);
-      if (previous && previous !== sceneId) await broadcast.evictPlayers(id, previous);
+      board.setActiveScene(id, requireUser(req).id, sceneId);
+      await broadcast.syncPlayerRooms(id);
       ctx.io?.to(campaignRoom(id)).emit('scene:activeChanged', { campaignId: id, sceneId });
+      return { ok: true };
+    });
+
+    // Llevar a unos jugadores a otra escena (cada uno recarga la partida y ve la suya).
+    app.put('/campaigns/:id/player-scene', async (req) => {
+      const { id } = campaignParams.parse(req.params);
+      board.movePlayers(id, requireUser(req).id, req.body);
+      await broadcast.syncPlayerRooms(id);
+      ctx.io?.to(campaignRoom(id)).emit('scene:activeChanged', { campaignId: id, sceneId: board.activeSceneId(id) });
+      return { ok: true };
+    });
+
+    // ---------- Carpetas y orden de la lista de escenas ----------
+    const folders = createSceneFolderService(ctx);
+    const listChanged = (campaignId: string) => ctx.io?.to(campaignRoom(campaignId)).emit('scenes:changed', { campaignId });
+
+    app.post('/campaigns/:id/scene-folders', async (req, reply) => {
+      const { id } = campaignParams.parse(req.params);
+      const folder = folders.create(id, requireUser(req).id, req.body);
+      listChanged(id);
+      return reply.code(201).send({ folder });
+    });
+
+    app.patch('/scene-folders/:folderId', async (req) => {
+      const { folderId } = folderParams.parse(req.params);
+      const folder = folders.rename(folderId, requireUser(req).id, req.body);
+      listChanged(folder.campaignId);
+      return { folder };
+    });
+
+    app.delete('/scene-folders/:folderId', async (req) => {
+      const { folderId } = folderParams.parse(req.params);
+      const folder = folders.remove(folderId, requireUser(req).id);
+      listChanged(folder.campaignId);
+      return { ok: true };
+    });
+
+    app.put('/campaigns/:id/scene-tree', async (req) => {
+      const { id } = campaignParams.parse(req.params);
+      folders.arrange(id, requireUser(req).id, req.body);
+      listChanged(id);
       return { ok: true };
     });
 
@@ -72,7 +115,8 @@ export const boardModule: ServerModule = {
       ctx.io?.to(sceneRoom(sceneId)).emit('scene:removed', { sceneId });
       ctx.io?.in(sceneRoom(sceneId)).socketsLeave(sceneRoom(sceneId));
       ctx.io?.to(campaignRoom(campaignId)).emit('scenes:changed', { campaignId });
-      if (wasActive) ctx.io?.to(campaignRoom(campaignId)).emit('scene:activeChanged', { campaignId, sceneId: null });
+      // Los que estaban en ella (la party o alguien aparte) recargan su escena.
+      ctx.io?.to(campaignRoom(campaignId)).emit('scene:activeChanged', { campaignId, sceneId: wasActive ? null : board.activeSceneId(campaignId) });
       return { ok: true };
     });
   },

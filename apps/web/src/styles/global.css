@@ -123,9 +123,6 @@ input[type='color'] { padding: 2px; height: 38px; }
 .owners legend { font-size: 0.85rem; color: var(--muted); padding: 0 4px; }
 .hint { font-size: 0.8rem; margin: 10px 0 0; }
 
-.scene-list { list-style: none; padding: 0; margin: 0 0 8px; display: flex; flex-direction: column; gap: 2px; }
-.scene-list li { display: flex; align-items: center; gap: 6px; border-radius: 6px; padding: 2px 4px; }
-.scene-list li.viewing { background: var(--bg-elev-2); }
 .scene-name { flex: 1; text-align: left; border: none; padding: 6px 4px; }
 .scene-settings { margin-top: 10px; }
 
@@ -400,3 +397,23 @@ body.fx-shake .table-main { animation: fx-shake 0.6s cubic-bezier(.36,.07,.19,.9
 .compendium .tabs { margin-bottom: 4px; }
 .compendium .row select, .creator .row select { width: auto; }
 .compendium label.switch { white-space: nowrap; margin-bottom: 0; }
+
+/* Escenas: árbol con carpetas y selector de la barra de arriba */
+.scene-tree { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 1px; }
+.scene-row { display: flex; align-items: center; gap: 4px; border-radius: 6px; padding: 1px 4px; border-top: 2px solid transparent; }
+.scene-row.viewing { background: var(--bg-elev-2); }
+.scene-row.folder .scene-name { font-weight: 600; }
+.scene-row.drop-before { border-top-color: var(--gold); }
+.scene-row.drop-inside { background: rgba(214, 168, 74, 0.18); }
+.scene-row .scene-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.scene-row button.small { padding: 2px 6px; }
+.scene-players { display: flex; gap: 2px; }
+.player-dot { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; font-size: 0.65rem; font-weight: 700; color: #fff; text-shadow: 0 0 2px #000; }
+.move-players { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px 8px 8px 22px; }
+.move-players .switch { margin-bottom: 0; }
+.scene-root-drop { margin-top: 6px; padding: 6px; border: 1px dashed var(--border); border-radius: 6px; font-size: 0.78rem; color: var(--muted); text-align: center; }
+.scene-root-drop.drop-inside { border-color: var(--gold); color: var(--text); }
+.scene-switcher { position: relative; }
+.scene-switcher-backdrop { position: fixed; inset: 0; z-index: 40; }
+.scene-switcher-menu { position: absolute; top: calc(100% + 6px); left: 0; z-index: 41; width: min(460px, 90vw); max-height: 70vh; overflow-y: auto; padding: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); display: flex; flex-direction: column; gap: 8px; }
+.scene-switcher > button { position: relative; z-index: 42; }

@@ -49,6 +49,8 @@ export const campaignMembers = sqliteTable(
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     role: text('role', { enum: ['gm', 'player'] }).notNull(),
+    /** Escena aparte a la que el DM ha llevado a este jugador (null = la de la party). Sin FK, como activeSceneId. */
+    sceneId: text('scene_id'),
     joinedAt: text('joined_at').notNull().default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ','now'))`),
   },
   (t) => [primaryKey({ columns: [t.campaignId, t.userId] })],
@@ -92,6 +94,8 @@ export const scenes = sqliteTable(
     distanceUnit: text('distance_unit').notNull().default('pies'),
     diagonalRule: text('diagonal_rule', { enum: ['5e', 'alt', 'euclid'] }).notNull().default('5e'),
     sortOrder: integer('sort_order').notNull().default(0),
+    /** Carpeta en la lista del DM. Sin FK: si se borra la carpeta, la escena sube de nivel. */
+    folderId: text('folder_id'),
     fog: text('fog', { mode: 'json' }).$type<Fog>().notNull().default({ enabled: false, ops: [] }),
     walls: text('walls', { mode: 'json' }).$type<Wall[]>().notNull().default([]),
     terrain: text('terrain').notNull().default(''),
@@ -100,6 +104,22 @@ export const scenes = sqliteTable(
     ...timestamps,
   },
   (t) => [index('scenes_campaign_idx').on(t.campaignId)],
+);
+
+/** Carpetas de la lista de escenas (se pueden anidar). */
+export const sceneFolders = sqliteTable(
+  'scene_folders',
+  {
+    id: text('id').primaryKey(),
+    campaignId: text('campaign_id')
+      .notNull()
+      .references(() => campaigns.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    parentId: text('parent_id'),
+    sortOrder: integer('sort_order').notNull().default(0),
+    ...timestamps,
+  },
+  (t) => [index('scene_folders_campaign_idx').on(t.campaignId)],
 );
 
 export const boardItems = sqliteTable(

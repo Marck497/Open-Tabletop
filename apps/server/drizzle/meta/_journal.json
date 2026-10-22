@@ -99,6 +99,13 @@
       "when": 1792630583548,
       "tag": "0013_token_views",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1792632131031,
+      "tag": "0014_scene_folders",
+      "breakpoints": true
     }
   ]
 }

@@ -28,11 +28,16 @@ export interface CampaignSummary {
 export interface CampaignMember extends PublicUser {
   role: CampaignRole;
   joinedAt: string;
+  /** Solo para el DM: escena en la que está cada jugador. */
+  sceneId?: string | null;
 }
 
 export interface CampaignDetail extends CampaignSummary {
   ownerId: string;
-  /** Escena en la que están los jugadores (la que ven al entrar). */
+  /**
+   * Escena de la party. A un jugador se le manda la suya, que puede ser otra si el DM
+   * le ha llevado aparte.
+   */
   activeSceneId: string | null;
   /** Solo se envía al DM. */
   inviteCode?: string;
