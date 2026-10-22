@@ -9,6 +9,7 @@ export * from './schemas/ai.js';
 export * from './schemas/journal.js';
 export * from './schemas/macro.js';
 export * from './schemas/jukebox.js';
+export * from './schemas/backup.js';
 export * from './ai/planner.js';
 export * from './schemas/sheet.js';
 export * from './schemas/character.js';

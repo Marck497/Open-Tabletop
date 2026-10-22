@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import type { CampaignDetail, CampaignSummary } from '@vtt/shared';
 import { api } from '../../core/api';
 import { TopBar } from '../../components/TopBar';
+import { restoreBackup } from '../backup/restore';
 
 export function CampaignsPage() {
   const navigate = useNavigate();
@@ -10,6 +11,7 @@ export function CampaignsPage() {
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [restoring, setRestoring] = useState(false);
 
   useEffect(() => {
     api.get<{ campaigns: CampaignSummary[] }>('/campaigns').then((r) => setCampaigns(r.campaigns), (e) => setError(e.message));
@@ -32,6 +34,20 @@ export function CampaignsPage() {
       navigate(`/c/${campaign.id}`);
     } catch (err) {
       setError((err as Error).message);
+    }
+  }
+
+  async function restore(file: File | undefined) {
+    if (!file) return;
+    setRestoring(true);
+    setError(null);
+    try {
+      const summary = await restoreBackup(file);
+      if (summary.skippedAssets) alert(`Restaurada, pero ${summary.skippedAssets} archivos no venían en la copia o no eran válidos.`);
+      navigate(`/c/${summary.campaignId}`);
+    } catch (err) {
+      setError((err as Error).message);
+      setRestoring(false);
     }
   }
 
@@ -76,6 +92,14 @@ export function CampaignsPage() {
             </label>
             <button>Unirse</button>
           </form>
+        </div>
+        <div className="card restore-card">
+          <h2>Restaurar una copia de seguridad</h2>
+          <p className="muted">Crea una partida nueva a partir de un archivo <code>.vtt.json.gz</code> descargado desde la pestaña Mesa. Serás su DM; luego invita otra vez a los jugadores.</p>
+          <label className="button-like">
+            {restoring ? 'Restaurando…' : '⬆ Elegir archivo'}
+            <input type="file" accept=".gz,.json,application/gzip,application/json" hidden disabled={restoring} onChange={(e) => void restore(e.target.files?.[0])} />
+          </label>
         </div>
       </main>
     </>
