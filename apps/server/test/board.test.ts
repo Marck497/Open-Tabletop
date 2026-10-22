@@ -359,3 +359,43 @@ describe('editor de mapas', () => {
   });
 });
 
+describe('vida y CA en los tokens', () => {
+  it('el DM elige qué ven los jugadores de la vida y la CA; los cambios de la hoja llegan solos', async () => {
+    const { app, gm, pl, campaign, sceneId, gmC, plC, token } = await setup();
+    const post = (url: string, payload: object) => app.inject({ method: 'POST', url: `/api${url}`, headers: { cookie: gm.cookie }, payload });
+    const { character: gob } = (await post(`/campaigns/${campaign.id}/compendium/goblin`, {})).json();
+    const { character: hero } = (await post(`/campaigns/${campaign.id}/characters`, { name: 'Ana', controlledBy: [pl.user.id] })).json();
+    await app.inject({ method: 'PATCH', url: `/api/characters/${hero.id}`, headers: { cookie: gm.cookie }, payload: { values: { pg_max: 20, pg_actuales: 12, pg_temporales: 5, ca: 16 } } });
+
+    const seen = (id: string) => new Promise<BoardItem>((resolve) => plC.on('item:upserted', ({ item }) => item.id === id && resolve(item)));
+    let got = seen('?');
+    const enemy = await token('token', { characterId: gob.id, x: 140 });
+    const own = await token('token', { characterId: hero.id, ownerIds: [pl.user.id], x: 280 });
+    // El DM lo ve todo.
+    expect(enemy.stats).toMatchObject({ hp: 7, hpMax: 7, ratio: 1, ac: 15 });
+    const state = ok(await call<SceneState>(plC, 'scene:view', { sceneId }));
+    const byId = (id: string) => state.items.find((i) => i.id === id)!;
+    // Por defecto el jugador no ve la vida ni la CA del goblin, pero sí las de su personaje (con los temporales).
+    expect(byId(enemy.id).stats ?? null).toBeNull();
+    expect(byId(own.id).stats).toMatchObject({ hp: 12, hpMax: 20, hpTemp: 5, ratio: 0.6, tempRatio: 0.25, ac: 16 });
+
+    // Solo la barra: proporción aproximada, sin números.
+    got = seen(enemy.id);
+    ok(await call(gmC, 'item:update', { sceneId, id: enemy.id, patch: { hpView: 'bar', acView: 'all' } }));
+    let item = await got;
+    expect(item.stats).toEqual({ ratio: 1, ac: 15 });
+
+    // Al cambiar la hoja (daño), el token llega otra vez con la vida nueva.
+    got = seen(enemy.id);
+    await app.inject({ method: 'PATCH', url: `/api/characters/${gob.id}`, headers: { cookie: gm.cookie }, payload: { values: { pg_actuales: 3 } } });
+    item = await got;
+    expect(item.stats).toEqual({ ratio: 0.45, ac: 15 });
+
+    got = seen(enemy.id);
+    ok(await call(gmC, 'item:update', { sceneId, id: enemy.id, patch: { hpView: 'numbers', acView: 'gm' } }));
+    expect((await got).stats).toEqual({ hp: 3, hpMax: 7, hpTemp: null, ratio: 3 / 7 });
+    // El jugador no puede cambiar quién ve la vida de su token.
+    expect((await call(plC, 'item:update', { sceneId, id: own.id, patch: { hpView: 'gm' } })).ok).toBe(false);
+  });
+});
+

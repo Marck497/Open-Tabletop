@@ -263,6 +263,10 @@ textarea { resize: vertical; }
 .status-btn { font-size: 1.05rem; padding: 2px 5px; background: transparent; border: 1px solid transparent; opacity: 0.45; filter: grayscale(0.6); }
 .status-btn:hover { opacity: 0.85; filter: none; }
 .status-btn.on { opacity: 1; filter: none; border-color: var(--gold); background: rgba(214, 168, 74, 0.18); }
+.status-btn.buff { border-bottom: 2px solid rgba(76, 217, 100, 0.55); }
+.status-btn.debuff { border-bottom: 2px solid rgba(255, 90, 79, 0.45); }
+.status-btn.buff.on { border-color: #4cd964; background: rgba(76, 217, 100, 0.18); }
+.status-btn.debuff.on { border-color: #ff5a4f; background: rgba(255, 90, 79, 0.16); }
 .status-defs { list-style: none; padding: 0; margin: 6px 0; display: flex; flex-direction: column; gap: 4px; }
 .status-defs .row { flex-wrap: nowrap; gap: 6px; }
 .status-defs .switch { margin: 0; white-space: nowrap; font-size: 0.8rem; }

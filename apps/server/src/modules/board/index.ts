@@ -36,6 +36,7 @@ export const boardModule: ServerModule = {
   routes(app, ctx) {
     const board = createBoardService(ctx);
     const broadcast = createBoardBroadcaster(ctx, board);
+    ctx.events.on('character:changed', ({ campaignId, characterId }) => void broadcast.characterChanged(campaignId, characterId));
 
     app.get('/campaigns/:id/scenes', async (req) => {
       const { id } = campaignParams.parse(req.params);
@@ -110,7 +111,8 @@ export const boardModule: ServerModule = {
       handleAck(ack, async () => {
         const { scene, item } = board.createItem(payload.sceneId, userId(), payload.item);
         await broadcast.itemChanged(scene, null, item);
-        return item;
+        const { role } = board.access(payload.sceneId, userId()).viewer;
+        return board.statsFor(scene.campaignId)(forViewer(item, role), role, userId());
       }),
     );
 
@@ -118,7 +120,8 @@ export const boardModule: ServerModule = {
       handleAck(ack, async () => {
         const { scene, before, after } = board.updateItem(payload.sceneId, payload.id, userId(), payload.patch);
         await broadcast.itemChanged(scene, before, after);
-        return forViewer(after, board.access(payload.sceneId, userId()).viewer.role);
+        const { role } = board.access(payload.sceneId, userId()).viewer;
+        return board.statsFor(scene.campaignId)(forViewer(after, role), role, userId());
       }),
     );
 

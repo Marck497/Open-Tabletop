@@ -88,6 +88,20 @@ Con el editor abierto, el zoom va con la rueda y el mapa se desplaza con el bot�
 
 Ejemplos de fórmulas: `floor((fue - 10) / 2)`, `if(sigilo_comp, competencia, 0)`. Ejemplos de tiradas: `1d20 + @{fue_mod}`, `2d20kh1 + 5` (ventaja), `@{dano}` (tira lo que haya escrito en el campo "dano").
 
+### Vida, CA y estados en los tokens
+
+Los tokens vinculados a una hoja muestran encima su **barra de vida**: verde, amarilla o roja según lo que les queda, y con los **PG temporales** en azul al final. Abajo a la izquierda llevan un **escudo con su CA**.
+
+- **Qué ven los jugadores** lo elige el DM en cada token (panel del elemento → *Lo que ven los jugadores*):
+  - **Vida**: solo el DM, barra sin números (proporción aproximada) o barra y números.
+  - **CA**: solo el DM o todos.
+  - Por defecto, la vida y la CA de los personajes de los jugadores las ve todo el mundo, y las de los enemigos solo el DM.
+  - Con *Aplicar a los N enemigos de la escena* se copia la elección a todos los enemigos de golpe.
+  - Lo oculto el DM lo ve más apagado y con 🙈.
+- **Seguridad**: el servidor solo envía a cada jugador lo que puede ver, y se actualiza solo al cambiar la hoja (daño, curación…).
+- **Estados**: los bufos (Bendecido, Acelerado, Inspiración bárdica, Escudo de fe, Furia, Heroísmo, Resistencia) llevan un aro verde y los perjuicios un aro rojo.
+- **Plantilla**: en *Combate, barras de vida e IA de enemigos* se elige qué campo son los PG temporales.
+
 ## Chat, tiradas e iniciativa
 
 - **Chat** (pestaña por defecto): escribe normal o usa comandos: `/r 1d20+5 Ataque`, `/gr 1d20` (secreta para el DM), `/w Ana texto` (susurro), `/em se esconde`. Con ↑ recuperas lo último que enviaste, y el selector permite hablar como tu personaje.

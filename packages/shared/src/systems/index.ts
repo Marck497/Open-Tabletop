@@ -1,6 +1,6 @@
 import { allFields, createResolver, sheetTemplateSchema, type CombatMapping, type SheetField, type SheetTemplate, type SheetValues, type StatusDef } from '../schemas/sheet.js';
 import { dnd5eTemplate } from './dnd5e.js';
-import { DND5E_STATUSES } from './statuses.js';
+import { DND5E_STATUSES, GENERIC_STATUSES } from './statuses.js';
 import { genericTemplate } from './generic.js';
 
 /** Plantillas incluidas de serie. Se copian a cada partida, donde el DM puede editarlas. */
@@ -27,8 +27,12 @@ export function combatOf(template: SheetTemplate): CombatMapping | null {
 
 /** Estados de los tokens de una plantilla (las guardadas antes de existir la opción usan los de 5e). */
 export function statusesOf(template: SheetTemplate | null): StatusDef[] {
-  return template?.statuses ?? DND5E_STATUSES;
+  const list = template?.statuses ?? DND5E_STATUSES;
+  // Plantillas guardadas antes de que existieran los bufos: se completa el tipo con el de las condiciones conocidas.
+  return list.map((d) => (d.kind ? d : { ...d, kind: KNOWN_KINDS.get(d.id) }));
 }
+
+const KNOWN_KINDS = new Map([...DND5E_STATUSES, ...GENERIC_STATUSES].filter((d) => d.kind).map((d) => [d.id, d.kind]));
 
 /** Campo de iniciativa de la plantilla (el marcado "iniciativa"). */
 export function initiativeFieldOf(template: SheetTemplate): SheetField | undefined {

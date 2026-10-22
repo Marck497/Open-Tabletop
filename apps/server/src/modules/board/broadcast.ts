@@ -37,6 +37,7 @@ export function createBoardBroadcaster(ctx: AppContext, board: BoardService) {
   async function itemChanged(scene: Scene, before: BoardItem | null, after: BoardItem | null) {
     const eyes = eyesFor(scene);
     const movesEye = (i: BoardItem | null, userId: string) => !!i && isEye(i) && i.ownerIds.includes(userId);
+    const withStats = board.statsFor(scene.campaignId);
     for (const { socket, userId, role } of await socketsWithRole(scene)) {
       // Si se mueve (o aparece, o se va) uno de sus tokens, cambia todo lo que ve: se le manda la escena entera.
       if (scene.vision && role !== 'gm' && (movesEye(before, userId) || movesEye(after, userId))) {
@@ -45,7 +46,7 @@ export function createBoardBroadcaster(ctx: AppContext, board: BoardService) {
       }
       const seesAfter = after && canSeeItem(after, scene, role, userId, eyes(userId));
       const seesBefore = before && canSeeItem(before, scene, role, userId, eyes(userId));
-      if (seesAfter) socket.emit('item:upserted', { sceneId: scene.id, item: forViewer(after, role) });
+      if (seesAfter) socket.emit('item:upserted', { sceneId: scene.id, item: withStats(forViewer(after, role), role, userId) });
       else if (seesBefore) socket.emit('item:removed', { sceneId: scene.id, id: before.id });
     }
   }
@@ -103,5 +104,16 @@ export function createBoardBroadcaster(ctx: AppContext, board: BoardService) {
     }
   }
 
-  return { itemChanged, itemMoving, fogChanged, sceneUpdated, evictPlayers, relay };
+  /** Ha cambiado una hoja (o la plantilla, si `characterId` es null): se reenvían los tokens vinculados con su vida nueva. */
+  async function characterChanged(campaignId: string, characterId: string | null) {
+    if (!ctx.io) return;
+    for (const sceneId of board.sceneIdsOf(campaignId)) {
+      const { scene, items } = board.itemsOf(sceneId);
+      const linked = items.filter((i) => i.characterId && (characterId === null || i.characterId === characterId));
+      if (!linked.length || !(await ctx.io.in(sceneRoom(sceneId)).fetchSockets()).length) continue;
+      for (const item of linked) await itemChanged(scene, item, item);
+    }
+  }
+
+  return { characterChanged, itemChanged, itemMoving, fogChanged, sceneUpdated, evictPlayers, relay };
 }

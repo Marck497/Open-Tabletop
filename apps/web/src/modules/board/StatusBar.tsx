@@ -17,8 +17,8 @@ export function StatusBar({ isGm, meId }: { isGm: boolean; meId: string }) {
       {defs.map((d) => (
         <button
           key={d.id}
-          className={`status-btn ${item.statuses.includes(d.id) ? 'on' : ''}`}
-          title={`${d.label}${d.incapacitated ? ' (no puede actuar)' : ''}`}
+          className={`status-btn ${d.kind ?? ''} ${item.statuses.includes(d.id) ? 'on' : ''}`}
+          title={`${d.label}${d.kind === 'buff' ? ' (bufo)' : ''}${d.incapacitated ? ' (no puede actuar)' : ''}`}
           aria-pressed={item.statuses.includes(d.id)}
           onClick={() => toggle(d.id)}
         >
