@@ -1,5 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 import {
+  fxForHomebrew,
+  fxForRow,
   allFields,
   combatOf,
   createResolver,
@@ -25,6 +27,7 @@ import {
   type SheetRow,
   type SheetTemplate,
   type TokenAi,
+  type HomebrewEntry,
 } from '@vtt/shared';
 import type { AppContext } from '../../core/module.js';
 import { badRequest, notFound } from '../../core/errors.js';
@@ -38,6 +41,7 @@ import { createChatService } from '../chat/service.js';
 import { secureRng } from '../dice/service.js';
 import { broadcastCharacter } from '../sheets/index.js';
 import { createSheetService } from '../sheets/service.js';
+import { createFxService } from '../fx/service.js';
 
 /** Pausa entre casillas al animar el movimiento de un enemigo. */
 export const STEP_MS = 140;
@@ -51,6 +55,8 @@ interface Attack {
   extra?: string;
   critFrom?: number;
   resolve?: (name: string) => unknown;
+  /** Creación enlazada (para su animación). */
+  entry?: HomebrewEntry | null;
 }
 
 /** Turno de un enemigo con IA: moverse por la cuadrícula, atacar y anotarlo en el chat. */
@@ -62,6 +68,7 @@ export function createAiService(ctx: AppContext) {
   const chat = createChatService(ctx);
   const campaignsSvc = createCampaignService(ctx);
   const homebrew = createHomebrewService(ctx);
+  const fx = createFxService(ctx);
 
   function activeSceneId(campaignId: string) {
     return db.select({ id: campaigns.activeSceneId }).from(campaigns).where(eq(campaigns.id, campaignId)).get()?.id ?? null;
@@ -149,6 +156,7 @@ export function createAiService(ctx: AppContext) {
         extra: dice.length > 1 ? dice.slice(1).join(' + ') : undefined,
         critFrom: d.critFrom,
         resolve: createResolver(template, character.values, row),
+        entry,
       };
     }
     const columns = allFields(template).find((f) => f.key === list)?.columns ?? [];
@@ -306,6 +314,8 @@ export function createAiService(ctx: AppContext) {
     const verdict = crit ? '¡crítico!' : hit === null ? '¿impacta?' : hit ? 'impacta' : nat === 1 ? 'pifia' : 'falla';
     const acText = target.ac === null ? '' : ` (CA ${target.ac})`;
     await say(base, 'roll', '', { label: `${attack.name} → ${target.name}${acText}: ${verdict}`, expression: attack.attack, total: atk.value, rolls: atk.rolls });
+    const cue = attack.entry ? fxForHomebrew(attack.entry, crit) : fxForRow('attack', attack.name, [attack.damage, attack.extra].filter(Boolean).join(' '), crit);
+    if (cue) await fx.play({ userId: gm.id, campaignId, originItemId: item.id, target: { sceneId: scene.id, targetIds: [target.item.id] }, cue, secret: base.secret });
     result.attacked = true;
     result.hit = hit;
     if (hit === false || !attack.damage) return result;

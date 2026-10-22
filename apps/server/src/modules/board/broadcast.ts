@@ -122,5 +122,11 @@ export function createBoardBroadcaster(ctx: AppContext, board: BoardService) {
     }
   }
 
-  return { characterChanged, itemChanged, itemMoving, fogChanged, sceneUpdated, syncPlayerRooms, relay };
+  /** Quién está mirando la escena y qué elementos puede ver cada uno (para efectos que no se guardan). */
+  async function viewers(scene: Scene) {
+    const eyes = eyesFor(scene);
+    return (await socketsWithRole(scene)).map((v) => ({ ...v, sees: (item: BoardItem) => canSeeItem(item, scene, v.role, v.userId, eyes(v.userId)) }));
+  }
+
+  return { characterChanged, itemChanged, itemMoving, fogChanged, sceneUpdated, syncPlayerRooms, relay, viewers };
 }

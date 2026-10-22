@@ -6,6 +6,7 @@ import { requireUser } from '../auth/index.js';
 import { createCampaignService } from '../campaigns/service.js';
 import { broadcastCharacter } from '../sheets/index.js';
 import { createHomebrewEffects } from '../homebrew/effects.js';
+import { createFxService } from '../fx/service.js';
 import { createSheetActions } from './actions.js';
 import { canSeeMessage, createChatService } from './service.js';
 
@@ -48,6 +49,7 @@ export const chatModule: ServerModule = {
     const chat = createChatService(ctx);
     const actions = createSheetActions(ctx);
     const effects = createHomebrewEffects(ctx);
+    const fx = createFxService(ctx);
 
     socket.on('chat:send', (payload, ack) =>
       handleAck(ack, async () => {
@@ -60,9 +62,12 @@ export const chatModule: ServerModule = {
 
     socket.on('sheet:action', (payload, ack) =>
       handleAck(ack, async () => {
-        const { message, before, after, selfStatus } = actions.run(socket.data.user, payload);
+        const { message, before, after, selfStatus, fx: anim } = actions.run(socket.data.user, payload);
         if (after) await broadcastCharacter(ctx, before, after);
         await broadcastMessage(ctx, message);
+        if (anim) {
+          await fx.play({ userId: socket.data.user.id, campaignId: before.campaignId, characterId: before.id, secret: message.secret, ...anim });
+        }
         if (selfStatus) await effects.markCaster(before.campaignId, before.id, selfStatus);
         return message;
       }),
