@@ -81,6 +81,10 @@ Ejemplos de fórmulas: `floor((fue - 10) / 2)`, `if(sigilo_comp, competencia, 0)
 - Al tirar, **todos ven el orden en grande** en el centro de la pantalla, con el dado y el bono de cada uno (y el resumen queda en el chat). Los jugadores que aún no estén en la lista tienen **🎲 Tirar mi iniciativa** (o la tiran desde su hoja).
 - Con el combate empezado, arriba aparece **de quién es el turno y quién va después** (y *¡Es tu turno!* cuando te toca). El token al que le toca se resalta en el tablero y cada jugador puede terminar su propio turno. El DM puede seguir añadiendo tokens a mano y corregir valores.
 
+### Críticos y pifias
+
+Cuando alguien saca un **20 natural** en un d20, toda la mesa ve un destello dorado con "¡CRÍTICO!" y chispas. Con un **1 natural** aparece "¡PIFIA!" en rojo y la pantalla tiembla. Con ventaja o desventaja solo cuenta el dado que se queda. Cada uno puede quitar la animación o el sonido en *Mesa → Efectos*. Las tiradas secretas y los susurros solo los ve quien las recibe.
+
 ## Música y ambiente
 
 - En la pestaña **Mesa**, el DM sube audio (MP3, OGG, WAV, M4A, FLAC; máx. 25 MB) y pulsa ▶. Suena a la vez para toda la mesa, sincronizado: quien entra tarde lo oye por donde va.

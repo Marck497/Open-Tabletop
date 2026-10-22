@@ -11,6 +11,7 @@ import { useBoard } from '../board/store';
 import { useSceneSync } from '../board/useSceneSync';
 import { ChatPanel } from '../chat/ChatPanel';
 import { RollToasts } from '../dice/RollToasts';
+import { CritFx, FxPanel } from '../dice/CritFx';
 import { InitiativeAnnounce, InitiativeTracker, TurnBanner } from '../initiative/InitiativeTracker';
 import { useInitiativeSync } from '../initiative/useInitiativeSync';
 import { HandoutWindow } from '../journal/HandoutWindow';
@@ -142,6 +143,7 @@ export function CampaignPage() {
             ) : null,
           )}
         {activeTab !== 'chat' && <RollToasts campaignId={campaign.id} />}
+        <CritFx campaignId={campaign.id} />
       </section>
       <aside className="table-side">
         {isGm && hasSelection && <ItemPanel campaignId={campaign.id} members={campaign.members} />}
@@ -165,6 +167,7 @@ export function CampaignPage() {
             <>
               <MembersPanel campaign={campaign} online={online} meId={me.id} />
               <JukeboxPanel campaignId={campaign.id} isGm={isGm} />
+              <FxPanel />
               {isGm && campaign.inviteCode && <InvitePanel campaignId={campaign.id} inviteCode={campaign.inviteCode} />}
               {isGm && <BackupPanel campaignId={campaign.id} />}
             </>

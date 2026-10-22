@@ -326,3 +326,31 @@ textarea { resize: vertical; }
 .initiative-announce .total { font-size: 1.3rem; font-weight: bold; }
 .initiative-announce small { text-align: right; }
 @keyframes announce-in { from { opacity: 0; transform: translate(-50%, -46%); } to { opacity: 1; transform: translate(-50%, -50%); } }
+
+/* Críticos y pifias */
+.crit-fx { position: absolute; inset: 0; z-index: 45; display: grid; place-items: center; overflow: hidden; cursor: pointer; }
+.crit-flash { position: absolute; inset: 0; pointer-events: none; }
+.crit-fx.crit .crit-flash { background: radial-gradient(circle at center, rgba(255,226,140,0.75), rgba(214,168,74,0.25) 35%, rgba(0,0,0,0) 70%); animation: crit-flash 2.6s ease-out forwards; }
+.crit-fx.fumble .crit-flash { background: radial-gradient(circle at center, rgba(0,0,0,0) 30%, rgba(120,0,0,0.55) 100%); animation: fumble-flash 2.6s ease-out forwards; }
+.crit-card { position: relative; text-align: center; animation: crit-pop 2.6s cubic-bezier(.2,1.4,.4,1) forwards; }
+.crit-die { margin: 0 auto 6px; width: 92px; height: 92px; display: grid; place-items: center; font-size: 2.6rem; font-weight: 800; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); }
+.crit-fx.crit .crit-die { background: linear-gradient(160deg, #ffe08a, #c98a1a); color: #3a2400; animation: crit-spin 0.7s ease-out; }
+.crit-fx.fumble .crit-die { background: linear-gradient(160deg, #6b6470, #2b2730); color: #ff5a4f; animation: fumble-drop 0.9s cubic-bezier(.3,1.6,.5,1); }
+.crit-title { font-size: clamp(3rem, 9vw, 6.5rem); font-weight: 900; letter-spacing: 0.04em; line-height: 1; }
+.crit-fx.crit .crit-title { color: #ffd76a; text-shadow: 0 0 18px rgba(255,200,80,0.9), 0 0 48px rgba(255,170,40,0.6), 0 4px 0 #6b4300; }
+.crit-fx.fumble .crit-title { color: #ff4f45; text-shadow: 0 4px 0 #3a0000, 0 0 24px rgba(0,0,0,0.9); transform: rotate(-4deg); }
+.crit-sub { margin-top: 10px; font-size: 1.1rem; color: #fff; text-shadow: 0 2px 6px #000; }
+.crit-sparks { position: absolute; left: 50%; top: 50%; pointer-events: none; }
+.crit-sparks span { position: absolute; width: var(--s); height: var(--s); border-radius: 50%; background: #ffe39a; box-shadow: 0 0 8px 2px rgba(255,200,80,0.9); animation: crit-spark 1.3s ease-out forwards; }
+@keyframes crit-flash { 0% { opacity: 0; } 8% { opacity: 1; } 60% { opacity: 0.6; } 100% { opacity: 0; } }
+@keyframes fumble-flash { 0% { opacity: 0; } 10% { opacity: 1; } 75% { opacity: 0.8; } 100% { opacity: 0; } }
+@keyframes crit-pop { 0% { transform: scale(0.2); opacity: 0; } 12% { transform: scale(1.12); opacity: 1; } 20% { transform: scale(1); } 85% { transform: scale(1); opacity: 1; } 100% { transform: scale(1.05); opacity: 0; } }
+@keyframes crit-spin { from { transform: rotate(-540deg) scale(0.3); } to { transform: rotate(0) scale(1); } }
+@keyframes fumble-drop { from { transform: translateY(-220px) rotate(40deg); } to { transform: translateY(0) rotate(0); } }
+@keyframes crit-spark { 0% { transform: rotate(var(--a)) translateX(0); opacity: 1; } 100% { transform: rotate(var(--a)) translateX(var(--d)); opacity: 0; } }
+body.fx-shake .table-main { animation: fx-shake 0.6s cubic-bezier(.36,.07,.19,.97) 0.15s both; }
+@keyframes fx-shake { 10%, 90% { transform: translate(-2px, 1px); } 20%, 80% { transform: translate(4px, -2px); } 30%, 50%, 70% { transform: translate(-8px, 3px) rotate(-0.4deg); } 40%, 60% { transform: translate(8px, -3px) rotate(0.4deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .crit-card, .crit-die, .crit-sparks span, body.fx-shake .table-main { animation: none !important; }
+  .crit-fx { animation: none; }
+}

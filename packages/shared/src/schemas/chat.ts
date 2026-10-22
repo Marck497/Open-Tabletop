@@ -68,3 +68,14 @@ export const CHAT_HELP = [
   ['/w Ana texto', 'Susurrar a alguien (por su nombre visible)'],
   ['/em se esconde', 'Acción en tercera persona'],
 ] as const;
+
+/**
+ * ¿Ha salido un crítico (20 natural) o una pifia (1 natural) en los d20 que cuentan?
+ * Si en la misma tirada hay de los dos, gana el crítico.
+ */
+export function naturalOutcome(roll: Pick<ChatRoll, 'rolls'> | null | undefined): 'crit' | 'fumble' | null {
+  const kept = (roll?.rolls ?? []).filter((r) => r.sides === 20).flatMap((r) => r.kept.map((i) => r.results[i]));
+  if (kept.includes(20)) return 'crit';
+  if (kept.includes(1)) return 'fumble';
+  return null;
+}
