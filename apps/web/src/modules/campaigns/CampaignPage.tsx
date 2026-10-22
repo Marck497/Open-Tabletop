@@ -26,6 +26,7 @@ import { useJournalSync } from '../journal/useJournalSync';
 import { MacroBar } from '../macros/MacroBar';
 import { JukeboxPanel } from '../jukebox/JukeboxPanel';
 import { BackupPanel } from '../backup/BackupPanel';
+import { PerformancePanel } from '../performance/PerformancePanel';
 import { JukeboxPlayer } from '../jukebox/JukeboxPlayer';
 import { CharacterSheet } from '../sheets/CharacterSheet';
 import { CharactersPanel } from '../sheets/CharactersPanel';
@@ -195,6 +196,7 @@ export function CampaignPage() {
               <FxPanel />
               {isGm && campaign.inviteCode && <InvitePanel campaignId={campaign.id} inviteCode={campaign.inviteCode} />}
               {isGm && <BackupPanel campaignId={campaign.id} />}
+              {isGm && <PerformancePanel campaignId={campaign.id} />}
             </>
           )}
         </div>
