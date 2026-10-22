@@ -123,7 +123,7 @@ export function rollHomebrew(d: HomebrewData, opts: { resolve: (name: string) =>
 export type NewSheetRow = Omit<SheetRow, '_id'>;
 
 /** Fila nueva de una tabla de la hoja con los valores por defecto de sus columnas. */
-function rowFor(template: SheetTemplate, list: string, set: Record<string, string | number | boolean | undefined>): NewSheetRow {
+export function rowFor(template: SheetTemplate, list: string, set: Record<string, string | number | boolean | undefined>): NewSheetRow {
   const cols = allFields(template).find((f) => f.key === list)?.columns ?? [];
   const row: NewSheetRow = {};
   for (const c of cols) if (c.type !== 'computed') row[c.key] = c.default ?? (c.type === 'number' ? 0 : c.type === 'checkbox' ? false : '');

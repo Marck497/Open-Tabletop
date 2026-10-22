@@ -129,6 +129,7 @@ export const dnd5eTemplate: SheetTemplateInput = {
     spellDc: 'conj_cd',
     spellMod: 'conj_mod',
     defenses: DEFENSES_MAPPING,
+    coins: ['pc', 'pp', 'pe', 'po', 'ppt'],
   },
   sections: [
     {

@@ -10,6 +10,7 @@ import type { AiSettings } from './schemas/ai.js';
 import type { Character } from './schemas/character.js';
 import type { Handout } from './schemas/journal.js';
 import type { JukeboxAction, JukeboxState } from './schemas/jukebox.js';
+import type { LootInput } from './systems/loot.js';
 import type { ChatMessage, InitiativeEntry, InitiativeScope, InitiativeState } from './schemas/chat.js';
 
 export interface PresenceUser {
@@ -153,6 +154,8 @@ export interface ClientToServerEvents {
   'sheet:action': (payload: SheetActionRequest, ack: Ack<ChatMessage>) => void;
   /** Solo DM: aplica el efecto de una creación del chat (salvaciones, daño, curación, estados) a esos tokens. */
   'effect:apply': (payload: { messageId: string; itemIds: string[] }, ack: Ack<ChatMessage>) => void;
+  /** Solo DM: reparte objetos y monedas a las hojas (se anuncia en el chat). */
+  'loot:give': (payload: LootInput, ack: Ack<ChatMessage>) => void;
   'chat:send': (payload: { campaignId: string; text: string; asCharacterId?: string | null }, ack: Ack<ChatMessage>) => void;
   'initiative:get': (payload: { campaignId: string }, ack: Ack<InitiativeState>) => void;
   /** Acciones sobre el orden de iniciativa (las de gestión, solo el DM). */
