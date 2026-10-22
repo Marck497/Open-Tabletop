@@ -218,6 +218,90 @@ describe('tablero', () => {
   });
 });
 
+describe('escenas por jugador y carpetas', () => {
+  it('el DM lleva a un jugador aparte; el otro se queda con la party y cada uno solo ve la suya', async () => {
+    const { app, gm, pl, campaign, sceneId, plC } = await setup();
+    const pl2 = await registerUser(app, 'otro');
+    await app.inject({ method: 'POST', url: '/api/campaigns/join', headers: { cookie: pl2.cookie }, payload: { inviteCode: campaign.inviteCode } });
+    const api = (method: 'GET' | 'PUT' | 'POST', url: string, cookie: string, payload?: object) => app.inject({ method, url: `/api${url}`, headers: { cookie }, payload });
+    const { scene: side } = (await api('POST', `/campaigns/${campaign.id}/scenes`, gm.cookie, { name: 'Cripta' })).json();
+
+    ok(await call(plC, 'campaign:join', { campaignId: campaign.id }));
+    const changed = next(plC, 'scene:activeChanged');
+    expect((await api('PUT', `/campaigns/${campaign.id}/player-scene`, gm.cookie, { sceneId: side.id, userIds: [pl.user.id] })).statusCode).toBe(200);
+    await changed;
+    // Lo que ve cada uno.
+    expect((await api('GET', `/campaigns/${campaign.id}`, pl.cookie)).json().campaign.activeSceneId).toBe(side.id);
+    expect((await api('GET', `/campaigns/${campaign.id}`, pl2.cookie)).json().campaign.activeSceneId).toBe(sceneId);
+    const gmView = (await api('GET', `/campaigns/${campaign.id}`, gm.cookie)).json().campaign;
+    expect(gmView.activeSceneId).toBe(sceneId);
+    expect(gmView.members.find((m: { id: string }) => m.id === pl.user.id).sceneId).toBe(side.id);
+    expect((await api('GET', `/campaigns/${campaign.id}`, pl2.cookie)).json().campaign.members.every((m: { sceneId?: string }) => m.sceneId === undefined)).toBe(true);
+    expect((await api('GET', `/campaigns/${campaign.id}/scenes`, pl.cookie)).json().scenes.map((s: { id: string }) => s.id)).toEqual([side.id]);
+    // Acceso: el jugador apartado ya no entra en la de la party, y el otro no entra en la cripta.
+    expect((await call(plC, 'scene:view', { sceneId })).ok).toBe(false);
+    ok(await call(plC, 'scene:view', { sceneId: side.id }));
+    const pl2C = client(pl2.cookie);
+    expect((await call(pl2C, 'scene:view', { sceneId: side.id })).ok).toBe(false);
+    // Solo el DM y solo jugadores.
+    expect((await api('PUT', `/campaigns/${campaign.id}/player-scene`, pl.cookie, { sceneId, userIds: [pl.user.id] })).statusCode).toBe(403);
+    expect((await api('PUT', `/campaigns/${campaign.id}/player-scene`, gm.cookie, { sceneId, userIds: [gm.user.id] })).statusCode).toBe(400);
+
+    // "Toda la party" los junta a todos.
+    await api('PUT', `/campaigns/${campaign.id}/active-scene`, gm.cookie, { sceneId: side.id });
+    expect((await api('GET', `/campaigns/${campaign.id}`, pl2.cookie)).json().campaign.activeSceneId).toBe(side.id);
+    // Llevar a uno a la escena de la party lo deja "con la party" y sigue a la party después.
+    await api('PUT', `/campaigns/${campaign.id}/player-scene`, gm.cookie, { sceneId, userIds: [pl.user.id] });
+    await api('PUT', `/campaigns/${campaign.id}/player-scene`, gm.cookie, { sceneId: side.id, userIds: [pl.user.id] });
+    await api('PUT', `/campaigns/${campaign.id}/active-scene`, gm.cookie, { sceneId });
+    expect((await api('GET', `/campaigns/${campaign.id}`, pl.cookie)).json().campaign.activeSceneId).toBe(sceneId);
+    // Si borran la escena en la que estaba aparte, vuelve con la party.
+    await api('PUT', `/campaigns/${campaign.id}/player-scene`, gm.cookie, { sceneId: side.id, userIds: [pl.user.id] });
+    await app.inject({ method: 'DELETE', url: `/api/scenes/${side.id}`, headers: { cookie: gm.cookie } });
+    expect((await api('GET', `/campaigns/${campaign.id}`, pl.cookie)).json().campaign.activeSceneId).toBe(sceneId);
+  });
+
+  it('el jugador apartado deja de recibir los cambios de la escena de la party', async () => {
+    const { app, gm, pl, campaign, plC, token } = await setup();
+    const { scene: side } = (
+      await app.inject({ method: 'POST', url: `/api/campaigns/${campaign.id}/scenes`, headers: { cookie: gm.cookie }, payload: { name: 'Aparte' } })
+    ).json();
+    ok(await call(plC, 'campaign:join', { campaignId: campaign.id }));
+    await app.inject({ method: 'PUT', url: `/api/campaigns/${campaign.id}/player-scene`, headers: { cookie: gm.cookie }, payload: { sceneId: side.id, userIds: [pl.user.id] } });
+    const seen: string[] = [];
+    plC.on('item:upserted', ({ item }) => seen.push(item.id));
+    const t = await token('map');
+    await tick();
+    expect(seen).not.toContain(t.id);
+  });
+
+  it('carpetas: anidar, ordenar, sin bucles, y al borrar una su contenido sube', async () => {
+    const { app, gm, pl, campaign, sceneId } = await setup();
+    const api = (method: 'GET' | 'PUT' | 'POST' | 'PATCH' | 'DELETE', url: string, payload?: object, cookie = gm.cookie) =>
+      app.inject({ method, url: `/api${url}`, headers: { cookie }, payload });
+    const a = (await api('POST', `/campaigns/${campaign.id}/scene-folders`, { name: 'Acto 1' })).json().folder;
+    const b = (await api('POST', `/campaigns/${campaign.id}/scene-folders`, { name: 'Mazmorras', parentId: a.id })).json().folder;
+    expect(b.parentId).toBe(a.id);
+    expect((await api('POST', `/campaigns/${campaign.id}/scene-folders`, { name: 'X' }, pl.cookie)).statusCode).toBe(403);
+    const { scene } = (await api('POST', `/campaigns/${campaign.id}/scenes`, { name: 'Cripta', folderId: b.id })).json();
+    expect(scene.folderId).toBe(b.id);
+    expect((await api('PATCH', `/scene-folders/${a.id}`, { name: 'Acto I' })).json().folder.name).toBe('Acto I');
+    // Bucle: meter Acto I dentro de su propia subcarpeta.
+    expect((await api('PUT', `/campaigns/${campaign.id}/scene-tree`, { folders: [{ id: a.id, parentId: b.id, sortOrder: 0 }] })).statusCode).toBe(400);
+    expect((await api('PUT', `/campaigns/${campaign.id}/scene-tree`, { scenes: [{ id: sceneId, folderId: a.id, sortOrder: 3 }] })).statusCode).toBe(200);
+    let list = (await api('GET', `/campaigns/${campaign.id}/scenes`)).json();
+    expect(list.folders).toHaveLength(2);
+    expect(list.scenes.find((s: { id: string }) => s.id === sceneId)).toMatchObject({ folderId: a.id, sortOrder: 3 });
+    // Los jugadores no ven las carpetas.
+    expect((await api('GET', `/campaigns/${campaign.id}/scenes`, undefined, pl.cookie)).json().folders).toEqual([]);
+    // Borrar "Mazmorras": la cripta sube a "Acto I".
+    await api('DELETE', `/scene-folders/${b.id}`);
+    list = (await api('GET', `/campaigns/${campaign.id}/scenes`)).json();
+    expect(list.folders.map((f: { name: string }) => f.name)).toEqual(['Acto I']);
+    expect(list.scenes.find((s: { id: string }) => s.id === scene.id).folderId).toBe(a.id);
+  });
+});
+
 describe('archivos', () => {
   const PNG_1x1 = Buffer.from(
     'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',

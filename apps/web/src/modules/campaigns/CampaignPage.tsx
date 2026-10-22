@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
+import type { CampaignMember } from '@vtt/shared';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { getSocket } from '../../core/socket';
 import { useAuth } from '../auth/store';
 import { Board } from '../board/Board';
 import { ItemPanel } from '../board/ItemPanel';
+import { SceneSwitcher } from '../board/SceneTree';
 import { ScenesPanel } from '../board/ScenesPanel';
 import { Toolbar } from '../board/Toolbar';
 import { StatusBar } from '../board/StatusBar';
@@ -114,8 +116,12 @@ export function CampaignPage() {
         </button>
         <h1>{campaign.name}</h1>
         <span className={`badge ${campaign.role}`}>{isGm ? 'DM' : 'Jugador'}</span>
-        {scene && <span className="muted scene-title">· {scene.name}</span>}
-        {isGm && scene && scene.id !== campaign.activeSceneId && <span className="badge warn">Los jugadores no ven esta escena</span>}
+        {isGm ? (
+          <SceneSwitcher campaignId={campaign.id} current={scene} members={campaign.members} partySceneId={campaign.activeSceneId} viewingId={viewingSceneId} onView={setGmSceneId} />
+        ) : (
+          scene && <span className="muted scene-title">· {scene.name}</span>
+        )}
+        {isGm && scene && <ScenePresence sceneId={scene.id} members={campaign.members} partySceneId={campaign.activeSceneId} />}
         <span className={`conn ${connected ? 'on' : 'off'}`}>{connected ? 'Conectado' : 'Reconectando…'}</span>
       </header>
       {scene && <Toolbar campaignId={campaign.id} isGm={isGm} />}
@@ -161,7 +167,7 @@ export function CampaignPage() {
           )}
           {activeTab === 'journal' && <JournalPanel campaignId={campaign.id} isGm={isGm} />}
           {activeTab === 'scenes' && isGm && (
-            <ScenesPanel campaignId={campaign.id} activeSceneId={campaign.activeSceneId} viewingId={viewingSceneId} onView={setGmSceneId} />
+            <ScenesPanel campaignId={campaign.id} activeSceneId={campaign.activeSceneId} viewingId={viewingSceneId} members={campaign.members} onView={setGmSceneId} />
           )}
           {activeTab === 'table' && (
             <>
@@ -179,4 +185,14 @@ export function CampaignPage() {
       {editingTemplate && template && <TemplateEditor campaignId={campaign.id} template={template} onClose={() => setEditingTemplate(false)} />}
     </div>
   );
+}
+
+/** Quién de los jugadores ve la escena que tiene abierta el DM. */
+function ScenePresence({ sceneId, members, partySceneId }: { sceneId: string; members: CampaignMember[]; partySceneId: string | null }) {
+  const players = members.filter((m) => m.role === 'player');
+  const here = players.filter((p) => (p.sceneId ?? partySceneId) === sceneId);
+  if (!players.length) return null;
+  if (!here.length) return <span className="badge warn">Ningún jugador ve esta escena</span>;
+  if (here.length === players.length) return <span className="badge">Toda la party está aquí</span>;
+  return <span className="badge">Aquí: {here.map((p) => p.displayName).join(', ')}</span>;
 }

@@ -62,7 +62,7 @@ export const sceneInputSchema = z.object({
   /** Hasta dónde ven los tokens, en casillas (0 = sin límite). */
   visionRange: z.number().int().min(0).max(1000),
 });
-export const createSceneSchema = sceneInputSchema.partial().extend({ name: z.string().trim().min(1).max(80) });
+export const createSceneSchema = sceneInputSchema.partial().extend({ name: z.string().trim().min(1).max(80), folderId: z.string().min(1).max(64).nullable().optional() });
 export const updateSceneSchema = sceneInputSchema.partial();
 export type CreateSceneInput = z.input<typeof createSceneSchema>;
 export type UpdateSceneInput = z.input<typeof updateSceneSchema>;
@@ -83,10 +83,78 @@ export interface Scene {
   vision: boolean;
   visionRange: number;
   sortOrder: number;
+  /** Carpeta en la lista de escenas del DM (null = fuera de carpetas). */
+  folderId: string | null;
   fog: Fog;
   walls: Wall[];
   /** Suelo pintado por casillas (ver terrain.ts); '' = sin pintar. */
   terrain: string;
+}
+
+/** Carpeta de la lista de escenas (solo la ve el DM). Se pueden meter unas dentro de otras. */
+export interface SceneFolder {
+  id: string;
+  campaignId: string;
+  name: string;
+  parentId: string | null;
+  sortOrder: number;
+}
+
+export const sceneFolderInputSchema = z.object({
+  name: z.string().trim().min(1).max(80),
+  parentId: z.string().min(1).max(64).nullable().default(null),
+});
+export type SceneFolderInput = z.input<typeof sceneFolderInputSchema>;
+
+/** Mover y ordenar escenas y carpetas (arrastrar en la lista). Solo se cambia lo que se manda. */
+export const sceneTreeSchema = z.object({
+  scenes: z
+    .array(z.object({ id: z.string().min(1).max(64), folderId: z.string().min(1).max(64).nullable(), sortOrder: z.number().int() }))
+    .max(1000)
+    .default([]),
+  folders: z
+    .array(z.object({ id: z.string().min(1).max(64), parentId: z.string().min(1).max(64).nullable(), sortOrder: z.number().int() }))
+    .max(500)
+    .default([]),
+});
+export type SceneTreeInput = z.input<typeof sceneTreeSchema>;
+
+/** Llevar a unos jugadores concretos a una escena (el resto se queda donde está). */
+export const movePlayersSchema = z.object({
+  sceneId: z.string().min(1).max(64),
+  userIds: z.array(z.string().min(1).max(64)).min(1).max(100),
+});
+
+/** ¿Meter la carpeta `id` dentro de `parentId` crearía un bucle? */
+export function folderCycle(folders: Pick<SceneFolder, 'id' | 'parentId'>[], id: string, parentId: string | null): boolean {
+  const parentOf = new Map(folders.map((f) => [f.id, f.parentId]));
+  for (let cur = parentId, steps = 0; cur; cur = parentOf.get(cur) ?? null, steps++) {
+    if (cur === id || steps > folders.length) return true;
+  }
+  return false;
+}
+
+export interface SceneTreeNode {
+  folder: SceneFolder;
+  folders: SceneTreeNode[];
+  scenes: Scene[];
+}
+
+/** Árbol de carpetas y escenas, ordenado. Lo que apunta a una carpeta que no existe va a la raíz. */
+export function buildSceneTree(folders: SceneFolder[], scenes: Scene[]): { folders: SceneTreeNode[]; scenes: Scene[] } {
+  const ids = new Set(folders.map((f) => f.id));
+  const byOrder = <T extends { sortOrder: number; name: string }>(a: T, b: T) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name);
+  const node = (f: SceneFolder): SceneTreeNode => ({
+    folder: f,
+    folders: folders.filter((c) => c.parentId === f.id && c.id !== f.id).sort(byOrder).map(node),
+    scenes: scenes.filter((s) => s.folderId === f.id).sort(byOrder),
+  });
+  // Raíz: sin padre, o con un padre que no existe o en bucle.
+  const roots = folders.filter((f) => !f.parentId || !ids.has(f.parentId) || folderCycle(folders, f.id, f.parentId));
+  return {
+    folders: roots.sort(byOrder).map((f) => node({ ...f, parentId: null })),
+    scenes: scenes.filter((s) => !s.folderId || !ids.has(s.folderId)).sort(byOrder),
+  };
 }
 
 /** Dibujos sobre el tablero: trazos a mano alzada, líneas, rectángulos, elipses, textos y sellos (un emoji que ocupa su caja). */

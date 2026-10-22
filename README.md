@@ -49,7 +49,14 @@ Abre `http://IP-DE-LA-PI:3000` desde cualquier equipo de tu red. La primera comp
 - **Paredes y visión** (🧱 Paredes): arrastra para trazar paredes (se ajustan a las esquinas de la cuadrícula y a los extremos de otras paredes; con *Alt*, libres). Elige el tipo: *pared*, *puerta*, *ventana* (deja ver pero no pasar) o *puerta secreta* (para los jugadores es una pared hasta que la abres). Clic en una pared para cambiarle el tipo; con *Borrar*, para quitarla.
 - Activa **Visión** para que cada jugador vea solo lo que ven sus tokens: el resto queda a oscuras y lo ya explorado, en penumbra. Los tokens que no ven ni siquiera se les envían. *Alcance* limita hasta dónde ven (en casillas, 0 = sin límite) y *Ver como jugadores* te muestra la oscuridad. Ojo: con la visión activada, un jugador sin tokens en la escena no ve nada.
 - **Puertas**: clic en el icono 🚪 para abrirla o cerrarla. Tú, con *Mayús*+clic, le echas la llave 🔒. Los jugadores abren las puertas que ven y no tienen llave, y no pueden mover sus tokens a través de paredes ni puertas cerradas.
-- **Escenas**: puedes preparar otras escenas sin que los jugadores las vean y llevarlos con *Llevar aquí*.
+- **Escenas**: el botón **🗺** de la barra de arriba (y la pestaña *Escenas*) abre la lista de mapas que tienes preparados.
+  - Pulsa una escena para abrirla **solo tú**: los jugadores no la ven hasta que los lleves.
+  - **Llevar ▾** te deja elegir:
+    - **Toda la party**: todos van a esa escena.
+    - Solo a los jugadores que marques: el resto se queda donde estaba, y así puedes dividir el grupo.
+  - Cada jugador ve únicamente la escena en la que está. En la lista, la escena de la party lleva la etiqueta *Party*, y cada jugador aparece con su inicial en el mapa donde se encuentra. Arriba ves quién está en la escena que tienes abierta.
+  - **Carpetas**: créalas con *+ Carpeta* (📁+ crea una subcarpeta), renómbralas con ✎ y pliégalas con un clic. Si borras una carpeta, sus escenas no se pierden: suben a la carpeta de arriba.
+  - **Arrastra** una escena o una carpeta para ordenarla. Soltarla encima de otra carpeta la mete dentro; soltarla en el borde superior la coloca delante. Con *Suelta aquí para sacar de las carpetas* vuelve a la raíz.
 
 **Todos**
 - Arrastra el fondo para moverte y usa la rueda para hacer zoom.
@@ -170,7 +177,7 @@ Cuando alguien saca un **20 natural** en un d20, toda la mesa ve un destello dor
 
 ## Copias de seguridad
 
-- En la pestaña **Mesa**, el DM tiene **⬇ Descargar copia**: un archivo `.vtt.json.gz` con escenas, tokens, paredes, niebla, hojas, plantilla, diario, macros compartidas y música. Con *Incluir imágenes y música* también lleva los archivos (pesa más). El chat no se guarda.
+- En la pestaña **Mesa**, el DM tiene **⬇ Descargar copia**: un archivo `.vtt.json.gz` con escenas y sus carpetas, tokens, paredes, niebla, hojas, plantilla, diario, macros compartidas y música. Con *Incluir imágenes y música* también lleva los archivos (pesa más). El chat no se guarda.
 - Para restaurarla, en la lista de partidas pulsa **⬆ Elegir archivo** en *Restaurar una copia de seguridad* (máx. 500 MB). Se crea una partida **nueva** en la que eres el DM: los jugadores no van en la copia, así que hay que invitarlos otra vez y asignarles sus personajes.
 - Sirve también para pasar una partida de un servidor a otro (p. ej. de tu PC a la Raspberry). Además de esto, conviene copiar de vez en cuando la carpeta de datos entera (ver *Instalar en la Raspberry Pi 5*).
 

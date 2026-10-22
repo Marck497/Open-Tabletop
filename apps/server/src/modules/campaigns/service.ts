@@ -39,6 +39,16 @@ export function createCampaignService(ctx: AppContext) {
     return role;
   }
 
+  /** Escena que ve un jugador: la suya si el DM le ha llevado aparte, si no la de la party. */
+  function sceneOf(campaignId: string, userId: string): string | null {
+    const own = db
+      .select({ sceneId: campaignMembers.sceneId })
+      .from(campaignMembers)
+      .where(and(eq(campaignMembers.campaignId, campaignId), eq(campaignMembers.userId, userId)))
+      .get()?.sceneId;
+    return own ?? db.select({ id: campaigns.activeSceneId }).from(campaigns).where(eq(campaigns.id, campaignId)).get()?.id ?? null;
+  }
+
   function requireGm(campaignId: string, userId: string): void {
     if (requireMember(campaignId, userId) !== 'gm') throw forbidden('Solo el DM puede hacer esto');
   }
@@ -86,6 +96,7 @@ export function createCampaignService(ctx: AppContext) {
         displayName: users.displayName,
         role: campaignMembers.role,
         joinedAt: campaignMembers.joinedAt,
+        sceneId: campaignMembers.sceneId,
       })
       .from(campaignMembers)
       .innerJoin(users, eq(users.id, campaignMembers.userId))
@@ -99,10 +110,11 @@ export function createCampaignService(ctx: AppContext) {
       systemId: c.systemId,
       createdAt: c.createdAt,
       ownerId: c.ownerId,
-      activeSceneId: c.activeSceneId,
+      activeSceneId: role === 'gm' ? c.activeSceneId : (members.find((m) => m.id === userId)?.sceneId ?? c.activeSceneId),
       role,
       inviteCode: role === 'gm' ? c.inviteCode : undefined,
-      members,
+      // Dónde está cada jugador solo lo sabe el DM.
+      members: members.map(({ sceneId, ...m }) => (role === 'gm' && m.role === 'player' ? { ...m, sceneId: sceneId ?? c.activeSceneId } : m)),
     };
   }
 
@@ -167,7 +179,7 @@ export function createCampaignService(ctx: AppContext) {
     notify(campaignId, 'campaign:membersChanged');
   }
 
-  return { getRole, requireMember, requireGm, listForUser, create, get, update, remove, joinByInvite, regenerateInvite, setMemberRole, removeMember };
+  return { getRole, requireMember, requireGm, sceneOf, listForUser, create, get, update, remove, joinByInvite, regenerateInvite, setMemberRole, removeMember };
 }
 
 export type CampaignService = ReturnType<typeof createCampaignService>;

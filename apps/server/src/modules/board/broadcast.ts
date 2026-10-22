@@ -82,11 +82,18 @@ export function createBoardBroadcaster(ctx: AppContext, board: BoardService) {
     if (listChanged) ctx.io?.to(campaignRoom(scene.campaignId)).emit('scenes:changed', { campaignId: scene.campaignId });
   }
 
-  /** Saca de una escena a los jugadores (p. ej. cuando el DM cambia la escena activa). */
-  async function evictPlayers(campaignId: string, sceneId: string) {
+  /**
+   * Tras mover jugadores de escena: cada jugador conectado deja de escuchar las escenas
+   * que ya no son la suya (su web pide la nueva al recibir scene:activeChanged).
+   */
+  async function syncPlayerRooms(campaignId: string) {
     if (!ctx.io) return;
-    for (const s of await ctx.io.in(sceneRoom(sceneId)).fetchSockets()) {
-      if (campaigns.getRole(campaignId, s.data.user.id) !== 'gm') s.leave(sceneRoom(sceneId));
+    const rooms = board.sceneIdsOf(campaignId).map(sceneRoom);
+    for (const s of await ctx.io.in(campaignRoom(campaignId)).fetchSockets()) {
+      const userId = s.data.user.id;
+      if (campaigns.getRole(campaignId, userId) !== 'player') continue;
+      const mine = campaigns.sceneOf(campaignId, userId);
+      for (const room of rooms) if (s.rooms.has(room) && room !== (mine ? sceneRoom(mine) : null)) s.leave(room);
     }
   }
 
@@ -115,5 +122,5 @@ export function createBoardBroadcaster(ctx: AppContext, board: BoardService) {
     }
   }
 
-  return { characterChanged, itemChanged, itemMoving, fogChanged, sceneUpdated, evictPlayers, relay };
+  return { characterChanged, itemChanged, itemMoving, fogChanged, sceneUpdated, syncPlayerRooms, relay };
 }

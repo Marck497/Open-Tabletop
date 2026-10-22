@@ -6,7 +6,7 @@ import { asc, eq } from 'drizzle-orm';
 import { BACKUP_FORMAT, BACKUP_VERSION, backupSchema, type BackupInput, type ImportSummary } from '@vtt/shared';
 import type { AppContext } from '../../core/module.js';
 import { badRequest } from '../../core/errors.js';
-import { assets, boardItems, campaigns, characters, handouts, jukebox, macros, scenes, sheetTemplates } from '../../db/schema.js';
+import { assets, boardItems, campaignMembers, campaigns, characters, handouts, jukebox, macros, sceneFolders, scenes, sheetTemplates } from '../../db/schema.js';
 import { createAssetService } from '../assets/service.js';
 import { createCampaignService } from '../campaigns/service.js';
 
@@ -30,6 +30,12 @@ export function createBackupService(ctx: AppContext) {
       campaign: { name: c.name, description: c.description, systemId: c.systemId, activeSceneId: c.activeSceneId },
       template: db.select().from(sheetTemplates).where(eq(sheetTemplates.campaignId, campaignId)).get()?.definition ?? null,
       scenes: sceneRows.map(({ campaignId: _c, createdAt: _t, ...s }) => s),
+      sceneFolders: db
+        .select()
+        .from(sceneFolders)
+        .where(eq(sceneFolders.campaignId, campaignId))
+        .all()
+        .map(({ campaignId: _c, createdAt: _t, ...f }) => f),
       items: db
         .select()
         .from(boardItems)
@@ -152,11 +158,19 @@ export function createBackupService(ctx: AppContext) {
       if (backup.scenes.length) {
         // Fuera la escena vacía con la que nace toda partida.
         tx.update(campaigns).set({ activeSceneId: null }).where(eq(campaigns.id, campaignId)).run();
+        tx.update(campaignMembers).set({ sceneId: null }).where(eq(campaignMembers.campaignId, campaignId)).run();
         tx.delete(scenes).where(eq(scenes.campaignId, campaignId)).run();
+        tx.delete(sceneFolders).where(eq(sceneFolders.campaignId, campaignId)).run();
       }
-      for (const { id, ...s } of backup.scenes) {
+      // Carpetas: primero todas (para tener sus ids nuevos) y luego quién va dentro de quién.
+      for (const { id, parentId: _p, ...f } of backup.sceneFolders) tx.insert(sceneFolders).values({ ...f, id: fresh(id), campaignId, parentId: null }).run();
+      for (const f of backup.sceneFolders) {
+        const parentId = ref(f.parentId);
+        if (parentId) tx.update(sceneFolders).set({ parentId }).where(eq(sceneFolders.id, ref(f.id)!)).run();
+      }
+      for (const { id, folderId, ...s } of backup.scenes) {
         const fits = s.terrain.length === (s.widthCells ?? 30) * (s.heightCells ?? 20);
-        tx.insert(scenes).values({ ...s, terrain: fits ? s.terrain : '', id: fresh(id), campaignId }).run();
+        tx.insert(scenes).values({ ...s, terrain: fits ? s.terrain : '', id: fresh(id), campaignId, folderId: ref(folderId) }).run();
         summary.scenes++;
       }
       for (const { id, ...ch } of backup.characters) {
