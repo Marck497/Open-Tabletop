@@ -43,7 +43,7 @@ const BRUSHES = [1, 2, 3, 5, 8];
 
 /** Mezclas listas para el pincel de objetos. */
 const MIXES: { name: string; emojis: string[] }[] = [
-  { name: 'Bosque', emojis: ['🌲', '🌳'] },
+  { name: 'Árboles', emojis: ['🌲', '🌳'] },
   { name: 'Selva', emojis: ['🌴', '🌳', '🌿'] },
   { name: 'Rocas', emojis: ['🪨'] },
   { name: 'Flores', emojis: ['🌻', '🌾', '🌿'] },
