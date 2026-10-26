@@ -241,7 +241,7 @@ export const PREFABS: Prefab[] = [
   },
   {
     id: 'cripta',
-    name: 'Cripta',
+    name: 'Sala funeraria',
     icon: '⚰️',
     group: 'Mazmorra',
     description: 'Ataúdes entre cuatro columnas, huesos, telarañas y velas.',
