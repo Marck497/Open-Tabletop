@@ -1,5 +1,5 @@
 import { useBoard } from '../board/store';
-import { addNote, goToNote, noteNumber, notesOf, readNote, renumberNotes } from './notes';
+import { addNote, goToNote, noteNumber, notesOf, readablePart, readNote, renumberNotes } from './notes';
 
 /** Lista de notas numeradas de la escena abierta (pestaña Escenas, solo el DM). */
 export function NotesList({ campaignId }: { campaignId: string }) {
@@ -24,8 +24,8 @@ export function NotesList({ campaignId }: { campaignId: string }) {
               <span className="note-title">{n.name || `Nota ${noteNumber(n)}`}</span>
               {n.gmNotes && <span className="muted note-text">{n.gmNotes.split('\n')[0]}</span>}
             </button>
-            {n.gmNotes && (
-              <button className="ghost small" title="Leer en el chat: manda su título y texto a todos" onClick={() => void readNote(campaignId, n)}>
+            {readablePart(n) && (
+              <button className="ghost small" title="Leer en el chat: manda su título y la parte para leer (lo de antes de ---) a todos" onClick={() => void readNote(campaignId, n)}>
                 📣
               </button>
             )}

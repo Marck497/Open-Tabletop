@@ -5,6 +5,7 @@ import { newFolder, newScene, SceneTree, useSceneList } from './SceneTree';
 import { duplicateScene, exportSceneUrl, IMPORT_ACCEPT, importSceneFile, saveToLibrary } from '../scenelib/api';
 import { LibraryWindow } from '../scenelib/LibraryWindow';
 import { NotesList } from '../notes/NotesList';
+import { AdventureWindow } from '../adventure/AdventureWindow';
 import { TriggersList } from '../triggers/TriggersList';
 import { useBoard } from './store';
 
@@ -22,6 +23,7 @@ export function ScenesPanel({ campaignId, activeSceneId, viewingId, members, onV
   const [editing, setEditing] = useState(false);
   const [library, setLibrary] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [adventure, setAdventure] = useState(false);
   const viewing = scenes.find((s) => s.id === viewingId);
   const boardSceneId = useBoard((s) => s.scene?.id);
 
@@ -87,6 +89,9 @@ export function ScenesPanel({ campaignId, activeSceneId, viewingId, members, onV
           <button className="ghost small" onClick={() => void newScene(campaignId, scenes.length).then((s) => s && onView(s.id))}>
             + Nueva
           </button>
+          <button className="ghost small" onClick={() => setAdventure(true)} title="Crea una escena lista para jugar: mapa amueblado, notas, encuentros escondidos, trampas y tesoro">
+            ✨ Aventura rápida
+          </button>
         </span>
       </div>
       <SceneTree campaignId={campaignId} scenes={scenes} folders={folders} members={members} partySceneId={activeSceneId} viewingId={viewingId} onView={onView} />
@@ -112,6 +117,17 @@ export function ScenesPanel({ campaignId, activeSceneId, viewingId, members, onV
         </>
       )}
       {message && <p className="notice-line">{message}</p>}
+      {adventure && (
+        <AdventureWindow
+          campaignId={campaignId}
+          onClose={() => setAdventure(false)}
+          onCreated={(scene, text) => {
+            setAdventure(false);
+            setMessage(text);
+            onView(scene.id);
+          }}
+        />
+      )}
       {library && <LibraryWindow campaignId={campaignId} onClose={() => setLibrary(false)} onCreated={(scene) => onView(scene.id)} />}
     </div>
   );

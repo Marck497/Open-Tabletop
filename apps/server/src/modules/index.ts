@@ -1,4 +1,5 @@
 import type { ServerModule } from '../core/module.js';
+import { adventureModule } from './adventure/index.js';
 import { aiModule } from './ai/index.js';
 import { assetsModule } from './assets/index.js';
 import { authModule } from './auth/index.js';
@@ -26,4 +27,4 @@ import { triggersModule } from './triggers/index.js';
  * Registro de módulos del servidor. Para añadir una funcionalidad nueva
  * (tablero, hojas, dados...), crea su carpeta en `modules/` y añádela aquí.
  */
-export const modules: ServerModule[] = [authModule, campaignsModule, presenceModule, assetsModule, boardModule, sheetsModule, chatModule, initiativeModule, aiModule, journalModule, macrosModule, homebrewModule, concentrationModule, durationsModule, lootModule, encountersModule, damageModule, jukeboxModule, backupModule, sceneLibraryModule, performanceModule, triggersModule];
+export const modules: ServerModule[] = [authModule, campaignsModule, presenceModule, assetsModule, boardModule, sheetsModule, chatModule, initiativeModule, aiModule, journalModule, macrosModule, homebrewModule, concentrationModule, durationsModule, lootModule, encountersModule, damageModule, jukeboxModule, backupModule, sceneLibraryModule, performanceModule, triggersModule, adventureModule];

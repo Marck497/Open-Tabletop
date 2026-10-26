@@ -63,7 +63,7 @@ export const GM_TOUR: TourStep[] = [
     target: 'scene-switcher',
     tab: 'scenes',
     title: 'Escenas',
-    body: 'Cada escena es un mapa distinto. Desde aquí y desde la pestaña Escenas puedes preparar una sin que la vean los jugadores, ajustar su cuadrícula y llevar a la party (o a un jugador) a otra. 📍 Notas del mapa numera los sitios con su descripción (solo para ti), 🪤 Trampas y zonas saltan solas cuando un token entra (con salvación y daño, o descubriendo una emboscada), ⧉ Duplicar copia la escena abierta, 📚 Biblioteca guarda escenas para reutilizarlas en otras partidas y ⬆ Importar trae mapas de Dungeondraft con sus paredes, puertas y luces.',
+    body: 'Cada escena es un mapa distinto. ✨ Aventura rápida te prepara una entera en un momento: mapa, notas en cada sala, encuentros escondidos, trampas y tesoro. Desde aquí y desde la pestaña Escenas puedes preparar una sin que la vean los jugadores, ajustar su cuadrícula y llevar a la party (o a un jugador) a otra. 📍 Notas del mapa numera los sitios con su descripción (solo para ti), 🪤 Trampas y zonas saltan solas cuando un token entra (con salvación y daño, o descubriendo una emboscada), ⧉ Duplicar copia la escena abierta, 📚 Biblioteca guarda escenas para reutilizarlas en otras partidas y ⬆ Importar trae mapas de Dungeondraft con sus paredes, puertas y luces.',
   },
   {
     target: 'characters',

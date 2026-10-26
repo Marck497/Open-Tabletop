@@ -50,10 +50,13 @@ export function goToNote(note: BoardItem) {
   useBoard.getState().select(note.id);
 }
 
-/** Manda al chat, para todos, el texto de la nota (para leérselo a los jugadores). */
+/** Lo que se lee a los jugadores: el texto hasta una línea con «---» (lo de después es solo para el DM). */
+export const readablePart = (note: BoardItem) => note.gmNotes.split(/^\s*-{3,}\s*$/m)[0]!.trim();
+
+/** Manda al chat, para todos, el título y la parte para leer de la nota (preguntando antes, por si acaso). */
 export function readNote(campaignId: string, note: BoardItem) {
   const title = note.name.trim();
-  const text = [title && `📜 ${title}`, note.gmNotes.trim()].filter(Boolean).join('\n');
-  if (!text) return;
+  const text = [title && `📜 ${title}`, readablePart(note)].filter(Boolean).join('\n');
+  if (!text || !confirm(`¿Leer esto a todos en el chat?\n\n${text}`)) return;
   return emitAck('chat:send', { campaignId, text }).catch((e: Error) => useBoard.getState().showNotice(e.message));
 }
