@@ -22,6 +22,8 @@ export * from './schemas/chat.js';
 export * from './systems/index.js';
 export * from './systems/tokenStats.js';
 export * from './compendium/monsters.js';
+export * from './schemas/encounter.js';
+export * from './systems/encounters.js';
 export * from './realtime.js';
 export * from './srd/index.js';
 export * from './systems/actions.js';

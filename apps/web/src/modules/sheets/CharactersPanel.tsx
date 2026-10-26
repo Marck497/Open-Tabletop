@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { assetUrl, type CampaignMember, type Character } from '@vtt/shared';
 import { api } from '../../core/api';
 import { CompendiumWindow } from '../compendium/CompendiumWindow';
+import { EncountersWindow } from '../encounters/EncountersWindow';
 import type { HomebrewDraft } from '../homebrew/HomebrewEditor';
 import { HomebrewWindow } from '../homebrew/HomebrewWindow';
 import { LootWindow } from '../loot/LootWindow';
@@ -27,6 +28,7 @@ export function CharactersPanel({
   const openSheet = useSheets((s) => s.openSheet);
   const list = Object.values(characters).sort((a, b) => a.name.localeCompare(b.name));
   const [compendium, setCompendium] = useState(false);
+  const [encounters, setEncounters] = useState(false);
   const [creator, setCreator] = useState(false);
   const [rules, setRules] = useState(false);
   const [loot, setLoot] = useState(false);
@@ -49,6 +51,11 @@ export function CharactersPanel({
           {isGm && (
             <button className="ghost small" onClick={() => setCompendium(true)} title="Monstruos del SRD 5e con su hoja y su IA">
               📖 Compendio
+            </button>
+          )}
+          {isGm && (
+            <button className="ghost small" onClick={() => setEncounters(true)} title="Grupos de monstruos preparados: su dificultad y soltarlos en el tablero con un clic">
+              ⚔ Encuentros
             </button>
           )}
           {isGm && (
@@ -111,6 +118,7 @@ export function CharactersPanel({
       {homebrew && <HomebrewWindow campaignId={campaignId} isGm={isGm} meId={meId} members={members} initialDraft={homebrew.draft} onClose={() => setHomebrew(null)} />}
       {loot && <LootWindow campaignId={campaignId} onClose={() => setLoot(false)} />}
       {compendium && <CompendiumWindow campaignId={campaignId} onClose={() => setCompendium(false)} />}
+      {encounters && <EncountersWindow campaignId={campaignId} onClose={() => setEncounters(false)} />}
     </div>
   );
 }

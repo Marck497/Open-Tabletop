@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm';
 import { blob, index, integer, primaryKey, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
-import type { AiSettings, BoardLayer, Drawing, HomebrewData, JukeboxTrack, ChatRoll, TokenAi, Fog, InitiativeEntry, Light, SheetTemplate, SheetValues, Wall } from '@vtt/shared';
+import type { AiSettings, BoardLayer, Drawing, EncounterMonster, HomebrewData, JukeboxTrack, ChatRoll, TokenAi, Fog, InitiativeEntry, Light, SheetTemplate, SheetValues, Wall } from '@vtt/shared';
 
 const timestamps = {
   createdAt: text('created_at').notNull().default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ','now'))`),
@@ -305,4 +305,20 @@ export const sceneLibrary = sqliteTable(
     ...timestamps,
   },
   (t) => [index('scene_library_user_idx').on(t.userId)],
+);
+
+/** Encuentros preparados de cada partida (grupos de monstruos del compendio). Solo los ve el DM. */
+export const encounters = sqliteTable(
+  'encounters',
+  {
+    id: text('id').primaryKey(),
+    campaignId: text('campaign_id')
+      .notNull()
+      .references(() => campaigns.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    notes: text('notes').notNull().default(''),
+    monsters: text('monsters', { mode: 'json' }).$type<EncounterMonster[]>().notNull().default([]),
+    ...timestamps,
+  },
+  (t) => [index('encounters_campaign_idx').on(t.campaignId)],
 );

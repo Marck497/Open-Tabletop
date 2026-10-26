@@ -75,7 +75,7 @@ export const GM_TOUR: TourStep[] = [
     target: 'library',
     tab: 'characters',
     title: 'Compendio, reglas y creaciones',
-    body: '📖 Compendio (justo encima) trae monstruos del SRD con su hoja y su IA. 📚 Reglas busca conjuros, objetos, clases y especies. ⚗ Creaciones es tu taller de hechizos, ataques y objetos propios, con áreas, salvaciones y daño que aplicas con 🎯.',
+    body: '📖 Compendio (justo encima) trae monstruos del SRD con su hoja y su IA, y ⚔ Encuentros guarda grupos de monstruos con su dificultad para soltarlos en el tablero con un clic. 📚 Reglas busca conjuros, objetos, clases y especies. ⚗ Creaciones es tu taller de hechizos, ataques y objetos propios, con áreas, salvaciones y daño que aplicas con 🎯.',
   },
   {
     target: 'chat',

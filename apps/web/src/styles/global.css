@@ -576,3 +576,26 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--border); 
 .map-prefabs button { padding: 3px 7px; }
 .map-prefab-info { display: flex; align-items: flex-start; gap: 8px; margin-top: 6px; }
 .map-prefab-info .map-hint { flex: 1; margin: 0; }
+
+/* Encuentros preparados */
+.modal.encounters { width: min(760px, 100%); display: flex; flex-direction: column; gap: 10px; max-height: 90vh; overflow-y: auto; }
+.encounters input.tiny-number { width: 4.5em; padding: 2px 4px; }
+.party-line { align-items: center; gap: 6px; flex-wrap: wrap; }
+.encounter-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.encounter-row { border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; }
+.encounter-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.encounter-monsters { font-size: 0.9rem; margin-top: 2px; }
+.encounter-notes { font-size: 0.85rem; margin-top: 4px; white-space: pre-wrap; opacity: 0.85; }
+.encounter-editor { display: flex; flex-direction: column; gap: 8px; }
+.encounter-suggest { align-items: center; gap: 6px; }
+.encounter-picked { border: 1px dashed var(--border); border-radius: 8px; padding: 6px 10px; }
+.encounter-picked-row { padding: 2px 0; }
+.encounter-rating { margin: 6px 0 0; }
+.encounter-results { list-style: none; margin: 0; padding: 0; max-height: 220px; overflow-y: auto; }
+.encounter-results li { padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.badge.difficulty-trivial { color: var(--muted); }
+.badge.difficulty-easy { color: #7bc67b; border-color: #7bc67b; }
+.badge.difficulty-medium { color: #e8b25a; border-color: #e8b25a; }
+.badge.difficulty-hard { color: #f08a4b; border-color: #f08a4b; }
+.badge.difficulty-deadly { color: #ff6b6b; border-color: #ff6b6b; }
+.encounter-suggest select { width: auto; }
