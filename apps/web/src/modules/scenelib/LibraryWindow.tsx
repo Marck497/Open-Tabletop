@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Scene, SceneLibraryEntry } from '@vtt/shared';
-import { formatSize, importSceneFile, listLibrary, placeLibraryEntry, removeLibraryEntry, renameLibraryEntry } from './api';
+import { formatSize, IMPORT_ACCEPT, importSceneFile, listLibrary, placeLibraryEntry, removeLibraryEntry, renameLibraryEntry } from './api';
 
 interface Props {
   campaignId: string;
@@ -102,11 +102,11 @@ export function LibraryWindow({ campaignId, onClose, onCreated }: Props) {
           </ul>
         )}
         <div className="row library-import">
-          <label className="button-like ghost small" title="Archivo .vtt-escena.json.gz descargado con ⬇ Exportar">
-            {busy ? 'Un momento…' : '⬆ Importar archivo de escena'}
-            <input type="file" accept=".gz,.json,application/gzip,application/json" hidden disabled={busy} onChange={(e) => void importFile(e.target.files?.[0])} />
+          <label className="button-like ghost small" title="Una escena exportada (.vtt-escena.json.gz) o un mapa de Dungeondraft, Dungeon Alchemist… (.dd2vtt, .uvtt)">
+            {busy ? 'Importando…' : '⬆ Importar archivo'}
+            <input type="file" accept={IMPORT_ACCEPT} hidden disabled={busy} onChange={(e) => void importFile(e.target.files?.[0])} />
           </label>
-          <small className="muted">Para escenas que te pasen otros DM o que exportaste de otro servidor.</small>
+          <small className="muted">Escenas que te pasen otros DM o mapas de Dungeondraft (.dd2vtt) y otros programas con formato Universal VTT, con sus paredes, puertas y luces.</small>
         </div>
       </div>
     </div>

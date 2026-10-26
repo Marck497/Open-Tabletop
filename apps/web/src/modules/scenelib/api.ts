@@ -15,7 +15,10 @@ export const placeLibraryEntry = (campaignId: string, id: string) => api.post<{ 
 /** Enlace para descargar la escena como archivo. */
 export const exportSceneUrl = (sceneId: string) => `/api/scenes/${sceneId}/export`;
 
-/** Sube un archivo de escena y la crea en la partida. */
+/** Archivos que se pueden importar: escenas exportadas y mapas Universal VTT (Dungeondraft, Dungeon Alchemist…). */
+export const IMPORT_ACCEPT = '.gz,.json,.dd2vtt,.uvtt,.df2vtt,application/gzip,application/json';
+
+/** Sube un archivo de escena (o un mapa de Dungeondraft) y la crea en la partida. */
 export async function importSceneFile(campaignId: string, file: File): Promise<Scene> {
   const form = new FormData();
   form.append('file', file);

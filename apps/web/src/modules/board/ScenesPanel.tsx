@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { DIAGONAL_LABELS, DIAGONAL_RULES, type CampaignMember, type DiagonalRule, type Scene, type UpdateSceneInput } from '@vtt/shared';
 import { api } from '../../core/api';
 import { newFolder, newScene, SceneTree, useSceneList } from './SceneTree';
-import { duplicateScene, exportSceneUrl, saveToLibrary } from '../scenelib/api';
+import { duplicateScene, exportSceneUrl, IMPORT_ACCEPT, importSceneFile, saveToLibrary } from '../scenelib/api';
 import { LibraryWindow } from '../scenelib/LibraryWindow';
 
 interface Props {
@@ -38,6 +38,20 @@ export function ScenesPanel({ campaignId, activeSceneId, viewingId, members, onV
       return `Copia creada: «${copy.name}».`;
     });
 
+  const [importing, setImporting] = useState(false);
+  const importFile = (file: File | undefined) =>
+    file &&
+    run(async () => {
+      setImporting(true);
+      try {
+        const scene = await importSceneFile(campaignId, file);
+        onView(scene.id);
+        return `«${scene.name}» importada: ${scene.widthCells} × ${scene.heightCells} casillas${scene.walls.length ? `, ${scene.walls.length} paredes y puertas` : ''}.`;
+      } finally {
+        setImporting(false);
+      }
+    });
+
   const keep = (scene: Scene) =>
     run(async () => {
       const name = prompt('Nombre en tu biblioteca', scene.name)?.trim();
@@ -59,6 +73,10 @@ export function ScenesPanel({ campaignId, activeSceneId, viewingId, members, onV
           <button className="ghost small" onClick={() => setLibrary(true)} title="Escenas guardadas para usarlas en cualquier partida, e importar archivos de escena">
             📚 Biblioteca
           </button>
+          <label className="button-like ghost small" title="Importa un mapa de Dungeondraft, Dungeon Alchemist… (.dd2vtt, .uvtt) con sus paredes, puertas y luces, o una escena exportada">
+            {importing ? 'Importando…' : '⬆ Importar'}
+            <input type="file" accept={IMPORT_ACCEPT} hidden disabled={importing} onChange={(e) => void importFile(e.target.files?.[0])} />
+          </label>
           <button className="ghost small" onClick={() => void newFolder(campaignId)}>
             + Carpeta
           </button>
