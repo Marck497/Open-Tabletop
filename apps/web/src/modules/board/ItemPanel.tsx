@@ -26,6 +26,7 @@ import { AiPanel } from '../ai/AiPanel';
 import { DamagePanel } from '../damage/DamagePanel';
 import { startCalibration } from '../gridcal/store';
 import { isNote, readNote } from '../notes/notes';
+import { TriggerPanel } from '../triggers/TriggerPanel';
 
 /** Propiedades del elemento seleccionado (solo DM). */
 export function ItemPanel({ campaignId, members }: { campaignId: string; members: CampaignMember[] }) {
@@ -46,6 +47,7 @@ export function ItemPanel({ campaignId, members }: { campaignId: string; members
     updateSelected({ ownerIds: item.ownerIds.includes(userId) ? item.ownerIds.filter((id) => id !== userId) : [...item.ownerIds, userId] });
 
   if (isNote(item)) return <NotePanel campaignId={campaignId} item={item} name={name} setName={setName} />;
+  if (item.trigger) return <TriggerPanel item={item} notes={<GmNotes item={item} label="📝 Notas del DM (te llegan al saltar)" placeholder="Qué hay, cómo se ve si la buscan (Percepción CD 15), cómo se desactiva…" />} />;
 
   return (
     <div className="panel">

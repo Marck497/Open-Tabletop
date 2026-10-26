@@ -20,9 +20,10 @@ import { homebrewModule } from './homebrew/index.js';
 import { presenceModule } from './presence/index.js';
 import { sceneLibraryModule } from './scenelib/index.js';
 import { sheetsModule } from './sheets/index.js';
+import { triggersModule } from './triggers/index.js';
 
 /**
  * Registro de módulos del servidor. Para añadir una funcionalidad nueva
  * (tablero, hojas, dados...), crea su carpeta en `modules/` y añádela aquí.
  */
-export const modules: ServerModule[] = [authModule, campaignsModule, presenceModule, assetsModule, boardModule, sheetsModule, chatModule, initiativeModule, aiModule, journalModule, macrosModule, homebrewModule, concentrationModule, durationsModule, lootModule, encountersModule, damageModule, jukeboxModule, backupModule, sceneLibraryModule, performanceModule];
+export const modules: ServerModule[] = [authModule, campaignsModule, presenceModule, assetsModule, boardModule, sheetsModule, chatModule, initiativeModule, aiModule, journalModule, macrosModule, homebrewModule, concentrationModule, durationsModule, lootModule, encountersModule, damageModule, jukeboxModule, backupModule, sceneLibraryModule, performanceModule, triggersModule];

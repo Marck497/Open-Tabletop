@@ -13,6 +13,7 @@ export * from './mapgen/scatter.js';
 export * from './mapgen/calibrate.js';
 export * from './schemas/explored.js';
 export * from './schemas/lights.js';
+export * from './schemas/triggers.js';
 export * from './schemas/ai.js';
 export * from './schemas/journal.js';
 export * from './schemas/macro.js';

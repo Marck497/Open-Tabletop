@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm';
 import { blob, index, integer, primaryKey, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
-import type { AiSettings, BoardLayer, Drawing, EncounterMonster, HomebrewData, JukeboxTrack, ChatRoll, TokenAi, Fog, InitiativeEntry, Light, SheetTemplate, SheetValues, Wall } from '@vtt/shared';
+import type { AiSettings, BoardLayer, Drawing, EncounterMonster, HomebrewData, JukeboxTrack, ChatRoll, TokenAi, Fog, InitiativeEntry, Light, SheetTemplate, SheetValues, Trigger, Wall } from '@vtt/shared';
 
 const timestamps = {
   createdAt: text('created_at').notNull().default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ','now'))`),
@@ -154,6 +154,7 @@ export const boardItems = sqliteTable(
     light: text('light', { mode: 'json' }).$type<Light>(),
     darkvision: real('darkvision').notNull().default(0),
     gmNotes: text('gm_notes').notNull().default(''),
+    trigger: text('trigger', { mode: 'json' }).$type<Trigger>(),
     ...timestamps,
   },
   (t) => [index('board_items_scene_idx').on(t.sceneId)],

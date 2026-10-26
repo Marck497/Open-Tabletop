@@ -1,5 +1,5 @@
 import { EventEmitter } from 'node:events';
-import type { InitiativeState } from '@vtt/shared';
+import type { BoardItem, InitiativeState, Point, Scene } from '@vtt/shared';
 
 /**
  * Eventos internos entre módulos del servidor. Permiten que un módulo reaccione
@@ -20,6 +20,8 @@ export interface DomainEvents {
   'initiative:turnStarted': [{ campaignId: string; userId: string; state: InitiativeState }];
   /** El turno ha avanzado hacia delante (empezar combate, siguiente o la IA al acabar): empieza el de `state.turn`. */
   'initiative:advanced': [{ campaignId: string; state: InitiativeState }];
+  /** Un token se ha movido (lo ha soltado alguien o lo ha movido la IA); `path`: puntos de giro (centros). */
+  'item:moved': [{ scene: Scene; before: BoardItem; after: BoardItem; path: Point[] }];
 }
 
 export class EventBus extends EventEmitter<DomainEvents> {}

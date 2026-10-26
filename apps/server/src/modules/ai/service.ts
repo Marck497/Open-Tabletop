@@ -212,6 +212,9 @@ export function createAiService(ctx: AppContext) {
     const end = path[path.length - 1]!;
     const { before, after } = board.systemUpdate(scene.id, item.id, { x: end.col * g, y: end.row * g });
     await broadcast.itemChanged(scene, before, after);
+    // Por si pisa una trampa (las que dispara cualquier token): el camino, casilla a casilla, por sus centros.
+    const half = g / 2;
+    ctx.events.emit('item:moved', { scene, before, after, path: path.slice(0, -1).map((p) => ({ x: p.col * g + half * (item.width / g), y: p.row * g + half * (item.height / g) })) });
   }
 
   async function say(base: Omit<ChatMessage, 'id' | 'createdAt' | 'kind' | 'text' | 'roll'>, kind: ChatMessage['kind'], text: string, r: ChatRoll | null) {
