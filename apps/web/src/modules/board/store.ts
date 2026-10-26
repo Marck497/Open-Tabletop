@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { BoardItem, BoardLayer, DrawingType, Fog, LightSource, Measure, MeasureShape, PointerAuthor, Scene, SceneState, Wall, WallKind } from '@vtt/shared';
 
-export type Tool = 'select' | 'measure' | 'ping' | 'draw' | 'walls' | 'map' | 'fog-reveal' | 'fog-hide';
+export type Tool = 'select' | 'measure' | 'ping' | 'draw' | 'walls' | 'map' | 'calibrate' | 'fog-reveal' | 'fog-hide';
 
 export interface DrawStyle {
   type: DrawingType;
