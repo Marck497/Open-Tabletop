@@ -243,6 +243,10 @@ pnpm typecheck
 pnpm build
 ```
 
+### Lanzador rápido
+
+`scripts/mesa.sh` reúne lo anterior en un menú: abrir la mesa en el navegador (`localhost:5173`), pasar las pruebas (tipos + tests) o ambas cosas. Instala las dependencias si hace falta. También acepta `lanzar`, `pruebas` o `todo` como argumento. Para parar la mesa, `Ctrl+C`.
+
 Si cambias el esquema de la base de datos (`apps/server/src/db/schema.ts`), genera la migración con `pnpm db:generate`. Se aplica sola al arrancar.
 
 ## Arquitectura
