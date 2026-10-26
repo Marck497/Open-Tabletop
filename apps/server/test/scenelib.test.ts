@@ -135,10 +135,48 @@ describe('reutilizar escenas', () => {
     const { gm, upload, campaign } = await setup();
     const bad = await upload(gm.cookie, `/campaigns/${campaign.id}/scenes/import`, Buffer.from('hola'), 'x.json', 'application/json');
     expect(bad.statusCode).toBe(400);
-    expect(bad.json().error).toBe('No es un archivo de escena');
+    expect(bad.json().error).toBe('No es un archivo de escena ni un mapa de Dungeondraft');
     const wrong = await upload(gm.cookie, `/campaigns/${campaign.id}/scenes/import`, Buffer.from(JSON.stringify({ format: 'otra-cosa' })), 'x.json', 'application/json');
     expect(wrong.statusCode).toBe(400);
     expect(wrong.json().error).toMatch(/^Escena no válida/);
+  });
+
+  it('importa un mapa de Dungeondraft (.dd2vtt) con su imagen, paredes, puerta y luz', async () => {
+    const { app, gm, pl, upload, campaign } = await setup();
+    const dd2vtt = {
+      format: 0.3,
+      resolution: { map_origin: { x: 0, y: 0 }, map_size: { x: 6, y: 4 }, pixels_per_grid: 100 },
+      line_of_sight: [[{ x: 0, y: 0 }, { x: 3, y: 0 }, { x: 3, y: 2 }]],
+      portals: [{ position: { x: 3, y: 2.5 }, bounds: [{ x: 3, y: 2 }, { x: 3, y: 3 }], rotation: 0, closed: true, freestanding: false }],
+      lights: [{ position: { x: 1, y: 1 }, range: 6, intensity: 1, color: 'ffffaa00', shadows: true }],
+      image: PNG_1x1.toString('base64'),
+    };
+    const file = Buffer.from(JSON.stringify(dd2vtt));
+    expect((await upload(pl.cookie, `/campaigns/${campaign.id}/scenes/import`, file, 'mapa_taberna.dd2vtt', 'application/octet-stream')).statusCode).toBe(403);
+    const res = await upload(gm.cookie, `/campaigns/${campaign.id}/scenes/import`, file, 'mapa_taberna.dd2vtt', 'application/octet-stream');
+    expect(res.statusCode).toBe(201);
+    const scene: Scene = res.json().scene;
+    expect(scene).toMatchObject({ name: 'mapa taberna', widthCells: 6, heightCells: 4, gridSize: 70, vision: true, lighting: false });
+    expect(scene.walls.map((w) => w.kind)).toEqual(['wall', 'wall', 'door']);
+
+    const c: Client = connect(server.url, { transports: ['websocket'], extraHeaders: { cookie: gm.cookie }, reconnection: false });
+    clients.push(c);
+    const state = ok(await call<SceneState>(c, 'scene:view', { sceneId: scene.id }));
+    const map = state.items.find((i) => i.layer === 'map');
+    expect(map).toMatchObject({ x: 0, y: 0, width: 420, height: 280 });
+    const img = await app.inject({ method: 'GET', url: `/api/assets/${map!.assetId}`, headers: { cookie: gm.cookie } });
+    expect(img.rawPayload.equals(PNG_1x1)).toBe(true);
+    expect(state.items.find((i) => i.layer === 'gm')).toMatchObject({ name: 'Luz', light: { bright: 15, dim: 15, color: '#ffaa00' } });
+
+    // Una imagen de más de 25 MB: se avisa en vez de crear un mapa sin fondo.
+    const huge = Buffer.from(JSON.stringify({ ...dd2vtt, image: PNG_1x1.toString('base64').slice(0, 20) + 'A'.repeat(36 * 1024 * 1024) }));
+    const big = await upload(gm.cookie, `/campaigns/${campaign.id}/scenes/import`, huge, 'grande.dd2vtt', 'application/octet-stream');
+    expect(big.statusCode).toBe(400);
+    expect(big.json().error).toMatch(/pesa \d+ MB y el máximo es 25 MB/);
+    // Un mapa roto dice qué le pasa.
+    const broken = await upload(gm.cookie, `/campaigns/${campaign.id}/scenes/import`, Buffer.from(JSON.stringify({ resolution: {}, image: 'x' })), 'roto.dd2vtt', 'application/octet-stream');
+    expect(broken.statusCode).toBe(400);
+    expect(broken.json().error).toMatch(/^Mapa no válido/);
   });
 
   it('guarda escenas en la biblioteca del DM y las usa en otra de sus partidas', async () => {

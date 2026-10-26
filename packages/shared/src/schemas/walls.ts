@@ -41,6 +41,8 @@ export const wallSchema = z.object({
   locked: z.boolean().default(false),
   /** Generada sola a partir del suelo pintado (se rehace al repintar). */
   auto: z.boolean().optional(),
+  /** Ya viene dibujada en la imagen del mapa (importado de Dungeondraft…): tapa y bloquea igual, pero no se pinta encima. */
+  onImage: z.boolean().optional(),
 });
 export type Wall = z.infer<typeof wallSchema>;
 export type WallInput = z.input<typeof wallSchema>;

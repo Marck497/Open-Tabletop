@@ -42,7 +42,7 @@ export const sceneLibraryModule: ServerModule = {
       const file = await req.file({ limits: { fileSize: MAX_SCENE_PACKAGE_BYTES, files: 1 } });
       if (!file) throw badRequest('Falta el archivo');
       const data = await file.toBuffer();
-      const scene = lib.importScene(id, user.id, data);
+      const scene = lib.importScene(id, user.id, data, file.filename);
       listChanged(id);
       return reply.code(201).send({ scene });
     });

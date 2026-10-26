@@ -59,6 +59,13 @@ Abre `http://IP-DE-LA-PI:3000` desde cualquier equipo de tu red. La primera comp
   - **Arrastra** una escena o una carpeta para ordenarla. Soltarla encima de otra carpeta la mete dentro; soltarla en el borde superior la coloca delante. Con *Suelta aquí para sacar de las carpetas* vuelve a la raíz.
   - **⧉ Duplicar** (pestaña *Escenas*, con la escena abierta): hace una copia justo debajo, con su mapa, paredes, niebla, luces, objetos y enemigos. Los tokens y dibujos de los jugadores no se copian.
   - **📚 Guardar en biblioteca**: guarda una copia en tu biblioteca personal (imágenes incluidas). Desde **📚 Biblioteca**, en cualquiera de tus partidas, *+ Usar aquí* crea una escena nueva a partir de ella. Lo que guardas sigue ahí aunque borres la escena o la partida original.
+  - **⬆ Importar** (arriba en la pestaña *Escenas*) crea una escena a partir de un **mapa de Dungeondraft** (`.dd2vtt`) o de otros programas que exportan en formato *Universal VTT* (Dungeon Alchemist `.uvtt`, DungeonFog `.df2vtt`…):
+    - la imagen del mapa ocupa toda la escena, en la capa *Mapa*;
+    - las paredes y puertas quedan puestas y alineadas con las del dibujo. No se pintan encima, porque la imagen ya las trae, pero tapan la vista y no dejan pasar;
+    - cada luz del mapa es una luz invisible en la capa del DM;
+    - se activa la visión dinámica, pero no la oscuridad, porque la imagen ya trae su iluminación.
+
+    La imagen tiene que pesar menos de 25 MB: si pesa más, expórtalo con menos píxeles por casilla (por ejemplo 100) o en WEBP.
   - **⬇ Exportar** descarga la escena como archivo `.vtt-escena.json.gz` para pasársela a otro DM o llevarla a otro servidor; se carga con *⬆ Importar archivo de escena* en la ventana de la biblioteca. Los tokens van sin hoja vinculada ni dueños.
 
 **Todos**

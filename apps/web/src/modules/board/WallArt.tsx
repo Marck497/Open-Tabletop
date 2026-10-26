@@ -149,7 +149,7 @@ function drawPost(ctx: Ctx, x: number, y: number, size: number) {
 export function WallArt({ walls, gridSize, isGm }: { walls: Wall[]; gridSize: number; isGm: boolean }) {
   const thick = Math.max(6, gridSize * 0.24);
   const tiles = useMemo<Tiles>(() => ({ stone: stoneTile(gridSize, thick), wood: woodTile(gridSize, thick * 0.6) }), [gridSize, thick]);
-  const drawn = useMemo(() => walls.filter((w) => !w.auto), [walls]);
+  const drawn = useMemo(() => walls.filter((w) => !w.auto && !w.onImage), [walls]);
   if (!drawn.length) return null;
   return (
     <Shape

@@ -4,6 +4,7 @@ import zlib from 'node:zlib';
 import { randomUUID } from 'node:crypto';
 import { and, asc, desc, eq, gt, max, sql } from 'drizzle-orm';
 import {
+  looksLikeUvtt,
   MAX_LIBRARY_ENTRIES,
   SCENE_PACKAGE_FORMAT,
   SCENE_PACKAGE_VERSION,
@@ -12,11 +13,12 @@ import {
   type SceneLibraryEntry,
   type ScenePackage,
   type ScenePackageInput,
+  uvttToScenePackage,
 } from '@vtt/shared';
 import type { AppContext } from '../../core/module.js';
 import { badRequest, notFound } from '../../core/errors.js';
 import { assets, boardItems, sceneLibrary, scenes } from '../../db/schema.js';
-import { createAssetService } from '../assets/service.js';
+import { createAssetService, MAX_ASSET_BYTES } from '../assets/service.js';
 import { createCampaignService } from '../campaigns/service.js';
 
 type SceneRow = typeof scenes.$inferSelect;
@@ -134,8 +136,11 @@ export function createSceneLibraryService(ctx: AppContext) {
     return { row, pkg };
   }
 
-  /** Lee un paquete de escena (con o sin gzip) y lo valida. */
-  function parse(file: Buffer): ScenePackage {
+  /**
+   * Lee un archivo de escena (con o sin gzip) y lo valida. También acepta mapas Universal VTT
+   * (.dd2vtt de Dungeondraft, .uvtt…), que se convierten; `name` es el nombre que tendrá entonces la escena.
+   */
+  function parse(file: Buffer, name = 'Mapa importado'): ScenePackage {
     let text: string;
     try {
       text = (file[0] === 0x1f && file[1] === 0x8b ? zlib.gunzipSync(file) : file).toString('utf8');
@@ -146,9 +151,27 @@ export function createSceneLibraryService(ctx: AppContext) {
     try {
       json = JSON.parse(text);
     } catch {
-      throw badRequest('No es un archivo de escena');
+      throw badRequest('No es un archivo de escena ni un mapa de Dungeondraft');
     }
+    if (looksLikeUvtt(json)) return validate(fromUvtt(json, name));
     return validate(json);
+  }
+
+  function fromUvtt(json: unknown, name: string): ScenePackageInput {
+    let pkg: ScenePackageInput;
+    try {
+      pkg = uvttToScenePackage(json, name);
+    } catch (e) {
+      throw badRequest((e as Error).message);
+    }
+    // La imagen tiene que caber como archivo de la partida; si no, mejor avisar que crear un mapa sin fondo.
+    const bytes = Math.floor(((pkg.assets?.[0]?.data.length ?? 0) * 3) / 4);
+    if (bytes > MAX_ASSET_BYTES) {
+      throw badRequest(
+        `La imagen del mapa pesa ${(bytes / 1024 / 1024).toFixed(0)} MB y el máximo es ${MAX_ASSET_BYTES / 1024 / 1024} MB. Expórtalo con menos píxeles por casilla (por ejemplo 100) o en WEBP.`,
+      );
+    }
+    return pkg;
   }
 
   function validate(json: unknown): ScenePackage {
@@ -206,9 +229,11 @@ export function createSceneLibraryService(ctx: AppContext) {
     return { filename: `${safeFileName(row.name, 'escena')}.vtt-escena.json.gz`, data: zlib.gzipSync(JSON.stringify(pkg)) };
   }
 
-  function importScene(campaignId: string, userId: string, file: Buffer): Scene {
+  /** `filename` da nombre a la escena si es un mapa de Dungeondraft (los archivos de escena ya traen el suyo). */
+  function importScene(campaignId: string, userId: string, file: Buffer, filename = ''): Scene {
     campaignsSvc.requireGm(campaignId, userId);
-    return unpack(campaignId, userId, parse(file));
+    const name = filename.replace(/\.(dd2vtt|uvtt|df2vtt|json|gz)$/gi, '').replace(/[_-]+/g, ' ').trim();
+    return unpack(campaignId, userId, parse(file, name || undefined));
   }
 
   // ---------- Biblioteca ----------
