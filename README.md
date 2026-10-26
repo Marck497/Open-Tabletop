@@ -86,12 +86,23 @@ Abre `http://IP-DE-LA-PI:3000` desde cualquier equipo de tu red. La primera comp
 - **Mensajes nuevos**: si estás en otra pestaña (o con la barra escondida), un número rojo te avisa de los mensajes del chat y de los documentos que el DM te comparte en el Diario.
 - **Pestañas**: *Mayús+1, 2, 3…* abre cada una. El DM tiene además **⚙️ Ajustes** con la invitación, las copias de seguridad y el rendimiento.
 
+### ✨ Aventura rápida
+
+En *Escenas*, **✨ Aventura rápida** crea en un momento una escena nueva lista para jugar. Eliges el lugar (mazmorra, cripta, castillo, alcantarillas, mina, cueva, bosque, camino o pueblo), el tamaño, cuántas salas, el grupo (sale solo de los PJ de la partida) y la dificultad, y prepara:
+
+- el mapa generado y amueblado, con visión dinámica;
+- una **nota numerada en cada sala**, siguiendo el recorrido desde la entrada (1). Cada nota dice lo que se ve (para leerlo con 📣) y, bajo la raya, lo que solo sabes tú;
+- **encuentros** con monstruos del compendio de la dificultad elegida (el último, el jefe, uno más difícil), con su hoja y su IA, escondidos en la capa del DM. Si quieres, **aparecen solos** cuando un jugador entra en su sala;
+- **trampas** con salvación y daño según el nivel, y un **cofre con el tesoro** al final.
+
+Los jugadores no ven la escena hasta que los llevas con *Llevar*. Todo se puede retocar después.
+
 ### Notas numeradas del mapa
 
 En la pestaña *Escenas*, con la escena abierta, **📍 Notas del mapa → + Nota** pone un círculo numerado (1, 2, 3…) en la capa del DM, como los números de los mapas de un módulo de aventura. Arrástralo a su sitio y escribe su título y su texto en el panel; los jugadores no lo ven nunca.
 
 - La lista muestra todas las notas de la escena: clic en una para ir a ella.
-- **📣 Leer en el chat** manda el título y el texto a todos (para la descripción que lees al entrar en una sala).
+- **📣 Leer en el chat** manda a todos el título y el texto que va antes de una línea con `---` (la descripción que lees al entrar en una sala). Lo de después de la raya es solo para ti y nunca sale; antes de enviarlo te enseña lo que va a mandar.
 - Si borras alguna, **Renumerar** las deja otra vez 1, 2, 3… Se copian con la escena al duplicarla, exportarla o guardarla en la biblioteca.
 
 ### Trampas y zonas de aviso

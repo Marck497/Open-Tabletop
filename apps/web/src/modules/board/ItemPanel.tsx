@@ -25,7 +25,7 @@ import { useSheets } from '../sheets/store';
 import { AiPanel } from '../ai/AiPanel';
 import { DamagePanel } from '../damage/DamagePanel';
 import { startCalibration } from '../gridcal/store';
-import { isNote, readNote } from '../notes/notes';
+import { isNote, readablePart, readNote } from '../notes/notes';
 import { TriggerPanel } from '../triggers/TriggerPanel';
 
 /** Propiedades del elemento seleccionado (solo DM). */
@@ -212,16 +212,16 @@ function NotePanel({ campaignId, item, name, setName }: { campaignId: string; it
           <input value={name} maxLength={80} placeholder="Entrada, Sala del trono…" onChange={(e) => setName(e.target.value)} onBlur={() => name !== item.name && updateSelected({ name })} />
         </label>
       </div>
-      <GmNotes item={item} label="📝 Texto (solo lo ves tú)" placeholder="Qué hay aquí, qué se ve al entrar, qué pasa si… Lo que quieras leer a los jugadores, mándalo con 📣." />
+      <GmNotes item={item} label="📝 Texto (solo lo ves tú)" placeholder={'Lo que ven al entrar (se lee con 📣).\n---\nLo de después de la raya es solo para ti: secretos, monstruos, qué pasa si…'} />
       <div className="row">
-        <button className="small" disabled={!item.gmNotes.trim() && !item.name.trim()} onClick={() => void readNote(campaignId, item)} title="Manda el título y el texto al chat, para todos">
+        <button className="small" disabled={!item.name.trim() && !readablePart(item)} onClick={() => void readNote(campaignId, item)} title="Manda al chat, para todos, el título y lo que va antes de la línea ---">
           📣 Leer en el chat
         </button>
         <button className="ghost small danger" onClick={() => void deleteItem(scene.id, item.id)}>
           Borrar
         </button>
       </div>
-      <p className="muted hint">Está en la capa del DM: los jugadores no la ven. Arrástrala con la capa DM activa.</p>
+      <p className="muted hint">Está en la capa del DM: los jugadores no la ven. Arrástrala con la capa DM activa. 📣 lee el título y lo que va antes de una línea con <b>---</b>; lo de después nunca sale.</p>
     </div>
   );
 }

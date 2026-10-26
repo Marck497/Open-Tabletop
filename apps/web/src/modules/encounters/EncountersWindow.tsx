@@ -36,7 +36,7 @@ function DifficultyBadge({ difficulty, xp }: { difficulty: Difficulty; xp: numbe
 }
 
 /** El grupo con el que se mide la dificultad: los PJ de la partida (con dueño) y su nivel, o lo que escriba el DM. */
-function useParty(campaignId: string) {
+export function useParty(campaignId: string) {
   const characters = useSheets((s) => s.characters);
   const detected = useMemo(
     () =>
@@ -196,7 +196,7 @@ export function EncountersWindow({ campaignId, onClose }: { campaignId: string; 
   );
 }
 
-function PartyLine({ party }: { party: ReturnType<typeof useParty> }) {
+export function PartyLine({ party }: { party: ReturnType<typeof useParty> }) {
   const { detected, manual, save, levels } = party;
   const size = levels.length;
   const level = Math.round(levels.reduce((a, b) => a + b, 0) / Math.max(1, size));
