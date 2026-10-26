@@ -5,6 +5,7 @@ import { updateCharacterSchema } from './character.js';
 import { handoutInputSchema } from './journal.js';
 import { macroInputSchema } from './macro.js';
 import { createHomebrewSchema } from './homebrew.js';
+import { encounterInputSchema } from './encounter.js';
 import { sheetTemplateSchema } from './sheet.js';
 import { wallsSchema } from './walls.js';
 
@@ -79,6 +80,11 @@ export const backupSchema = z.object({
     .array(createHomebrewSchema.extend({ id }))
     .max(5000)
     .default([]),
+  /** Encuentros preparados (grupos de monstruos del compendio). */
+  encounters: z
+    .array(encounterInputSchema.extend({ id }))
+    .max(1000)
+    .default([]),
   jukebox: z
     .array(z.object({ id, assetId: id, name: z.string().max(200), volume: z.number().min(0).max(1), loop: z.boolean() }))
     .max(100)
@@ -108,6 +114,7 @@ export interface ImportSummary {
   handouts: number;
   macros: number;
   homebrew: number;
+  encounters: number;
   assets: number;
   /** Archivos que no se pudieron restaurar (formato no válido o faltaban). */
   skippedAssets: number;

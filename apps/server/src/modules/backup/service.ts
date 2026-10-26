@@ -6,7 +6,7 @@ import { asc, eq } from 'drizzle-orm';
 import { BACKUP_FORMAT, BACKUP_VERSION, backupSchema, type BackupInput, type ImportSummary, type SheetValues } from '@vtt/shared';
 import type { AppContext } from '../../core/module.js';
 import { badRequest } from '../../core/errors.js';
-import { assets, boardItems, campaignMembers, campaigns, characters, handouts, homebrew, jukebox, macros, sceneFolders, scenes, sheetTemplates } from '../../db/schema.js';
+import { assets, boardItems, campaignMembers, campaigns, characters, encounters, handouts, homebrew, jukebox, macros, sceneFolders, scenes, sheetTemplates } from '../../db/schema.js';
 import { createAssetService } from '../assets/service.js';
 import { createCampaignService } from '../campaigns/service.js';
 
@@ -69,6 +69,12 @@ export function createBackupService(ctx: AppContext) {
         .all()
         .filter((h) => h.shared || h.ownerId === userId)
         .map(({ id, kind, name, shared, data }) => ({ id, kind, name, shared, data })),
+      encounters: db
+        .select()
+        .from(encounters)
+        .where(eq(encounters.campaignId, campaignId))
+        .all()
+        .map(({ id, name, notes, monsters }) => ({ id, name, notes, monsters })),
       jukebox: (db.select().from(jukebox).where(eq(jukebox.campaignId, campaignId)).get()?.tracks ?? []).map(({ id, assetId, name, volume, loop }) => ({
         id,
         assetId,
@@ -154,7 +160,7 @@ export function createBackupService(ctx: AppContext) {
       }
     }
 
-    const summary: ImportSummary = { campaignId, scenes: 0, items: 0, characters: 0, handouts: 0, macros: 0, homebrew: 0, assets: backup.assets.length - skippedAssets, skippedAssets };
+    const summary: ImportSummary = { campaignId, scenes: 0, items: 0, characters: 0, handouts: 0, macros: 0, homebrew: 0, encounters: 0, assets: backup.assets.length - skippedAssets, skippedAssets };
     db.transaction((tx) => {
       if (backup.template) {
         tx.insert(sheetTemplates)
@@ -219,6 +225,12 @@ export function createBackupService(ctx: AppContext) {
           .values({ ...m, id: fresh(id), campaignId, ownerId: userId, characterId: ref(m.characterId) })
           .run();
         summary.macros++;
+      }
+      for (const { id: _id, ...e } of backup.encounters) {
+        tx.insert(encounters)
+          .values({ ...e, id: randomUUID(), campaignId })
+          .run();
+        summary.encounters++;
       }
       const tracks = backup.jukebox.flatMap((t) => {
         const assetId = ref(t.assetId);

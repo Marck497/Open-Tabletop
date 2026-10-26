@@ -221,6 +221,15 @@ Cuando alguien saca un **20 natural** en un d20, toda la mesa ve un destello dor
 - **+ Hoja** crea el PNJ con su hoja de 5e rellena (CA, PG, características, ataques, rasgos). **+ Al tablero** además pone su token del tamaño correcto con la IA ya activada y su comportamiento (los arqueros disparan, los goblins son prudentes…). Con *Cuántos* creas varios a la vez, cada uno con su hoja (Orco 1, Orco 2…).
 - Si has cambiado la plantilla de hoja, se rellenan solo los campos que existan.
 
+## Encuentros preparados
+
+En *Personajes*, el DM tiene **⚔ Encuentros**: grupos de monstruos del compendio preparados de antemano («Emboscada goblin: 4 goblins y un lobo»).
+
+- **+ Nuevo encuentro**: busca monstruos y añádelos con **+**, ajusta cuántos de cada uno y apunta notas (dónde están, cómo atacan…). **🎲 Sugerir** propone uno al azar de la dificultad que elijas, y puedes pulsarlo varias veces.
+- **Dificultad**: cada encuentro dice si es *fácil*, *medio*, *difícil* o *mortal* para tu grupo, con las reglas del SRD 5.1 (PX de los monstruos, multiplicador según cuántos son y umbrales por nivel). El grupo sale de los personajes que tienen jugador y de su nivel; puedes cambiarlo a mano arriba.
+- **▶ Al tablero**: crea la hoja de cada monstruo (Goblin 1, Goblin 2…) y pone sus tokens, con su tamaño y la IA activada, en casillas libres alrededor del centro de tu vista, sin atravesar paredes ni pisar a nadie. Con *Soltarlos escondidos* van a la capa del DM.
+- Los encuentros son de la partida y entran en la copia de seguridad.
+
 ## IA de enemigos
 
 - Selecciona un token (DM) y en **🤖 IA de enemigo** marca *Actúa solo en su turno*. Elige su comportamiento: *cuerpo a cuerpo*, *a distancia* (mantiene la distancia y dispara), *prudente* (huye cuando le queda poca vida) o *guardián* (espera hasta que alguien se acerca), y a quién ataca: el más cercano, el más herido o al azar.
@@ -231,7 +240,7 @@ Cuando alguien saca un **20 natural** en un d20, toda la mesa ve un destello dor
 
 ## Copias de seguridad
 
-- En la pestaña **⚙️ Ajustes**, el DM tiene **⬇ Descargar copia**: un archivo `.vtt.json.gz` con escenas y sus carpetas, tokens, paredes, niebla, hojas, plantilla, diario, macros compartidas y música. Con *Incluir imágenes y música* también lleva los archivos (pesa más). El chat no se guarda.
+- En la pestaña **⚙️ Ajustes**, el DM tiene **⬇ Descargar copia**: un archivo `.vtt.json.gz` con escenas y sus carpetas, tokens, paredes, niebla, hojas, plantilla, diario, macros compartidas, encuentros preparados y música. Con *Incluir imágenes y música* también lleva los archivos (pesa más). El chat no se guarda.
 - Para restaurarla, en la lista de partidas pulsa **⬆ Elegir archivo** en *Restaurar una copia de seguridad* (máx. 500 MB). Se crea una partida **nueva** en la que eres el DM: los jugadores no van en la copia, así que hay que invitarlos otra vez y asignarles sus personajes.
 - Sirve también para pasar una partida de un servidor a otro (p. ej. de tu PC a la Raspberry). La 📚 biblioteca de escenas es tuya y no de la partida, así que no va en la copia: para llevar una escena suelta, usa *⬇ Exportar* en la pestaña *Escenas*. Además de esto, conviene copiar de vez en cuando la carpeta de datos entera (ver *Instalar en la Raspberry Pi 5*).
 
