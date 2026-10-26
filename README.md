@@ -57,6 +57,9 @@ Abre `http://IP-DE-LA-PI:3000` desde cualquier equipo de tu red. La primera comp
   - Cada jugador ve únicamente la escena en la que está. En la lista, la escena de la party lleva la etiqueta *Party*, y cada jugador aparece con su inicial en el mapa donde se encuentra. Arriba ves quién está en la escena que tienes abierta.
   - **Carpetas**: créalas con *+ Carpeta* (📁+ crea una subcarpeta), renómbralas con ✎ y pliégalas con un clic. Si borras una carpeta, sus escenas no se pierden: suben a la carpeta de arriba.
   - **Arrastra** una escena o una carpeta para ordenarla. Soltarla encima de otra carpeta la mete dentro; soltarla en el borde superior la coloca delante. Con *Suelta aquí para sacar de las carpetas* vuelve a la raíz.
+  - **⧉ Duplicar** (pestaña *Escenas*, con la escena abierta): hace una copia justo debajo, con su mapa, paredes, niebla, luces, objetos y enemigos. Los tokens y dibujos de los jugadores no se copian.
+  - **📚 Guardar en biblioteca**: guarda una copia en tu biblioteca personal (imágenes incluidas). Desde **📚 Biblioteca**, en cualquiera de tus partidas, *+ Usar aquí* crea una escena nueva a partir de ella. Lo que guardas sigue ahí aunque borres la escena o la partida original.
+  - **⬇ Exportar** descarga la escena como archivo `.vtt-escena.json.gz` para pasársela a otro DM o llevarla a otro servidor; se carga con *⬆ Importar archivo de escena* en la ventana de la biblioteca. Los tokens van sin hoja vinculada ni dueños.
 
 **Todos**
 - Arrastra el fondo para moverte y usa la rueda para hacer zoom.
@@ -229,7 +232,7 @@ Cuando alguien saca un **20 natural** en un d20, toda la mesa ve un destello dor
 
 - En la pestaña **⚙️ Ajustes**, el DM tiene **⬇ Descargar copia**: un archivo `.vtt.json.gz` con escenas y sus carpetas, tokens, paredes, niebla, hojas, plantilla, diario, macros compartidas y música. Con *Incluir imágenes y música* también lleva los archivos (pesa más). El chat no se guarda.
 - Para restaurarla, en la lista de partidas pulsa **⬆ Elegir archivo** en *Restaurar una copia de seguridad* (máx. 500 MB). Se crea una partida **nueva** en la que eres el DM: los jugadores no van en la copia, así que hay que invitarlos otra vez y asignarles sus personajes.
-- Sirve también para pasar una partida de un servidor a otro (p. ej. de tu PC a la Raspberry). Además de esto, conviene copiar de vez en cuando la carpeta de datos entera (ver *Instalar en la Raspberry Pi 5*).
+- Sirve también para pasar una partida de un servidor a otro (p. ej. de tu PC a la Raspberry). La 📚 biblioteca de escenas es tuya y no de la partida, así que no va en la copia: para llevar una escena suelta, usa *⬇ Exportar* en la pestaña *Escenas*. Además de esto, conviene copiar de vez en cuando la carpeta de datos entera (ver *Instalar en la Raspberry Pi 5*).
 
 ## Desarrollo
 
