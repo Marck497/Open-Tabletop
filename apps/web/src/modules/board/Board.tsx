@@ -365,7 +365,6 @@ export function Board({ isGm, meId }: Props) {
   }
 
   const itemProps = (item: BoardItem) => ({
-    key: item.id,
     item,
     isGm,
     scene,
@@ -427,14 +426,14 @@ export function Board({ isGm, meId }: Props) {
           <Rect name="background" width={sceneW} height={sceneH} fill={scene.backgroundColor} />
           {terrain && <TerrainLayer scene={scene} terrain={terrain} />}
           {byLayer('map').map((i) => (
-            <ItemNode {...itemProps(i)} />
+            <ItemNode key={i.id} {...itemProps(i)} />
           ))}
           {scene.gridVisible && <Grid scene={scene} />}
           <WallArt walls={scene.walls} gridSize={scene.gridSize} isGm={isGm} />
         </Layer>
         <Layer>
           {byLayer('token').map((i) => (
-            <ItemNode {...itemProps(i)} />
+            <ItemNode key={i.id} {...itemProps(i)} />
           ))}
         </Layer>
         {eyes && (
@@ -452,7 +451,7 @@ export function Board({ isGm, meId }: Props) {
           {scene.fog.enabled && <FogShape fog={scene.fog} width={sceneW} height={sceneH} />}
         </Layer>
         <Layer>
-          {isGm && byLayer('gm').map((i) => <ItemNode {...itemProps(i)} />)}
+          {isGm && byLayer('gm').map((i) => <ItemNode key={i.id} {...itemProps(i)} />)}
           {isGm && wallTool && <WallLines scene={scene} scale={view.scale} editing={wallTool} />}
           {wallDraft && (
             <Line

@@ -57,7 +57,7 @@ export const GM_TOUR: TourStep[] = [
   {
     target: 'mapeditor',
     title: 'Editor de mapas',
-    body: 'Pinta suelos, crea salas con sus paredes, pon puertas y objetos, o genera una mazmorra entera para improvisar.',
+    body: 'Pinta suelos, crea salas con sus paredes, pon puertas y objetos, coloca salas prediseñadas ya amuebladas (taberna, templo, cripta…) o genera una mazmorra entera para improvisar.',
   },
   {
     target: 'scene-switcher',
