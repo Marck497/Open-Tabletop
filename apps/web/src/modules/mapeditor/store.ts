@@ -1,12 +1,13 @@
 import { create } from 'zustand';
 import {
-  generateCave,
-  generateDungeon,
+  generateStyled,
   normalizeTerrain,
   paintPrefab,
-  terrainById,
   withAutoWalls,
+  type BoardItem,
   type CreateItemInput,
+  type MapSize,
+  type MapStyle,
   type PlacedPrefab,
   type Scene,
   type Wall,
@@ -31,7 +32,10 @@ interface Snapshot {
   sceneId: string;
   terrain: string;
   walls: Wall[];
+  /** Elementos que creó el paso. */
   placed?: Placed;
+  /** Elementos que quitó el paso (los muebles de la generación anterior): deshacer los vuelve a poner. */
+  cleared?: Placed;
 }
 
 const MAX_UNDO = 60;
@@ -50,6 +54,12 @@ interface MapEditorState {
   /** Sala prediseñada elegida y cuántos cuartos de vuelta está girada. */
   prefab: string;
   prefabTurns: number;
+  /** Opciones del generador al azar. */
+  genStyle: MapStyle;
+  genSize: MapSize;
+  genFurnish: boolean;
+  /** Generando (y poniendo los muebles): el botón espera a que acabe. */
+  genBusy: boolean;
   /** Terreno mientras se arrastra el pincel (aún sin guardar). */
   draft: string | null;
   undo: Snapshot[];
@@ -63,6 +73,7 @@ interface MapEditorState {
   setStampSize: (n: number) => void;
   setPrefab: (id: string) => void;
   rotatePrefab: () => void;
+  setGen: (patch: Partial<Pick<MapEditorState, 'genStyle' | 'genSize' | 'genFurnish'>>) => void;
   setDraft: (t: string | null) => void;
 }
 
@@ -75,6 +86,10 @@ export const useMapEditor = create<MapEditorState>((set) => ({
   stampSize: 1,
   prefab: 'taberna',
   prefabTurns: 0,
+  genStyle: 'dungeon',
+  genSize: 'normal',
+  genFurnish: true,
+  genBusy: false,
   draft: null,
   undo: [],
   redo: [],
@@ -86,14 +101,15 @@ export const useMapEditor = create<MapEditorState>((set) => ({
   setStampSize: (stampSize) => set({ stampSize }),
   setPrefab: (prefab) => set({ prefab, mode: 'prefab' }),
   rotatePrefab: () => set((s) => ({ prefabTurns: (s.prefabTurns + 1) % 4 })),
+  setGen: (patch) => set(patch),
   setDraft: (draft) => set({ draft }),
 }));
 
 const snap = (scene: Scene): Snapshot => ({ sceneId: scene.id, terrain: normalizeTerrain(scene.terrain, scene.widthCells, scene.heightCells), walls: scene.walls });
 
 /** Guarda en el historial el estado actual (antes de un cambio). `placed`: elementos que va a crear ese cambio. */
-export function remember(scene: Scene, placed?: Placed) {
-  useMapEditor.setState((s) => ({ undo: [...s.undo.filter((x) => x.sceneId === scene.id), { ...snap(scene), placed }].slice(-MAX_UNDO), redo: [] }));
+export function remember(scene: Scene, placed?: Placed, cleared?: Placed) {
+  useMapEditor.setState((s) => ({ undo: [...s.undo.filter((x) => x.sceneId === scene.id), { ...snap(scene), placed, cleared }].slice(-MAX_UNDO), redo: [] }));
 }
 
 /** Crea los elementos de un paso y apunta sus ids (para poder deshacerlo). */
@@ -102,10 +118,21 @@ async function createPlaced(sceneId: string, placed: Placed) {
   for (const item of placed.inputs) placed.ids.push((await emitAck('item:create', { sceneId, item })).id);
 }
 
-/** Borra los elementos de un paso (los que ya no estén, se ignoran). */
+/**
+ * Borra los elementos de un paso. Los que ya no estén (los borró alguien a mano) se ignoran y se
+ * olvidan, para que rehacer o deshacer vuelva a poner solo lo que de verdad se quitó.
+ */
 async function removePlaced(sceneId: string, placed: Placed) {
-  for (const id of placed.ids) await emitAck('item:delete', { sceneId, id }).catch(() => undefined);
+  const kept: CreateItemInput[] = [];
+  for (let i = 0; i < placed.ids.length; i++) {
+    const ok = await emitAck('item:delete', { sceneId, id: placed.ids[i]! }).then(
+      () => true,
+      () => false,
+    );
+    if (ok && placed.inputs[i]) kept.push(placed.inputs[i]!);
+  }
   placed.ids = [];
+  placed.inputs = kept;
 }
 
 /** Pone elementos en el mapa (objetos) como un paso que se puede deshacer. */
@@ -144,9 +171,19 @@ export function undo() {
   const { undo } = useMapEditor.getState();
   const prev = undo[undo.length - 1];
   if (!scene || !prev || prev.sceneId !== scene.id) return;
-  useMapEditor.setState((s) => ({ undo: s.undo.slice(0, -1), redo: [...s.redo, { ...snap(scene), placed: prev.placed }] }));
+  useMapEditor.setState((s) => ({ undo: s.undo.slice(0, -1), redo: [...s.redo, { ...snap(scene), placed: prev.placed, cleared: prev.cleared }] }));
   void apply(scene, prev.terrain, prev.walls);
-  if (prev.placed) void removePlaced(scene.id, prev.placed);
+  void swapItems(scene.id, prev.placed, prev.cleared);
+}
+
+/** Quita lo de `out` y pone lo de `back` (deshacer y rehacer de pasos con elementos). */
+async function swapItems(sceneId: string, out?: Placed, back?: Placed) {
+  try {
+    if (out) await removePlaced(sceneId, out);
+    if (back) await createPlaced(sceneId, back);
+  } catch (e) {
+    useBoard.getState().showNotice((e as Error).message);
+  }
 }
 
 export function redo() {
@@ -154,9 +191,9 @@ export function redo() {
   const { redo } = useMapEditor.getState();
   const next = redo[redo.length - 1];
   if (!scene || !next || next.sceneId !== scene.id) return;
-  useMapEditor.setState((s) => ({ redo: s.redo.slice(0, -1), undo: [...s.undo, { ...snap(scene), placed: next.placed }] }));
+  useMapEditor.setState((s) => ({ redo: s.redo.slice(0, -1), undo: [...s.undo, { ...snap(scene), placed: next.placed, cleared: next.cleared }] }));
   void apply(scene, next.terrain, next.walls);
-  if (next.placed) void createPlaced(scene.id, next.placed).catch((e: Error) => useBoard.getState().showNotice(e.message));
+  void swapItems(scene.id, next.cleared, next.placed);
 }
 
 /**
@@ -191,21 +228,77 @@ export async function placePrefab(scene: Scene, prefab: PlacedPrefab, x0: number
   await createPlaced(scene.id, placed).catch((e: Error) => useBoard.getState().showNotice(e.message));
 }
 
-/** Sustituye el mapa por uno generado (mazmorra o cueva), con sus paredes y puertas. */
-export function generate(scene: Scene, kind: 'dungeon' | 'cave') {
-  const { widthCells: w, heightCells: h, gridSize: g } = scene;
-  const seed = Math.floor(Math.random() * 2 ** 31);
-  // Si el suelo elegido es de interior se usa para las salas; si no, losas (mazmorra) o suelo de cueva.
-  const { code } = useMapEditor.getState();
-  const floor = terrainById(code)?.group === 'Interior' ? code : undefined;
-  const map = kind === 'dungeon' ? generateDungeon(w, h, { seed, floor }) : generateCave(w, h, { seed, floor: floor ?? 'o' });
-  remember(scene);
-  const doors: Wall[] = map.doors.map((d) => ({ id: newWallId(), x1: d.x1 * g, y1: d.y1 * g, x2: d.x2 * g, y2: d.y2 * g, kind: 'door', open: false, locked: false }));
-  return apply(scene, map.terrain, withAutoWalls(doors, map.terrain, w, h, g));
+/** Muebles puestos por el generador en cada escena (para quitarlos al generar otra vez o al limpiar). */
+const generated = new Map<string, Placed[]>();
+/** Último suelo generado en cada escena: si sigue igual, generar otro no necesita confirmación. */
+const lastTerrain = new Map<string, string>();
+
+/** ¿El mapa de la escena es el último que salió del generador (sin retocar)? */
+export const isFreshlyGenerated = (scene: Scene) => lastTerrain.get(scene.id) === scene.terrain;
+
+/** Lo necesario para volver a crear un elemento que se quita. */
+function inputOf({ id: _id, sceneId: _s, stats: _st, ...rest }: BoardItem): CreateItemInput {
+  return rest;
 }
 
-/** Borra todo el suelo pintado y las paredes automáticas. */
-export function clearTerrain(scene: Scene) {
-  remember(scene);
-  return apply(scene, '', scene.walls.filter((w) => !w.auto));
+/**
+ * Los muebles que puso el generador en la escena, como paso para quitarlos (y volver a ponerlos al deshacer).
+ * Se sacan de lo que creó el propio generador (no de lo que ya ha llegado al tablero, que puede ir con retraso);
+ * si alguno se movió, se vuelve a poner donde estaba.
+ */
+function generatedStillThere(sceneId: string): Placed | undefined {
+  const items = useBoard.getState().items;
+  const seen = new Set<string>();
+  const out: Placed = { ids: [], inputs: [] };
+  for (const p of generated.get(sceneId) ?? []) {
+    p.ids.forEach((id, i) => {
+      if (seen.has(id) || !p.inputs[i]) return;
+      seen.add(id);
+      out.ids.push(id);
+      out.inputs.push(items[id] ? inputOf(items[id]) : p.inputs[i]!);
+    });
+  }
+  return out.ids.length ? out : undefined;
+}
+
+/**
+ * Sustituye el mapa por uno generado con las opciones del editor (estilo, tamaño, amueblar):
+ * suelo, paredes, puertas y, si se pide, muebles y luces. Los muebles de la generación anterior se quitan.
+ */
+export async function generate(scene: Scene) {
+  if (useMapEditor.getState().genBusy) return;
+  useMapEditor.setState({ genBusy: true });
+  try {
+    await generateNow(scene);
+  } finally {
+    useMapEditor.setState({ genBusy: false });
+  }
+}
+
+async function generateNow(scene: Scene) {
+  const { widthCells: w, heightCells: h, gridSize: g } = scene;
+  const { genStyle, genSize, genFurnish } = useMapEditor.getState();
+  const seed = Math.floor(Math.random() * 2 ** 31);
+  const map = generateStyled(w, h, { seed, style: genStyle, size: genSize, furnish: genFurnish });
+  const doors: Wall[] = map.doors.map((d) => ({ id: newWallId(), x1: d.x1 * g, y1: d.y1 * g, x2: d.x2 * g, y2: d.y2 * g, kind: 'door', open: false, locked: false }));
+  const placed: Placed = {
+    ids: [],
+    inputs: map.objects.map((o) => ({ layer: 'map', x: o.x * g, y: o.y * g, width: o.size * g, height: o.size * g, drawing: { type: 'stamp', text: o.emoji }, light: o.light })),
+  };
+  const cleared = generatedStillThere(scene.id);
+  remember(scene, placed, cleared);
+  generated.set(scene.id, [...(generated.get(scene.id) ?? []), placed, ...(cleared ? [cleared] : [])]);
+  lastTerrain.set(scene.id, map.terrain);
+  await apply(scene, map.terrain, withAutoWalls(doors, map.terrain, w, h, g));
+  await swapItems(scene.id, cleared, placed);
+}
+
+/** Borra todo el suelo pintado, las paredes automáticas y los muebles generados. */
+export async function clearTerrain(scene: Scene) {
+  // También se van los muebles que puso el generador (deshacer los devuelve).
+  const cleared = generatedStillThere(scene.id);
+  remember(scene, undefined, cleared);
+  if (cleared) generated.set(scene.id, [...(generated.get(scene.id) ?? []), cleared]);
+  await apply(scene, '', scene.walls.filter((w) => !w.auto));
+  await swapItems(scene.id, cleared);
 }

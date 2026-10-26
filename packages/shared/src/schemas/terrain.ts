@@ -217,12 +217,25 @@ export interface DungeonOptions {
   /** Suelo de las salas y de los pasillos. */
   floor?: string;
   corridor?: string;
+  /** Lado mínimo y máximo de las salas en casillas (por defecto, de 3 a 9 de ancho y de 3 a 7 de alto). */
+  minRoom?: number;
+  maxRoom?: number;
+}
+
+/** Rectángulo en casillas. */
+export interface CellRect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
 }
 
 export interface GeneratedMap {
   terrain: string;
   /** Puertas a mano (en casillas: lado entre dos casillas). */
   doors: { x1: number; y1: number; x2: number; y2: number }[];
+  /** Salas de la mazmorra (para amueblarlas); las cuevas no tienen. */
+  rooms?: CellRect[];
 }
 
 /**
@@ -237,11 +250,12 @@ export function generateDungeon(w: number, h: number, opts: DungeonOptions): Gen
   const target = opts.rooms ?? Math.max(3, Math.round((w * h) / 90));
   const cells: string[] = emptyTerrain(w, h).split('');
   const roomOf = new Int16Array(w * h).fill(-1);
-  const rooms: { x: number; y: number; w: number; h: number }[] = [];
+  const rooms: CellRect[] = [];
+  const min = Math.max(2, opts.minRoom ?? 3);
 
   for (let tries = 0; tries < target * 30 && rooms.length < target; tries++) {
-    const rw = int(3, Math.max(3, Math.min(9, Math.floor(w / 3))));
-    const rh = int(3, Math.max(3, Math.min(7, Math.floor(h / 3))));
+    const rw = int(min, Math.max(min, Math.min(opts.maxRoom ?? 9, Math.floor(w / 3))));
+    const rh = int(min, Math.max(min, Math.min(opts.maxRoom ?? 7, Math.floor(h / 3))));
     if (rw + 2 > w || rh + 2 > h) break;
     const r = { x: int(1, w - rw - 1), y: int(1, h - rh - 1), w: rw, h: rh };
     // Una casilla de separación como mínimo entre salas.
@@ -300,7 +314,7 @@ export function generateDungeon(w: number, h: number, opts: DungeonOptions): Gen
         doors.push(dx !== 0 ? { x1: ex, y1: y, x2: ex, y2: y + 1 } : { x1: x, y1: ey, x2: x + 1, y2: ey });
       }
     }
-  return { terrain, doors };
+  return { terrain, doors, rooms };
 }
 
 /** Cueva: autómata celular sobre ruido; se queda la zona abierta más grande y el resto es roca. */

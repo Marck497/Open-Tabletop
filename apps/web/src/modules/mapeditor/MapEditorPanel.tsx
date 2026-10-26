@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
-import { PREFAB_GROUPS, PREFABS, prefabById, rotatePrefab, TERRAIN_GROUPS, TERRAINS, terrainById, type Scene } from '@vtt/shared';
+import { MAP_SIZE_LABELS, MAP_SIZES, MAP_STYLE_DEFS, MAP_STYLES, PREFAB_GROUPS, PREFABS, prefabById, rotatePrefab, TERRAIN_GROUPS, TERRAINS, terrainById, type Scene } from '@vtt/shared';
 import { useBoard } from '../board/store';
-import { clearTerrain, generate, redo, undo, useMapEditor, type MapTool } from './store';
+import { clearTerrain, generate, isFreshlyGenerated, redo, undo, useMapEditor, type MapTool } from './store';
 import { texturePreview } from './textures';
 
 const TOOLS: { id: MapTool; icon: string; label: string; key: string; hint: string }[] = [
@@ -61,8 +61,6 @@ export function MapEditorPanel({ scene }: { scene: Scene }) {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
-
-  const ask = (msg: string) => !painted || confirm(msg);
 
   return (
     <aside className="map-editor" aria-label="Editor de mapas">
@@ -155,20 +153,7 @@ export function MapEditorPanel({ scene }: { scene: Scene }) {
         </button>
       </div>
 
-      <div className="map-group">Generar al azar</div>
-      <div className="row map-row">
-        <button className="small" title="Salas unidas por pasillos, con puertas" onClick={() => ask('Se sustituirá el mapa actual (se puede deshacer). ¿Seguir?') && void generate(scene, 'dungeon')}>
-          🏰 Mazmorra
-        </button>
-        <button className="small" title="Cueva natural rodeada de roca" onClick={() => ask('Se sustituirá el mapa actual (se puede deshacer). ¿Seguir?') && void generate(scene, 'cave')}>
-          🕳️ Cueva
-        </button>
-        {painted && (
-          <button className="ghost small" onClick={() => confirm('¿Borrar todo el suelo pintado y sus paredes automáticas?') && void clearTerrain(scene)}>
-            Limpiar
-          </button>
-        )}
-      </div>
+      <Generator scene={scene} painted={painted} />
       <p className="map-hint">Rueda para el zoom; botón central o derecho para moverte por el mapa.</p>
     </aside>
   );
@@ -207,6 +192,53 @@ function PrefabPicker() {
           </button>
         </div>
       )}
+    </>
+  );
+}
+
+/** Generar un mapa al azar: estilo, cuántas salas y si se amuebla. Se puede pulsar varias veces hasta que guste. */
+function Generator({ scene, painted }: { scene: Scene; painted: boolean }) {
+  const ed = useMapEditor();
+  const def = MAP_STYLE_DEFS[ed.genStyle];
+  const cave = ed.genStyle === 'cave';
+  const run = () => {
+    if (painted && !isFreshlyGenerated(scene) && !confirm('Se sustituirá el mapa actual (se puede deshacer con Ctrl+Z). ¿Seguir?')) return;
+    void generate(scene);
+  };
+  return (
+    <>
+      <div className="map-group">Generar al azar</div>
+      <div className="map-prefabs" role="group" aria-label="Estilo del mapa">
+        {MAP_STYLES.map((st) => (
+          <button key={st} className={`small ${ed.genStyle === st ? 'active' : ''}`} title={MAP_STYLE_DEFS[st].description} onClick={() => ed.setGen({ genStyle: st })}>
+            {MAP_STYLE_DEFS[st].icon} {MAP_STYLE_DEFS[st].name}
+          </button>
+        ))}
+      </div>
+      <p className="map-hint">{def.description}</p>
+      <div className="row map-row">
+        <select value={ed.genSize} onChange={(e) => ed.setGen({ genSize: e.target.value as typeof ed.genSize })} aria-label="Tamaño">
+          {MAP_SIZES.map((sz) => (
+            <option key={sz} value={sz}>
+              {cave ? { few: 'Más roca', normal: 'Normal', many: 'Más abierta' }[sz] : MAP_SIZE_LABELS[sz]}
+            </option>
+          ))}
+        </select>
+        <label className="switch" title="Pone objetos según el uso de cada sala (almacén, tumbas, armería…) y luces">
+          <input type="checkbox" checked={ed.genFurnish} onChange={(e) => ed.setGen({ genFurnish: e.target.checked })} />
+          Amueblar
+        </label>
+      </div>
+      <div className="row map-row">
+        <button className="small primary" disabled={ed.genBusy} onClick={run} title="Genera un mapa nuevo del tamaño de la escena. Púlsalo otra vez para probar otro.">
+          {ed.genBusy ? 'Generando…' : '🎲 Generar'}
+        </button>
+        {painted && (
+          <button className="ghost small" onClick={() => confirm('¿Borrar todo el suelo pintado, sus paredes automáticas y los muebles generados?') && void clearTerrain(scene)}>
+            Limpiar
+          </button>
+        )}
+      </div>
     </>
   );
 }
