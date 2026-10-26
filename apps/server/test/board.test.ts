@@ -60,6 +60,14 @@ describe('tablero', () => {
     expect(mine).toMatchObject({ layer: 'token', ownerIds: [pl.user.id], drawing: { type: 'path', strokeWidth: 4 } });
     // No puede crear tokens.
     expect((await call(plC, 'item:create', { sceneId, item: { layer: 'token', x: 0, y: 0, width: 70, height: 70 } })).ok).toBe(false);
+    // Un objeto suyo no da luz (en una escena a oscuras le dejaría ver de más), ni puede ponérsela después.
+    const lamp = ok(
+      await call<BoardItem>(plC, 'item:create', { sceneId, item: { layer: 'token', x: 0, y: 0, width: 70, height: 70, drawing: { type: 'stamp', text: '🔥' }, light: { bright: 60, dim: 60 } } }),
+    );
+    expect(lamp.light).toBeNull();
+    expect((await call(plC, 'item:update', { sceneId, id: lamp.id, patch: { light: { bright: 60, dim: 60 } } })).ok).toBe(false);
+    // Los del DM, sí.
+    expect((await token('map', { drawing: { type: 'stamp', text: '🔥' }, light: { bright: 20, dim: 20 } })).light).toMatchObject({ bright: 20, dim: 20 });
     // Puede redimensionar su dibujo.
     expect((await call(plC, 'item:update', { sceneId, id: mine.id, patch: { width: 40, height: 20, drawing: { ...drawing, points: [0, 0, 20, 20, 40, 0] } } })).ok).toBe(true);
     // No puede borrar ni dibujos del DM ni tokens.

@@ -88,11 +88,12 @@ Botón **🗺️ Editor de mapas** (solo el DM). Abre una paleta a la derecha de
 - **🏠 Habitación** (H): arrastra un rectángulo y aparece la sala con sus paredes. Si dos salas se tocan, se unen.
 - **🚪 Puerta** (P): clic en el borde de una casilla para poner o quitar una puerta.
 - **Paredes automáticas**: se ponen solas donde el suelo toca el vacío o un muro y se rehacen al pintar; las que pongas a mano se respetan.
-- **🌲 Objetos** (O): árboles, rocas, muebles, cofres, calaveras, señales… de 1 a 4 casillas. Se colocan en la capa *Mapa* y se mueven o giran con ✋.
+- **🌲 Objetos** (O): árboles, rocas, muebles, cofres, calaveras, señales… de 1 a 4 casillas. Se colocan en la capa *Mapa* y se mueven o giran con ✋. Un objeto también puede **dar luz** (una hoguera, una vela): selecciónalo y elige la luz en su panel.
+- **🏛️ Salas prediseñadas** (S): taberna, tienda, habitación de posada, herrería, plaza con fuente, templo, sala del trono, biblioteca, cripta, celdas, altar ritual y campamento. Clic en el mapa y aparece la sala con su suelo, paredes, puertas (las de las celdas, con llave), muebles y luces; **T** (o *↻ Girar*) la gira antes de colocarla. Luego se retoca como cualquier otra cosa. Las de exterior (plaza y campamento) no llevan paredes: quedan mejor sobre hierba o tierra ya pintada.
 - **Generar al azar**: una mazmorra (salas, pasillos y puertas) o una cueva, del tamaño de la escena.
-- **Deshacer y rehacer** con Ctrl+Z / Ctrl+Y.
+- **Deshacer y rehacer** con Ctrl+Z / Ctrl+Y, también los objetos y las salas que pongas.
 
-Con el editor abierto, el zoom va con la rueda y el mapa se desplaza con el botón central o el derecho.
+Con el editor abierto, el zoom va con la rueda y el mapa se desplaza con el botón central o el derecho. Mientras está abierto, las letras son atajos de sus herramientas (no de las del tablero); **M** lo cierra.
 
 ## Hojas de personaje
 

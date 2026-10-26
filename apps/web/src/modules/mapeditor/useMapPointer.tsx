@@ -1,9 +1,22 @@
 import { useRef, useState } from 'react';
 import { Line, Rect, Text } from 'react-konva';
-import { floodFill, isSolidCell, nearestCellEdge, normalizeTerrain, paintBrush, paintRect, terrainById, TERRAIN_EMPTY, type Point, type Scene } from '@vtt/shared';
-import { emitAck } from '../../core/socket';
+import {
+  fitPrefab,
+  floodFill,
+  isSolidCell,
+  nearestCellEdge,
+  normalizeTerrain,
+  paintBrush,
+  paintRect,
+  prefabById,
+  rotatePrefab,
+  terrainById,
+  TERRAIN_EMPTY,
+  type Point,
+  type Scene,
+} from '@vtt/shared';
 import { useBoard } from '../board/store';
-import { commitTerrain, remember, toggleDoorAt, useMapEditor } from './store';
+import { commitTerrain, placeItems, placePrefab, remember, toggleDoorAt, useMapEditor } from './store';
 
 interface Cell {
   x: number;
@@ -29,6 +42,8 @@ export function useMapPointer(scene: Scene | null, scale: number) {
   const code = useMapEditor((s) => s.code);
   const stampSize = useMapEditor((s) => s.stampSize);
   const stamp = useMapEditor((s) => s.stamp);
+  const prefabId = useMapEditor((s) => s.prefab);
+  const prefabTurns = useMapEditor((s) => s.prefabTurns);
 
   if (!scene) return { onDown: () => {}, onMove: () => {}, onUp: () => {}, onLeave: () => {}, overlay: null };
   const { widthCells: w, heightCells: h, gridSize: g } = scene;
@@ -69,9 +84,16 @@ export function useMapPointer(scene: Scene | null, scale: number) {
       case 'stamp': {
         if (!inside(c)) return;
         const size = ed.stampSize * g;
-        void emitAck('item:create', { sceneId: scene!.id, item: { layer: 'map', x: c.x * g, y: c.y * g, width: size, height: size, drawing: { type: 'stamp', text: ed.stamp } } }).catch((e: Error) =>
-          useBoard.getState().showNotice(e.message),
-        );
+        void placeItems(scene!, [{ layer: 'map', x: c.x * g, y: c.y * g, width: size, height: size, drawing: { type: 'stamp', text: ed.stamp } }]);
+        return;
+      }
+      case 'prefab': {
+        const def = prefabById(ed.prefab);
+        if (!def || !inside(c)) return;
+        const placed = rotatePrefab(def, ed.prefabTurns);
+        const at = fitPrefab(placed, w, h, c.x, c.y);
+        if (!at) return useBoard.getState().showNotice(`La sala (${placed.w} × ${placed.h}) no cabe en la escena: agrándala en Ajustes de la escena.`);
+        void placePrefab(scene!, placed, at.x, at.y, def.outdoor);
       }
     }
   }
@@ -132,6 +154,8 @@ export function useMapPointer(scene: Scene | null, scale: number) {
     } else if (mode === 'brush' || mode === 'erase') {
       const r0 = Math.floor((brush - 1) / 2);
       overlay = <Rect x={(c.x - r0) * g} y={(c.y - r0) * g} width={brush * g} height={brush * g} stroke={mode === 'erase' ? '#ff6b6b' : '#fff'} strokeWidth={sw} dash={[6 / scale, 4 / scale]} listening={false} />;
+    } else if (mode === 'prefab') {
+      overlay = prefabPreview(scene, c, prefabId, prefabTurns, scale);
     } else if (mode === 'stamp') {
       const s = stampSize * g;
       overlay = <Text x={c.x * g} y={c.y * g} width={s} height={s} text={stamp} fontSize={s * 0.8} align="center" verticalAlign="middle" opacity={0.5} listening={false} />;
@@ -139,4 +163,48 @@ export function useMapPointer(scene: Scene | null, scale: number) {
   }
 
   return { onDown, onMove, onUp, onLeave: () => setHover(null), overlay };
+}
+
+/** Vista previa de la sala prediseñada donde quedaría al hacer clic. */
+function prefabPreview(scene: Scene, c: { x: number; y: number }, prefabId: string, turns: number, scale: number) {
+  const def = prefabById(prefabId);
+  if (!def) return null;
+  const { widthCells: w, heightCells: h, gridSize: g } = scene;
+  const p = rotatePrefab(def, turns);
+  const at = fitPrefab(p, w, h, c.x, c.y);
+  if (!at) {
+    return (
+      <Text x={c.x * g} y={c.y * g} text={`No cabe (${p.w} × ${p.h})`} fontSize={16 / scale} fill="#ff6b6b" shadowColor="#000" shadowBlur={3} listening={false} />
+    );
+  }
+  const cells = p.rows.flatMap((row, y) =>
+    row.split('').flatMap((code, x) =>
+      code === TERRAIN_EMPTY ? [] : [<Rect key={`c${x}-${y}`} x={(at.x + x) * g} y={(at.y + y) * g} width={g} height={g} fill={terrainById(code)?.color ?? '#888'} opacity={0.55} listening={false} />],
+    ),
+  );
+  return (
+    <>
+      {cells}
+      <Rect x={at.x * g} y={at.y * g} width={p.w * g} height={p.h * g} stroke="#e8b25a" strokeWidth={3 / scale} dash={[8 / scale, 5 / scale]} listening={false} />
+      {p.doors.map((d, i) => (
+        <Line key={`d${i}`} points={[(at.x + d.x1) * g, (at.y + d.y1) * g, (at.x + d.x2) * g, (at.y + d.y2) * g]} stroke="#5fb3e8" strokeWidth={6 / scale} lineCap="round" listening={false} />
+      ))}
+      {p.objects.map((o, i) => (
+        <Text
+          key={`o${i}`}
+          x={(at.x + o.x) * g}
+          y={(at.y + o.y) * g}
+          width={o.size * g}
+          height={o.size * g}
+          text={o.emoji}
+          fontSize={o.size * g * 0.7}
+          align="center"
+          verticalAlign="middle"
+          opacity={0.8}
+          listening={false}
+        />
+      ))}
+      <Text x={at.x * g} y={at.y * g - 22 / scale} text={`${def.name} · ${p.w} × ${p.h}`} fontSize={14 / scale} fill="#fff" shadowColor="#000" shadowBlur={3} listening={false} />
+    </>
+  );
 }

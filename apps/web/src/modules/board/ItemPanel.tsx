@@ -3,6 +3,7 @@ import {
   acViewOf,
   AC_VIEWS,
   BOARD_LAYERS,
+  canGiveLight,
   DARKVISION_PRESETS,
   hpViewOf,
   HP_VIEWS,
@@ -118,7 +119,7 @@ export function ItemPanel({ campaignId, members }: { campaignId: string; members
 
       <GmNotes item={item} />
 
-      {!item.drawing && <LightPanel item={item} scene={scene} />}
+      {canGiveLight(item) && <LightPanel item={item} scene={scene} />}
 
       {item.layer !== 'map' && !item.drawing && <AiPanel item={item} hasSheet={!!item.characterId} />}
 

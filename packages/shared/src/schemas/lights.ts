@@ -46,7 +46,10 @@ export interface Eye extends Point {
 }
 
 type SceneScale = { gridSize: number; cellDistance: number };
-type Lit = { x: number; y: number; width: number; height: number; light?: Light | null; drawing?: unknown };
+type Lit = { x: number; y: number; width: number; height: number; light?: Light | null; drawing?: { type: string } | null };
+
+/** ¿Puede dar luz? Los tokens e imágenes sí, y de los dibujos solo los objetos (una hoguera, una vela). */
+export const canGiveLight = (i: Pick<Lit, 'drawing'>) => !i.drawing || i.drawing.type === 'stamp';
 
 /** Pasa una distancia de la escena (pies) a píxeles. */
 export const distToPx = (d: number, scene: SceneScale) => (scene.cellDistance > 0 ? (d / scene.cellDistance) * scene.gridSize : 0);
@@ -55,7 +58,7 @@ export const distToPx = (d: number, scene: SceneScale) => (scene.cellDistance > 
 export function lightsOf(items: Lit[], scene: SceneScale): LightSource[] {
   const out: LightSource[] = [];
   for (const i of items) {
-    if (!i.light || i.drawing) continue;
+    if (!i.light || !canGiveLight(i)) continue;
     const bright = distToPx(i.light.bright, scene);
     const radius = bright + distToPx(i.light.dim, scene);
     if (radius <= 0) continue;

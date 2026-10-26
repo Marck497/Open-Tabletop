@@ -70,6 +70,8 @@ export function Shortcuts({ campaignId, isGm, meId }: { campaignId: string; isGm
         useLayout.getState().toggleSide(false);
         return;
       }
+      // Con el editor de mapas abierto, las letras son sus herramientas (B pincel, R rectángulo, P puerta…); M lo cierra.
+      if (board.tool === 'map' && /^[a-z]$/.test(key) && key !== 'm') return;
       if (key === 'b') {
         e.preventDefault();
         useLayout.getState().toggleSide();

@@ -570,3 +570,9 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--border); 
 .library-row { flex-wrap: nowrap; border-bottom: 1px solid rgba(255,255,255,0.06); padding: 4px 0; }
 .library-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .library-import { align-items: center; gap: 8px; flex-wrap: wrap; }
+
+/* Salas prediseñadas del editor de mapas */
+.map-prefabs { display: flex; flex-wrap: wrap; gap: 4px; }
+.map-prefabs button { padding: 3px 7px; }
+.map-prefab-info { display: flex; align-items: flex-start; gap: 8px; margin-top: 6px; }
+.map-prefab-info .map-hint { flex: 1; margin: 0; }

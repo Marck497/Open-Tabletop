@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { TERRAIN_GROUPS, TERRAINS, terrainById, type Scene } from '@vtt/shared';
+import { PREFAB_GROUPS, PREFABS, prefabById, rotatePrefab, TERRAIN_GROUPS, TERRAINS, terrainById, type Scene } from '@vtt/shared';
 import { useBoard } from '../board/store';
 import { clearTerrain, generate, redo, undo, useMapEditor, type MapTool } from './store';
 import { texturePreview } from './textures';
@@ -13,6 +13,7 @@ const TOOLS: { id: MapTool; icon: string; label: string; key: string; hint: stri
   { id: 'door', icon: '🚪', label: 'Puerta', key: 'P', hint: 'Clic en el borde de una casilla para poner o quitar una puerta.' },
   { id: 'picker', icon: '💧', label: 'Cuentagotas', key: 'I', hint: 'Clic en el mapa para coger ese suelo.' },
   { id: 'stamp', icon: '🌲', label: 'Objetos', key: 'O', hint: 'Clic para colocar el objeto elegido (luego se mueve o gira con ✋ en la capa Mapa).' },
+  { id: 'prefab', icon: '🏛️', label: 'Salas prediseñadas', key: 'S', hint: 'Elige una sala y haz clic en el mapa para colocarla con su suelo, puertas, muebles y luces. T la gira.' },
 ];
 
 const STAMPS: Record<string, string[]> = {
@@ -37,7 +38,7 @@ export function MapEditorPanel({ scene }: { scene: Scene }) {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if ((e.target as HTMLElement).closest('input, textarea, select')) return;
-      const { setMode, setBrush, brush } = useMapEditor.getState();
+      const { setMode, setBrush, brush, mode, rotatePrefab: turn } = useMapEditor.getState();
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
         e.preventDefault();
         if (e.shiftKey) redo();
@@ -50,6 +51,7 @@ export function MapEditorPanel({ scene }: { scene: Scene }) {
         return;
       }
       if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (mode === 'prefab' && e.key.toLowerCase() === 't') return turn();
       const t = TOOLS.find((x) => x.key === e.key.toUpperCase());
       if (t) setMode(t.id);
       const i = BRUSHES.indexOf(brush);
@@ -93,7 +95,9 @@ export function MapEditorPanel({ scene }: { scene: Scene }) {
         </div>
       )}
 
-      {ed.mode === 'stamp' ? (
+      {ed.mode === 'prefab' ? (
+        <PrefabPicker />
+      ) : ed.mode === 'stamp' ? (
         <>
           <div className="row map-row">
             <span className="tool-label">Tamaño</span>
@@ -135,7 +139,7 @@ export function MapEditorPanel({ scene }: { scene: Scene }) {
           </div>
         ))
       )}
-      {ed.mode !== 'stamp' && <div className="map-current">Suelo: {terrainById(ed.code)?.name}</div>}
+      {ed.mode !== 'stamp' && ed.mode !== 'prefab' && <div className="map-current">Suelo: {terrainById(ed.code)?.name}</div>}
 
       <label className="switch" title="Las paredes se ponen solas donde el suelo toca el vacío o un muro (las que pongas a mano se respetan)">
         <input type="checkbox" checked={ed.autoWalls} onChange={(e) => ed.setAutoWalls(e.target.checked)} />
@@ -167,5 +171,42 @@ export function MapEditorPanel({ scene }: { scene: Scene }) {
       </div>
       <p className="map-hint">Rueda para el zoom; botón central o derecho para moverte por el mapa.</p>
     </aside>
+  );
+}
+
+/** Lista de salas prediseñadas, la elegida con su descripción y el botón de girar. */
+function PrefabPicker() {
+  const ed = useMapEditor();
+  const current = prefabById(ed.prefab);
+  const size = current ? rotatePrefab(current, ed.prefabTurns) : null;
+  return (
+    <>
+      {PREFAB_GROUPS.map((group) => (
+        <div key={group}>
+          <div className="map-group">{group}</div>
+          <div className="map-prefabs">
+            {PREFABS.filter((p) => p.group === group).map((p) => (
+              <button key={p.id} className={`small ${ed.prefab === p.id ? 'active' : ''}`} title={p.description} onClick={() => ed.setPrefab(p.id)}>
+                {p.icon} {p.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
+      {current && size && (
+        <div className="map-prefab-info">
+          <p className="map-hint">
+            <b>
+              {current.icon} {current.name}
+            </b>{' '}
+            ({size.w} × {size.h}). {current.description}
+            {current.outdoor && ' Es de exterior: queda mejor sobre hierba o tierra ya pintada (si alrededor está vacío, las paredes automáticas la rodean).'}
+          </p>
+          <button className="small" onClick={ed.rotatePrefab} title="Girar un cuarto de vuelta (T)">
+            ↻ Girar
+          </button>
+        </div>
+      )}
+    </>
   );
 }
