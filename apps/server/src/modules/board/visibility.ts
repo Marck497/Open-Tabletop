@@ -42,7 +42,7 @@ export function sceneFor(scene: Scene, role: CampaignRole): Scene {
 
 /** Lo que se envía de un elemento: la IA de los enemigos y las notas privadas solo las ve el DM. */
 export function forViewer(item: BoardItem, role: CampaignRole): BoardItem {
-  return role === 'gm' || (!item.ai && !item.gmNotes) ? item : { ...item, ai: null, gmNotes: '' };
+  return role === 'gm' || (!item.ai && !item.gmNotes && !item.trigger) ? item : { ...item, ai: null, gmNotes: '', trigger: null };
 }
 
 /** Campos que un jugador puede cambiar en un token suyo. */

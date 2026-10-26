@@ -3,6 +3,7 @@ import { DIAGONAL_RULES, type DiagonalRule } from './measure.js';
 import { tokenAiSchema, type TokenAi } from './ai.js';
 import type { Wall } from './walls.js';
 import { lightSchema, type Light, type LightSource } from './lights.js';
+import { triggerSchema, type Trigger } from './triggers.js';
 
 /**
  * Capas del tablero (como en Roll20):
@@ -168,9 +169,10 @@ export function buildSceneTree(folders: SceneFolder[], scenes: Scene[]): { folde
 
 /**
  * Dibujos sobre el tablero: trazos a mano alzada, líneas, rectángulos, elipses, textos, sellos (un emoji
- * que ocupa su caja) y notas numeradas del DM (un círculo con su número en `text`; título en el nombre y texto en las notas del DM).
+ * que ocupa su caja), notas numeradas del DM (un círculo con su número en `text`; título en el nombre y texto en las notas del DM)
+ * y zonas de trampas y avisos (un rectángulo; lo que hacen va en `trigger` del elemento).
  */
-export const DRAWING_TYPES = ['path', 'line', 'rect', 'ellipse', 'text', 'stamp', 'note'] as const;
+export const DRAWING_TYPES = ['path', 'line', 'rect', 'ellipse', 'text', 'stamp', 'note', 'zone'] as const;
 export type DrawingType = (typeof DRAWING_TYPES)[number];
 
 export const drawingSchema = z.object({
@@ -240,6 +242,8 @@ export const boardItemFields = {
   darkvision: z.number().min(0).max(1000),
   /** Notas privadas del DM (PNJ, trampas, secretos): a los jugadores nunca les llegan. */
   gmNotes: z.string().max(5000),
+  /** Trampa o zona de aviso (ver triggers.ts); solo la recibe el DM. */
+  trigger: triggerSchema.nullable(),
 };
 
 export const createItemSchema = z.object({
@@ -261,6 +265,7 @@ export const createItemSchema = z.object({
   light: boardItemFields.light.default(null),
   darkvision: boardItemFields.darkvision.default(0),
   gmNotes: boardItemFields.gmNotes.default(''),
+  trigger: boardItemFields.trigger.default(null),
 });
 export const updateItemSchema = z.object(boardItemFields).partial();
 export type CreateItemInput = z.input<typeof createItemSchema>;
@@ -292,6 +297,8 @@ export interface BoardItem {
   darkvision: number;
   /** Solo lo recibe el DM ('' para los jugadores). */
   gmNotes: string;
+  /** Trampa o zona de aviso; solo lo recibe el DM (null para los jugadores). */
+  trigger: Trigger | null;
   /** Vida y CA de la hoja vinculada, ya filtradas para quien lo recibe (las calcula el servidor). */
   stats?: TokenStats | null;
 }

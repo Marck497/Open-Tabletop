@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { campaignRoom, measureSchema, pingSchema, sceneRoom, userColor, type BoardItem } from '@vtt/shared';
+import { campaignRoom, measureSchema, movePathSchema, pingSchema, sceneRoom, userColor, type BoardItem } from '@vtt/shared';
 import type { ServerModule } from '../../core/module.js';
 import { handleAck } from '../../core/socket-utils.js';
 import { requireUser } from '../auth/index.js';
@@ -174,6 +174,7 @@ export const boardModule: ServerModule = {
         const { scene, before, after } = board.updateItem(payload.sceneId, payload.id, userId(), payload.patch, payload.path);
         await broadcast.itemChanged(scene, before, after);
         if (movesPlayerEye(before, after)) broadcast.explore(scene.id);
+        if (before.x !== after.x || before.y !== after.y) ctx.events.emit('item:moved', { scene, before, after, path: movePathSchema.catch([]).parse(payload.path ?? []) });
         const { role } = board.access(payload.sceneId, userId()).viewer;
         return board.statsFor(scene.campaignId)(forViewer(after, role), role, userId());
       }),

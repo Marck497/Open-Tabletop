@@ -5,6 +5,7 @@ import { newFolder, newScene, SceneTree, useSceneList } from './SceneTree';
 import { duplicateScene, exportSceneUrl, IMPORT_ACCEPT, importSceneFile, saveToLibrary } from '../scenelib/api';
 import { LibraryWindow } from '../scenelib/LibraryWindow';
 import { NotesList } from '../notes/NotesList';
+import { TriggersList } from '../triggers/TriggersList';
 import { useBoard } from './store';
 
 interface Props {
@@ -107,6 +108,7 @@ export function ScenesPanel({ campaignId, activeSceneId, viewingId, members, onV
           </button>
           {editing && <SceneSettings key={viewing.id} scene={viewing} onDelete={() => void remove(viewing)} />}
           {boardSceneId === viewing.id && <NotesList campaignId={campaignId} />}
+          {boardSceneId === viewing.id && <TriggersList />}
         </>
       )}
       {message && <p className="notice-line">{message}</p>}

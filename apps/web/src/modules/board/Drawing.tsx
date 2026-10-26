@@ -25,6 +25,16 @@ export function DrawingShape({ drawing, width, height }: { drawing: Drawing; wid
         </>
       );
     }
+    case 'zone': {
+      // Trampa o zona de aviso (solo la ve el DM, salvo una trampa descubierta): rectángulo con su icono.
+      const icon = Math.max(14, Math.min(width, height, 210) / 3);
+      return (
+        <>
+          <Rect width={width} height={height} fill={fillOf(stroke, 0.18)} stroke={stroke} strokeWidth={3} dash={[12, 6]} />
+          <Text text={drawing.text} width={width} height={height} align="center" verticalAlign="middle" fontSize={icon} opacity={0.85} />
+        </>
+      );
+    }
     case 'stamp':
       return (
         <Text

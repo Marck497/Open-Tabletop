@@ -220,7 +220,7 @@ export function createBoardService(ctx: AppContext) {
     if (viewer.role !== 'gm') {
       // Los jugadores solo pueden dibujar, y siempre en la capa de tokens y como dueños de su dibujo.
       if (!data.drawing) throw forbidden('Solo el DM puede añadir elementos');
-      data = { ...data, layer: 'token', ownerIds: [userId], characterId: null, assetId: null, ai: null, statuses: [], statusRounds: {}, light: null };
+      data = { ...data, layer: 'token', ownerIds: [userId], characterId: null, assetId: null, ai: null, statuses: [], statusRounds: {}, light: null, trigger: null, gmNotes: '' };
     }
     checkAsset(data.assetId, scene.campaignId);
     checkCharacter(data.characterId, scene.campaignId);

@@ -94,6 +94,18 @@ En la pestaña *Escenas*, con la escena abierta, **📍 Notas del mapa → + Not
 - **📣 Leer en el chat** manda el título y el texto a todos (para la descripción que lees al entrar en una sala).
 - Si borras alguna, **Renumerar** las deja otra vez 1, 2, 3… Se copian con la escena al duplicarla, exportarla o guardarla en la biblioteca.
 
+### Trampas y zonas de aviso
+
+En *Escenas*, **🪤 Trampas y zonas → + Trampa** o **+ Zona** pone un rectángulo en la capa del DM: muévelo y cambia su tamaño desde las esquinas. Salta solo cuando un token entra en él (aunque solo lo cruce de paso; moverse dentro no cuenta). Los jugadores no lo ven ni reciben su configuración.
+
+- **Trampa**: con **salvación** (característica y CD) y **daño** (fórmula y tipo), al saltar se tira el daño y la salvación del token con su hoja, y se le aplica (mitad o nada al salvar, con resistencias). Ejemplo: foso, Destreza CD 13, 2d10 contundente.
+- **Zona de aviso**: solo te avisa (p. ej. «han entrado en la sala del trono»).
+- En las dos:
+  - **Mensaje para todos** se escribe en el chat al saltar («¡El suelo cede bajo tus pies!»), y tus **notas del DM** te llegan solo a ti.
+  - **Descubrir** saca a la capa de tokens lo que tengas escondido dentro en la capa del DM: monstruos al acecho para una emboscada o el propio foso.
+  - Por defecto solo las disparan los tokens de jugadores; con *Cualquier token*, también los monstruos (también los que mueve la IA).
+  - Las de *una sola vez* se desarman al saltar; en la lista se pueden **rearmar**.
+
 ### Ajustar la cuadrícula de una imagen
 
 Si subes un mapa que ya trae su cuadrícula dibujada y no coincide con la de la escena, selecciónalo (capa *Mapa*) y pulsa **📐 Ajustar cuadrícula**:

@@ -790,7 +790,7 @@ function ItemNode({ item, isGm, scene, selected, interactive, ghost, transformab
             </Group>
           );
         })}
-        {isGm && item.gmNotes && (
+        {isGm && item.gmNotes && item.drawing?.type !== 'note' && item.drawing?.type !== 'zone' && (
           // Solo el DM: este token tiene notas privadas (se leen en el panel al seleccionarlo).
           <Text text="📝" x={-4} y={-4} fontSize={Math.max(14, Math.min(w, h) / 3.2)} listening={false} shadowColor="#000" shadowBlur={3} />
         )}
