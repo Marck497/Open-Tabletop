@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import {
-  MAP_SIZE_LABELS,
+  mapSizeLabel,
   MAP_SIZES,
   MAP_STYLE_DEFS,
   MAP_STYLES,
@@ -255,7 +255,6 @@ function PrefabPicker() {
 function Generator({ scene, painted }: { scene: Scene; painted: boolean }) {
   const ed = useMapEditor();
   const def = MAP_STYLE_DEFS[ed.genStyle];
-  const cave = ed.genStyle === 'cave';
   const run = () => {
     if (painted && !isFreshlyGenerated(scene) && !confirm('Se sustituirá el mapa actual (se puede deshacer con Ctrl+Z). ¿Seguir?')) return;
     void generate(scene);
@@ -263,23 +262,25 @@ function Generator({ scene, painted }: { scene: Scene; painted: boolean }) {
   return (
     <>
       <div className="map-group">Generar al azar</div>
-      <div className="map-prefabs" role="group" aria-label="Estilo del mapa">
-        {MAP_STYLES.map((st) => (
-          <button key={st} className={`small ${ed.genStyle === st ? 'active' : ''}`} title={MAP_STYLE_DEFS[st].description} onClick={() => ed.setGen({ genStyle: st })}>
-            {MAP_STYLE_DEFS[st].icon} {MAP_STYLE_DEFS[st].name}
-          </button>
-        ))}
-      </div>
+      {[false, true].map((outdoor) => (
+        <div key={String(outdoor)} className="map-prefabs" role="group" aria-label={outdoor ? 'Exteriores' : 'Interiores'}>
+          {MAP_STYLES.filter((st) => !!MAP_STYLE_DEFS[st].outdoor === outdoor).map((st) => (
+            <button key={st} className={`small ${ed.genStyle === st ? 'active' : ''}`} title={MAP_STYLE_DEFS[st].description} onClick={() => ed.setGen({ genStyle: st })}>
+              {MAP_STYLE_DEFS[st].icon} {MAP_STYLE_DEFS[st].name}
+            </button>
+          ))}
+        </div>
+      ))}
       <p className="map-hint">{def.description}</p>
       <div className="row map-row">
         <select value={ed.genSize} onChange={(e) => ed.setGen({ genSize: e.target.value as typeof ed.genSize })} aria-label="Tamaño">
           {MAP_SIZES.map((sz) => (
             <option key={sz} value={sz}>
-              {cave ? { few: 'Más roca', normal: 'Normal', many: 'Más abierta' }[sz] : MAP_SIZE_LABELS[sz]}
+              {mapSizeLabel(ed.genStyle, sz)}
             </option>
           ))}
         </select>
-        <label className="switch" title="Pone objetos según el uso de cada sala (almacén, tumbas, armería…) y luces">
+        <label className="switch" title={def.outdoor ? 'Pone árboles, rocas y lo de cada sitio (campamento, carro, muebles de las casas…) y luces' : 'Pone objetos según el uso de cada sala (almacén, tumbas, armería…) y luces'}>
           <input type="checkbox" checked={ed.genFurnish} onChange={(e) => ed.setGen({ genFurnish: e.target.checked })} />
           Amueblar
         </label>

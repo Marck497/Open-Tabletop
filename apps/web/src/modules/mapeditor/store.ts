@@ -332,6 +332,8 @@ async function generateNow(scene: Scene) {
   const seed = Math.floor(Math.random() * 2 ** 31);
   const map = generateStyled(w, h, { seed, style: genStyle, size: genSize, furnish: genFurnish });
   const doors: Wall[] = map.doors.map((d) => ({ id: newWallId(), x1: d.x1 * g, y1: d.y1 * g, x2: d.x2 * g, y2: d.y2 * g, kind: 'door', open: false, locked: false }));
+  // Paredes propias del mapa (las casas de un pueblo).
+  for (const d of map.walls ?? []) doors.push({ id: newWallId(), x1: d.x1 * g, y1: d.y1 * g, x2: d.x2 * g, y2: d.y2 * g, kind: 'wall', open: false, locked: false });
   const placed: Placed = {
     ids: [],
     inputs: map.objects.map((o) => ({ layer: 'map', x: o.x * g, y: o.y * g, width: o.size * g, height: o.size * g, drawing: { type: 'stamp', text: o.emoji }, light: o.light })),

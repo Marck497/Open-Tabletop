@@ -105,8 +105,12 @@ Botón **🗺️ Editor de mapas** (solo el DM). Abre una paleta a la derecha de
   - **🌊 Alcantarillas**: canales de agua entre salas de adoquín.
   - **⛏️ Mina**: galerías de tierra entre cámaras con vetas y derrumbes.
   - **🕳️ Cueva**: natural, rodeada de roca.
+  - Exteriores (todo es suelo, sin paredes alrededor):
+    - **🌲 Bosque**: arboledas con una senda que lo cruza, un claro (a veces con un campamento con hoguera o unas ruinas) y quizá una charca con pasarela.
+    - **🛤️ Camino**: un camino entre arboledas, a veces cortado por un río con su puente, y un carro volcado en medio: listo para una emboscada.
+    - **🏘️ Pueblo**: calles de tierra, una plaza con pozo, farolas y puestos, y casas de madera con sus paredes y una puerta hacia la calle. La más cercana a la plaza es la taberna; luego tienda, herrería, templo, establo y viviendas, cada una con sus muebles.
 
-  Elige también cuántas salas quieres (pocas, normal o muchas). Con **Amueblar** (activado por defecto), a cada sala le toca un uso (almacén, cuartel, tumbas, armería…) y se llena con sus objetos y alguna antorcha o vela que da luz, sin tapar entradas ni puertas. **🎲 Generar** se puede pulsar varias veces hasta que guste: cada vez se quitan los muebles del mapa anterior (los objetos que pusiste a mano se quedan) y Ctrl+Z vuelve al anterior. *Limpiar* borra el suelo y los muebles generados.
+  Elige también el tamaño: cuántas salas (pocas, normal o muchas), lo espeso del bosque o cuántas casas tiene el pueblo. Con **Amueblar** (activado por defecto), a cada sala le toca un uso (almacén, cuartel, tumbas, armería…) y se llena con sus objetos y alguna antorcha o vela que da luz, sin tapar entradas ni puertas. **🎲 Generar** se puede pulsar varias veces hasta que guste: cada vez se quitan los muebles del mapa anterior (los objetos que pusiste a mano se quedan) y Ctrl+Z vuelve al anterior. *Limpiar* borra el suelo y los muebles generados.
 - **Deshacer y rehacer** con Ctrl+Z / Ctrl+Y, también los objetos y las salas que pongas.
 
 Con el editor abierto, el zoom va con la rueda y el mapa se desplaza con el botón central o el derecho. Mientras está abierto, las letras son atajos de sus herramientas (no de las del tablero); **M** lo cierra.

@@ -234,8 +234,10 @@ export interface GeneratedMap {
   terrain: string;
   /** Puertas a mano (en casillas: lado entre dos casillas). */
   doors: { x1: number; y1: number; x2: number; y2: number }[];
-  /** Salas de la mazmorra (para amueblarlas); las cuevas no tienen. */
+  /** Salas de la mazmorra o casas del pueblo (para amueblarlas); las cuevas no tienen. */
   rooms?: CellRect[];
+  /** Paredes a mano (en casillas, de esquina a esquina), p. ej. las de las casas de un pueblo. */
+  walls?: { x1: number; y1: number; x2: number; y2: number }[];
 }
 
 /**

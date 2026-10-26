@@ -1,25 +1,14 @@
-import type { Light } from '../schemas/lights.js';
-import { generateCave, generateDungeon, isSolidCell, seededRng, type CellRect, type GeneratedMap } from '../schemas/terrain.js';
-import { PREFAB_LIGHTS, type PrefabLight } from './prefabs.js';
+import { generateCave, generateDungeon, isSolidCell, seededRng, type GeneratedMap } from '../schemas/terrain.js';
+import { furnishRoomKinds, type GeneratedObject, type RoomKind } from './furnish.js';
+import { generateForest, generateRoad, generateVillage } from './outdoor.js';
 
 /**
- * Generador de mapas con estilos (mazmorra, cripta, castillo, alcantarillas, mina, cueva) y
- * amueblado: a cada sala le toca un uso (almacén, cuartel, tumbas…) y se llena con sus objetos
- * y alguna antorcha. Todo con semilla: la misma semilla da el mismo mapa.
+ * Generador de mapas con estilos (mazmorra, cripta, castillo, alcantarillas, mina, cueva, y de
+ * exterior: bosque, camino y pueblo) y amueblado: a cada sala le toca un uso (almacén, cuartel,
+ * tumbas…) y se llena con sus objetos y alguna antorcha. Todo con semilla: la misma semilla da el mismo mapa.
  */
 
-/** Dónde va un objeto dentro de la sala. */
-type Spot = 'corner' | 'wall' | 'center' | 'any';
-
-/** Objeto de un uso de sala: emoji, dónde, cuántos (mínimo y máximo) y la luz que da. */
-type Furniture = [emoji: string, where: Spot, min: number, max: number, light?: PrefabLight];
-
-interface RoomKind {
-  name: string;
-  items: Furniture[];
-}
-
-export const MAP_STYLES = ['dungeon', 'crypt', 'castle', 'sewer', 'mine', 'cave'] as const;
+export const MAP_STYLES = ['dungeon', 'crypt', 'castle', 'sewer', 'mine', 'cave', 'forest', 'road', 'village'] as const;
 export type MapStyle = (typeof MAP_STYLES)[number];
 
 export const MAP_SIZES = ['few', 'normal', 'many'] as const;
@@ -28,6 +17,10 @@ export const MAP_SIZE_LABELS: Record<MapSize, string> = { few: 'Pocas salas', no
 
 interface StyleDef {
   name: string;
+  /** De exterior: todo es suelo (no hay paredes alrededor). */
+  outdoor?: boolean;
+  /** Qué significa el tamaño en este estilo (si no, «Pocas salas / Normal / Muchas salas»). */
+  sizeLabels?: Record<MapSize, string>;
   icon: string;
   description: string;
   floor: string;
@@ -40,8 +33,6 @@ interface StyleDef {
   torches: number;
   kinds: RoomKind[];
 }
-
-const TORCH: Furniture = ['🔥', 'wall', 1, 1, 'antorcha'];
 
 export const MAP_STYLE_DEFS: Record<MapStyle, StyleDef> = {
   dungeon: {
@@ -144,17 +135,56 @@ export const MAP_STYLE_DEFS: Record<MapStyle, StyleDef> = {
     density: 1,
     torches: 0,
     kinds: [],
+    sizeLabels: { few: 'Más roca', normal: 'Normal', many: 'Más abierta' },
+  },
+  forest: {
+    name: 'Bosque',
+    icon: '🌲',
+    description: 'Arboleda con una senda, un claro (a veces con un campamento o unas ruinas) y quizá una charca.',
+    outdoor: true,
+    floor: 'g',
+    corridor: 'd',
+    minRoom: 0,
+    maxRoom: 0,
+    density: 0,
+    torches: 0,
+    kinds: [],
+    sizeLabels: { few: 'Poco espeso', normal: 'Normal', many: 'Muy espeso' },
+  },
+  road: {
+    name: 'Camino',
+    icon: '🛤️',
+    description: 'Un camino entre arboledas, a veces con un río y su puente, y un carro volcado: perfecto para una emboscada.',
+    outdoor: true,
+    floor: 'g',
+    corridor: 'd',
+    minRoom: 0,
+    maxRoom: 0,
+    density: 0,
+    torches: 0,
+    kinds: [],
+    sizeLabels: { few: 'Despejado', normal: 'Normal', many: 'Boscoso' },
+  },
+  village: {
+    name: 'Pueblo',
+    icon: '🏘️',
+    description: 'Calles de tierra, una plaza con pozo y casas con sus paredes y puertas: taberna, tienda, herrería, templo, establo y viviendas.',
+    outdoor: true,
+    floor: 'g',
+    corridor: 'd',
+    minRoom: 3,
+    maxRoom: 6,
+    density: 0,
+    torches: 0,
+    kinds: [],
+    sizeLabels: { few: 'Aldea', normal: 'Pueblo', many: 'Muchas casas' },
   },
 };
 
-/** Lo que coloca el generador: un objeto (emoji) en una casilla, con su tamaño y luz. */
-export interface GeneratedObject {
-  emoji: string;
-  x: number;
-  y: number;
-  size: number;
-  light: Light | null;
-}
+/** Lo que significa cada tamaño en un estilo. */
+export const mapSizeLabel = (style: MapStyle, size: MapSize) => MAP_STYLE_DEFS[style].sizeLabels?.[size] ?? MAP_SIZE_LABELS[size];
+
+export type { GeneratedObject };
 
 export interface StyledMap extends GeneratedMap {
   objects: GeneratedObject[];
@@ -162,77 +192,19 @@ export interface StyledMap extends GeneratedMap {
   roomKinds: string[];
 }
 
-/** Casillas a los dos lados de cada puerta: ahí no se pone nada para no tapar el paso. */
-function doorCells(map: GeneratedMap): Set<number> {
-  const out = new Set<number>();
-  const key = (x: number, y: number) => y * 100000 + x;
-  for (const d of map.doors) {
-    if (d.x1 === d.x2) {
-      out.add(key(d.x1 - 1, d.y1));
-      out.add(key(d.x1, d.y1));
-    } else {
-      out.add(key(d.x1, d.y1 - 1));
-      out.add(key(d.x1, d.y1));
-    }
-  }
-  return out;
-}
-
 /**
- * Amuebla las salas de una mazmorra: a cada una le da un uso del estilo y coloca sus objetos en
- * esquinas, junto a las paredes o en el centro, sin tapar entradas ni puertas.
+ * Amuebla las salas de una mazmorra: a cada una le da un uso del estilo (sin repetir hasta haberlos
+ * usado todos) y coloca sus objetos en esquinas, junto a las paredes o en el centro, sin tapar entradas ni puertas.
  */
 export function furnishRooms(map: GeneratedMap, w: number, h: number, style: MapStyle, rnd: () => number): { objects: GeneratedObject[]; roomKinds: string[] } {
   const def = MAP_STYLE_DEFS[style];
-  const rooms = map.rooms ?? [];
-  const objects: GeneratedObject[] = [];
-  const roomKinds: string[] = [];
-  if (!def.kinds.length) return { objects, roomKinds };
-  const t = map.terrain;
-  const inRoom = (r: CellRect, x: number, y: number) => x >= r.x && y >= r.y && x < r.x + r.w && y < r.y + r.h;
-  const solid = (x: number, y: number) => x < 0 || y < 0 || x >= w || y >= h || isSolidCell(t[y * w + x]);
-  const doors = doorCells(map);
-  const int = (a: number, b: number) => a + Math.floor(rnd() * (b - a + 1));
-  // Se reparten los usos para que no se repitan hasta haberlos usado todos.
+  if (!def.kinds.length) return { objects: [], roomKinds: [] };
   let bag: RoomKind[] = [];
-
-  for (const r of rooms) {
+  const kindOf = () => {
     if (!bag.length) bag = [...def.kinds].sort(() => rnd() - 0.5);
-    const kind = bag.pop()!;
-    roomKinds.push(kind.name);
-    const cells: { x: number; y: number; walls: number }[] = [];
-    for (let y = r.y; y < r.y + r.h; y++)
-      for (let x = r.x; x < r.x + r.w; x++) {
-        // Entrada: casilla de la sala que toca suelo de fuera (un pasillo). Se deja libre, igual que las de las puertas.
-        const neighbours = [
-          [x + 1, y],
-          [x - 1, y],
-          [x, y + 1],
-          [x, y - 1],
-        ] as const;
-        if (neighbours.some(([nx, ny]) => !inRoom(r, nx, ny) && !solid(nx, ny))) continue;
-        if (doors.has(y * 100000 + x)) continue;
-        cells.push({ x, y, walls: neighbours.filter(([nx, ny]) => solid(nx, ny)).length });
-      }
-    const used = new Set<string>();
-    const fits = (c: { x: number; y: number; walls: number }, where: Spot) =>
-      !used.has(`${c.x},${c.y}`) && (where === 'any' || (where === 'corner' ? c.walls >= 2 : where === 'wall' ? c.walls >= 1 : c.walls === 0));
-    const place = (emoji: string, where: Spot, light?: PrefabLight) => {
-      let options = cells.filter((c) => fits(c, where));
-      // Si no hay sitio del tipo pedido (sala muy pequeña), vale cualquiera libre.
-      if (!options.length) options = cells.filter((c) => fits(c, 'any'));
-      if (!options.length) return;
-      const c = options[Math.floor(rnd() * options.length)]!;
-      used.add(`${c.x},${c.y}`);
-      objects.push({ emoji, x: c.x, y: c.y, size: 1, light: light ? PREFAB_LIGHTS[light] : null });
-    };
-    const items = def.torches ? [...kind.items, TORCH] : kind.items;
-    for (const [emoji, where, min, max, light] of items) {
-      const n = int(min, max);
-      for (let i = 0; i < n; i++) place(emoji, where, light);
-    }
-  }
-  return { objects, roomKinds };
+    return bag.pop()!;
+  };
+  return furnishRoomKinds(map, w, h, kindOf, rnd, { torches: def.torches > 0 });
 }
 
 /** Cueva: rocas, setas, huesos y telarañas repartidos por el suelo (más cerca de las paredes). */
@@ -273,6 +245,9 @@ export function furnishCave(map: GeneratedMap, w: number, h: number, rnd: () => 
 /** Genera un mapa del estilo pedido; con `furnish`, amueblado. */
 export function generateStyled(w: number, h: number, opts: { seed: number; style: MapStyle; size?: MapSize; furnish?: boolean }): StyledMap {
   const def = MAP_STYLE_DEFS[opts.style];
+  if (opts.style === 'forest') return generateForest(w, h, opts);
+  if (opts.style === 'road') return generateRoad(w, h, opts);
+  if (opts.style === 'village') return generateVillage(w, h, opts);
   const factor = opts.size === 'few' ? 0.6 : opts.size === 'many' ? 1.5 : 1;
   const map =
     opts.style === 'cave'
