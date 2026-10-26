@@ -86,6 +86,14 @@ Abre `http://IP-DE-LA-PI:3000` desde cualquier equipo de tu red. La primera comp
 - **Mensajes nuevos**: si estás en otra pestaña (o con la barra escondida), un número rojo te avisa de los mensajes del chat y de los documentos que el DM te comparte en el Diario.
 - **Pestañas**: *Mayús+1, 2, 3…* abre cada una. El DM tiene además **⚙️ Ajustes** con la invitación, las copias de seguridad y el rendimiento.
 
+### Notas numeradas del mapa
+
+En la pestaña *Escenas*, con la escena abierta, **📍 Notas del mapa → + Nota** pone un círculo numerado (1, 2, 3…) en la capa del DM, como los números de los mapas de un módulo de aventura. Arrástralo a su sitio y escribe su título y su texto en el panel; los jugadores no lo ven nunca.
+
+- La lista muestra todas las notas de la escena: clic en una para ir a ella.
+- **📣 Leer en el chat** manda el título y el texto a todos (para la descripción que lees al entrar en una sala).
+- Si borras alguna, **Renumerar** las deja otra vez 1, 2, 3… Se copian con la escena al duplicarla, exportarla o guardarla en la biblioteca.
+
 ### Ajustar la cuadrícula de una imagen
 
 Si subes un mapa que ya trae su cuadrícula dibujada y no coincide con la de la escena, selecciónalo (capa *Mapa*) y pulsa **📐 Ajustar cuadrícula**:

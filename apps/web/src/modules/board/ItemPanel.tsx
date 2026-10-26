@@ -25,6 +25,7 @@ import { useSheets } from '../sheets/store';
 import { AiPanel } from '../ai/AiPanel';
 import { DamagePanel } from '../damage/DamagePanel';
 import { startCalibration } from '../gridcal/store';
+import { isNote, readNote } from '../notes/notes';
 
 /** Propiedades del elemento seleccionado (solo DM). */
 export function ItemPanel({ campaignId, members }: { campaignId: string; members: CampaignMember[] }) {
@@ -43,6 +44,8 @@ export function ItemPanel({ campaignId, members }: { campaignId: string; members
 
   const toggleOwner = (userId: string) =>
     updateSelected({ ownerIds: item.ownerIds.includes(userId) ? item.ownerIds.filter((id) => id !== userId) : [...item.ownerIds, userId] });
+
+  if (isNote(item)) return <NotePanel campaignId={campaignId} item={item} name={name} setName={setName} />;
 
   return (
     <div className="panel">
@@ -184,6 +187,43 @@ export function ItemPanel({ campaignId, members }: { campaignId: string; members
   );
 }
 
+/** Panel de una nota numerada: número, título, texto y leerla en el chat. */
+function NotePanel({ campaignId, item, name, setName }: { campaignId: string; item: BoardItem; name: string; setName: (n: string) => void }) {
+  const scene = useBoard((s) => s.scene)!;
+  const [num, setNum] = useState(item.drawing!.text);
+  useEffect(() => setNum(item.drawing!.text), [item.id, item.drawing]);
+  return (
+    <div className="panel">
+      <h3>📍 Nota {item.drawing!.text}</h3>
+      <div className="field-row">
+        <label style={{ maxWidth: 80 }}>
+          Número
+          <input
+            value={num}
+            maxLength={4}
+            onChange={(e) => setNum(e.target.value)}
+            onBlur={() => num.trim() && num !== item.drawing!.text && updateSelected({ drawing: { ...item.drawing!, text: num.trim() } })}
+          />
+        </label>
+        <label>
+          Título
+          <input value={name} maxLength={80} placeholder="Entrada, Sala del trono…" onChange={(e) => setName(e.target.value)} onBlur={() => name !== item.name && updateSelected({ name })} />
+        </label>
+      </div>
+      <GmNotes item={item} label="📝 Texto (solo lo ves tú)" placeholder="Qué hay aquí, qué se ve al entrar, qué pasa si… Lo que quieras leer a los jugadores, mándalo con 📣." />
+      <div className="row">
+        <button className="small" disabled={!item.gmNotes.trim() && !item.name.trim()} onClick={() => void readNote(campaignId, item)} title="Manda el título y el texto al chat, para todos">
+          📣 Leer en el chat
+        </button>
+        <button className="ghost small danger" onClick={() => void deleteItem(scene.id, item.id)}>
+          Borrar
+        </button>
+      </div>
+      <p className="muted hint">Está en la capa del DM: los jugadores no la ven. Arrástrala con la capa DM activa.</p>
+    </div>
+  );
+}
+
 const AC_VIEW_LABELS: Record<AcView, string> = { gm: 'Solo el DM', all: 'Todos' };
 
 /** Qué ven los jugadores de la vida y la CA del token (el DM y los dueños lo ven siempre). */
@@ -293,17 +333,17 @@ function LightPanel({ item, scene }: { item: BoardItem; scene: Scene }) {
 }
 
 /** Notas privadas del DM sobre el elemento (PNJ, trampas, secretos). Se guardan al salir del cuadro. */
-function GmNotes({ item }: { item: BoardItem }) {
+function GmNotes({ item, label = '📝 Notas del DM (los jugadores no las ven)', placeholder = 'Quién es, qué sabe, qué lleva encima, qué pasa si…' }: { item: BoardItem; label?: string; placeholder?: string }) {
   const [text, setText] = useState(item.gmNotes);
   useEffect(() => setText(item.gmNotes), [item.id, item.gmNotes]);
   return (
     <label>
-      📝 Notas del DM (los jugadores no las ven)
+      {label}
       <textarea
         rows={text ? Math.min(10, text.split('\n').length + 1) : 2}
         maxLength={5000}
         value={text}
-        placeholder="Quién es, qué sabe, qué lleva encima, qué pasa si…"
+        placeholder={placeholder}
         onChange={(e) => setText(e.target.value)}
         onBlur={() => {
           const scene = useBoard.getState().scene;

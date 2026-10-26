@@ -1,4 +1,4 @@
-import { Ellipse, Line, Rect, Text } from 'react-konva';
+import { Circle, Ellipse, Line, Rect, Text } from 'react-konva';
 import type { Drawing } from '@vtt/shared';
 
 /** Pinta un dibujo en coordenadas locales del elemento (0,0 = su esquina). */
@@ -16,6 +16,15 @@ export function DrawingShape({ drawing, width, height }: { drawing: Drawing; wid
       return <Ellipse x={width / 2} y={height / 2} radiusX={width / 2} radiusY={height / 2} fill={fill || undefined} {...common} />;
     case 'text':
       return <Text text={drawing.text} fontSize={drawing.fontSize} fill={stroke} fontStyle="bold" shadowColor="#000" shadowBlur={4} shadowOpacity={0.9} />;
+    case 'note': {
+      const r = Math.min(width, height) / 2;
+      return (
+        <>
+          <Circle x={width / 2} y={height / 2} radius={r - 1} fill="#d6a84a" stroke="#2a1d0a" strokeWidth={Math.max(2, r / 8)} shadowColor="#000" shadowBlur={6} shadowOpacity={0.6} />
+          <Text text={drawing.text} width={width} height={height} align="center" verticalAlign="middle" fontSize={r * (drawing.text.length > 2 ? 0.8 : 1.1)} fontStyle="bold" fill="#2a1d0a" />
+        </>
+      );
+    }
     case 'stamp':
       return (
         <Text
