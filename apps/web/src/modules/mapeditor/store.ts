@@ -9,6 +9,7 @@ import {
   type MapSize,
   type MapStyle,
   type PlacedPrefab,
+  type ScatterDensity,
   type Scene,
   type Wall,
 } from '@vtt/shared';
@@ -51,6 +52,10 @@ interface MapEditorState {
   /** Objeto (emoji) que se coloca y su tamaño en casillas. */
   stamp: string;
   stampSize: number;
+  /** Pincel de objetos: arrastrar esparce los objetos de `stampMix` (en vez de poner uno con cada clic). */
+  stampScatter: boolean;
+  stampMix: string[];
+  scatterDensity: ScatterDensity;
   /** Sala prediseñada elegida y cuántos cuartos de vuelta está girada. */
   prefab: string;
   prefabTurns: number;
@@ -71,6 +76,9 @@ interface MapEditorState {
   setAutoWalls: (on: boolean) => void;
   setStamp: (stamp: string) => void;
   setStampSize: (n: number) => void;
+  setStampScatter: (on: boolean) => void;
+  setStampMix: (mix: string[]) => void;
+  setScatterDensity: (d: ScatterDensity) => void;
   setPrefab: (id: string) => void;
   rotatePrefab: () => void;
   setGen: (patch: Partial<Pick<MapEditorState, 'genStyle' | 'genSize' | 'genFurnish'>>) => void;
@@ -84,6 +92,9 @@ export const useMapEditor = create<MapEditorState>((set) => ({
   autoWalls: true,
   stamp: '🌲',
   stampSize: 1,
+  stampScatter: false,
+  stampMix: ['🌲', '🌳'],
+  scatterDensity: 'medium',
   prefab: 'taberna',
   prefabTurns: 0,
   genStyle: 'dungeon',
@@ -97,8 +108,18 @@ export const useMapEditor = create<MapEditorState>((set) => ({
   setCode: (code) => set((s) => ({ code, mode: s.mode === 'erase' || s.mode === 'picker' || s.mode === 'door' || s.mode === 'stamp' || s.mode === 'prefab' ? 'brush' : s.mode })),
   setBrush: (brush) => set({ brush }),
   setAutoWalls: (autoWalls) => set({ autoWalls }),
-  setStamp: (stamp) => set({ stamp, mode: 'stamp' }),
+  // Con el pincel de objetos, elegir uno lo añade o lo quita de la mezcla (siempre queda al menos uno).
+  setStamp: (stamp) =>
+    set((s) => {
+      if (!s.stampScatter || s.mode !== 'stamp') return { stamp, mode: 'stamp', stampMix: s.stampScatter ? [stamp] : s.stampMix };
+      const has = s.stampMix.includes(stamp);
+      if (has && s.stampMix.length === 1) return {};
+      return { stamp, stampMix: has ? s.stampMix.filter((x) => x !== stamp) : [...s.stampMix, stamp] };
+    }),
   setStampSize: (stampSize) => set({ stampSize }),
+  setStampScatter: (stampScatter) => set((s) => ({ stampScatter, mode: 'stamp', stampMix: stampScatter && !s.stampMix.length ? [s.stamp] : s.stampMix })),
+  setStampMix: (stampMix) => set({ stampMix, mode: 'stamp', stamp: stampMix[0] ?? '🌲' }),
+  setScatterDensity: (scatterDensity) => set({ scatterDensity }),
   setPrefab: (prefab) => set({ prefab, mode: 'prefab' }),
   rotatePrefab: () => set((s) => ({ prefabTurns: (s.prefabTurns + 1) % 4 })),
   setGen: (patch) => set(patch),
@@ -112,10 +133,26 @@ export function remember(scene: Scene, placed?: Placed, cleared?: Placed) {
   useMapEditor.setState((s) => ({ undo: [...s.undo.filter((x) => x.sceneId === scene.id), { ...snap(scene), placed, cleared }].slice(-MAX_UNDO), redo: [] }));
 }
 
+/**
+ * Ids nuevos de los elementos que se han vuelto a crear al deshacer o rehacer (el viejo apunta al nuevo).
+ * Así otro paso que también los tenía apuntados (p. ej. un trazo cuyos objetos borró el pincel) los encuentra.
+ */
+const renamed = new Map<string, string>();
+const currentId = (id: string) => {
+  for (let n = 0; renamed.has(id) && n < 1000; n++) id = renamed.get(id)!;
+  return id;
+};
+
 /** Crea los elementos de un paso y apunta sus ids (para poder deshacerlo). */
 async function createPlaced(sceneId: string, placed: Placed) {
+  const old = placed.ids;
   placed.ids = [];
-  for (const item of placed.inputs) placed.ids.push((await emitAck('item:create', { sceneId, item })).id);
+  for (const item of placed.inputs) {
+    const id = (await emitAck('item:create', { sceneId, item })).id;
+    const prev = old[placed.ids.length];
+    if (prev) renamed.set(prev, id);
+    placed.ids.push(id);
+  }
 }
 
 /**
@@ -124,14 +161,20 @@ async function createPlaced(sceneId: string, placed: Placed) {
  */
 async function removePlaced(sceneId: string, placed: Placed) {
   const kept: CreateItemInput[] = [];
+  const keptIds: string[] = [];
   for (let i = 0; i < placed.ids.length; i++) {
-    const ok = await emitAck('item:delete', { sceneId, id: placed.ids[i]! }).then(
+    const id = currentId(placed.ids[i]!);
+    const ok = await emitAck('item:delete', { sceneId, id }).then(
       () => true,
       () => false,
     );
-    if (ok && placed.inputs[i]) kept.push(placed.inputs[i]!);
+    if (ok && placed.inputs[i]) {
+      kept.push(placed.inputs[i]!);
+      keptIds.push(id);
+    }
   }
-  placed.ids = [];
+  // Se quedan los ids de lo borrado: al volver a crearlo, `renamed` apunta los nuevos.
+  placed.ids = keptIds;
   placed.inputs = kept;
 }
 
@@ -140,6 +183,13 @@ export function placeItems(scene: Scene, inputs: CreateItemInput[]) {
   const placed: Placed = { ids: [], inputs };
   remember(scene, placed);
   return createPlaced(scene.id, placed).catch((e: Error) => useBoard.getState().showNotice(e.message));
+}
+
+/** Quita elementos del mapa (los objetos que borra el pincel) como un paso que se puede deshacer. */
+export function removeItems(scene: Scene, items: BoardItem[]) {
+  const cleared: Placed = { ids: items.map((i) => i.id), inputs: items.map(inputOf) };
+  remember(scene, undefined, cleared);
+  return removePlaced(scene.id, cleared).catch((e: Error) => useBoard.getState().showNotice(e.message));
 }
 
 /** Aplica y guarda suelo y paredes (se ve al momento; si el servidor lo rechaza, se avisa). */
@@ -251,7 +301,8 @@ function generatedStillThere(sceneId: string): Placed | undefined {
   const seen = new Set<string>();
   const out: Placed = { ids: [], inputs: [] };
   for (const p of generated.get(sceneId) ?? []) {
-    p.ids.forEach((id, i) => {
+    p.ids.forEach((oldId, i) => {
+      const id = currentId(oldId);
       if (seen.has(id) || !p.inputs[i]) return;
       seen.add(id);
       out.ids.push(id);

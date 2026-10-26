@@ -57,7 +57,7 @@ export const GM_TOUR: TourStep[] = [
   {
     target: 'mapeditor',
     title: 'Editor de mapas',
-    body: 'Pinta suelos, crea salas con sus paredes, pon puertas y objetos, coloca salas prediseñadas ya amuebladas (taberna, templo, cripta…) o genera al azar una mazmorra, cripta, castillo, alcantarillas, mina o cueva ya amueblada para improvisar.',
+    body: 'Pinta suelos, crea salas con sus paredes, pon puertas y objetos (o espárcelos con el pincel: un bosque en un trazo), coloca salas prediseñadas ya amuebladas (taberna, templo, cripta…) o genera al azar una mazmorra, cripta, castillo, alcantarillas, mina o cueva ya amueblada para improvisar.',
   },
   {
     target: 'scene-switcher',

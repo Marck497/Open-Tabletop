@@ -96,6 +96,7 @@ Botón **🗺️ Editor de mapas** (solo el DM). Abre una paleta a la derecha de
 - **🚪 Puerta** (P): clic en el borde de una casilla para poner o quitar una puerta.
 - **Paredes automáticas**: se ponen solas donde el suelo toca el vacío o un muro y se rehacen al pintar; las que pongas a mano se respetan.
 - **🌲 Objetos** (O): árboles, rocas, muebles, cofres, calaveras, señales… de 1 a 4 casillas. Se colocan en la capa *Mapa* y se mueven o giran con ✋. Un objeto también puede **dar luz** (una hoguera, una vela): selecciónalo y elige la luz en su panel.
+  - **🌲 Esparcir**: en vez de uno a uno, arrastra para esparcir muchos a la vez (un bosque, un campo de rocas, un osario). Elige uno o varios objetos, o una mezcla lista (*Bosque*, *Selva*, *Rocas*, *Flores*, *Huesos*, *Escombros*), el tamaño del pincel y la cantidad. No se amontonan, y con suelo pintado no caen en muros ni en el vacío. **Mayúsculas + arrastrar** quita los objetos por donde pasas.
 - **🏛️ Salas prediseñadas** (S): taberna, tienda, habitación de posada, herrería, plaza con fuente, templo, sala del trono, biblioteca, sala funeraria, celdas, altar ritual y campamento. Clic en el mapa y aparece la sala con su suelo, paredes, puertas (las de las celdas, con llave), muebles y luces; **T** (o *↻ Girar*) la gira antes de colocarla. Luego se retoca como cualquier otra cosa. Las de exterior (plaza y campamento) no llevan paredes: quedan mejor sobre hierba o tierra ya pintada.
 - **Generar al azar**, del tamaño de la escena. Elige el estilo:
   - **🏰 Mazmorra**: salas de piedra y pasillos de adoquines.

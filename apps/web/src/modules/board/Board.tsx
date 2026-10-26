@@ -201,7 +201,7 @@ export function Board({ isGm, meId }: Props) {
       return;
     }
     if (mapTool) {
-      mapPointer.onDown(pointerInScene(stage));
+      mapPointer.onDown(pointerInScene(stage), { shift: 'shiftKey' in e.evt && e.evt.shiftKey });
       return;
     }
     if (measureTool) {

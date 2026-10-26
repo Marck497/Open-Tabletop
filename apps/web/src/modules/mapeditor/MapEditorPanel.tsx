@@ -1,5 +1,20 @@
 import { useEffect } from 'react';
-import { MAP_SIZE_LABELS, MAP_SIZES, MAP_STYLE_DEFS, MAP_STYLES, PREFAB_GROUPS, PREFABS, prefabById, rotatePrefab, TERRAIN_GROUPS, TERRAINS, terrainById, type Scene } from '@vtt/shared';
+import {
+  MAP_SIZE_LABELS,
+  MAP_SIZES,
+  MAP_STYLE_DEFS,
+  MAP_STYLES,
+  PREFAB_GROUPS,
+  PREFABS,
+  prefabById,
+  rotatePrefab,
+  SCATTER_DENSITIES,
+  SCATTER_DENSITY_LABELS,
+  TERRAIN_GROUPS,
+  TERRAINS,
+  terrainById,
+  type Scene,
+} from '@vtt/shared';
 import { useBoard } from '../board/store';
 import { clearTerrain, generate, isFreshlyGenerated, redo, undo, useMapEditor, type MapTool } from './store';
 import { texturePreview } from './textures';
@@ -25,6 +40,18 @@ const STAMPS: Record<string, string[]> = {
 };
 
 const BRUSHES = [1, 2, 3, 5, 8];
+
+/** Mezclas listas para el pincel de objetos. */
+const MIXES: { name: string; emojis: string[] }[] = [
+  { name: 'Bosque', emojis: ['🌲', '🌳'] },
+  { name: 'Selva', emojis: ['🌴', '🌳', '🌿'] },
+  { name: 'Rocas', emojis: ['🪨'] },
+  { name: 'Flores', emojis: ['🌻', '🌾', '🌿'] },
+  { name: 'Huesos', emojis: ['💀', '🦴'] },
+  { name: 'Escombros', emojis: ['🪨', '🪵', '📦'] },
+];
+
+const SCATTER_HINT = 'Arrastra para esparcir los objetos elegidos (puedes marcar varios). Con Mayúsculas, arrastrar los quita.';
 
 /** Paleta flotante del editor de mapas (solo el DM). */
 export function MapEditorPanel({ scene }: { scene: Scene }) {
@@ -79,12 +106,12 @@ export function MapEditorPanel({ scene }: { scene: Scene }) {
         ))}
       </div>
       <p className="map-hint">
-        <b>{tool.label}.</b> {tool.hint}
+        <b>{ed.mode === 'stamp' && ed.stampScatter ? 'Pincel de objetos' : tool.label}.</b> {ed.mode === 'stamp' && ed.stampScatter ? SCATTER_HINT : tool.hint}
       </p>
 
-      {(ed.mode === 'brush' || ed.mode === 'erase') && (
+      {(ed.mode === 'brush' || ed.mode === 'erase' || (ed.mode === 'stamp' && ed.stampScatter)) && (
         <div className="row map-row">
-          <span className="tool-label">Tamaño</span>
+          <span className="tool-label">{ed.mode === 'stamp' ? 'Pincel' : 'Tamaño'}</span>
           {BRUSHES.map((b) => (
             <button key={b} className={`small ${ed.brush === b ? 'active' : ''}`} title={`${b}×${b} casillas ([ y ] para cambiarlo)`} onClick={() => ed.setBrush(b)}>
               {b}
@@ -97,8 +124,36 @@ export function MapEditorPanel({ scene }: { scene: Scene }) {
         <PrefabPicker />
       ) : ed.mode === 'stamp' ? (
         <>
+          <div className="row map-row" role="group" aria-label="Cómo se colocan">
+            <button className={`small ${!ed.stampScatter ? 'active' : ''}`} title="Un objeto con cada clic" onClick={() => ed.setStampScatter(false)}>
+              Uno a uno
+            </button>
+            <button className={`small ${ed.stampScatter ? 'active' : ''}`} title="Arrastra para esparcir muchos objetos a la vez (árboles, rocas…)" onClick={() => ed.setStampScatter(true)}>
+              🌲 Esparcir
+            </button>
+          </div>
+          {ed.stampScatter && (
+            <>
+              <div className="row map-row">
+                <span className="tool-label">Cantidad</span>
+                {SCATTER_DENSITIES.map((d) => (
+                  <button key={d} className={`small ${ed.scatterDensity === d ? 'active' : ''}`} onClick={() => ed.setScatterDensity(d)}>
+                    {SCATTER_DENSITY_LABELS[d]}
+                  </button>
+                ))}
+              </div>
+              <div className="map-group">Mezclas</div>
+              <div className="map-prefabs">
+                {MIXES.map((m) => (
+                  <button key={m.name} className={`small ${m.emojis.join() === ed.stampMix.join() ? 'active' : ''}`} onClick={() => ed.setStampMix(m.emojis)}>
+                    {m.emojis.join('')} {m.name}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
           <div className="row map-row">
-            <span className="tool-label">Tamaño</span>
+            <span className="tool-label">{ed.stampScatter ? 'Cada objeto' : 'Tamaño'}</span>
             {[1, 2, 3, 4].map((n) => (
               <button key={n} className={`small ${ed.stampSize === n ? 'active' : ''}`} title={`${n}×${n} casillas`} onClick={() => ed.setStampSize(n)}>
                 {n}
@@ -110,7 +165,7 @@ export function MapEditorPanel({ scene }: { scene: Scene }) {
               <div className="map-group">{group}</div>
               <div className="map-stamps">
                 {list.map((s) => (
-                  <button key={s} className={`stamp ${ed.stamp === s ? 'active' : ''}`} onClick={() => ed.setStamp(s)}>
+                  <button key={s} className={`stamp ${(ed.stampScatter ? ed.stampMix.includes(s) : ed.stamp === s) ? 'active' : ''}`} onClick={() => ed.setStamp(s)}>
                     {s}
                   </button>
                 ))}
