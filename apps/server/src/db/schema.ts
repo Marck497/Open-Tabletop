@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { index, integer, primaryKey, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { blob, index, integer, primaryKey, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 import type { AiSettings, BoardLayer, Drawing, HomebrewData, JukeboxTrack, ChatRoll, TokenAi, Fog, InitiativeEntry, Light, SheetTemplate, SheetValues, Wall } from '@vtt/shared';
 
 const timestamps = {
@@ -287,3 +287,22 @@ export const jukebox = sqliteTable('jukebox', {
     .references(() => campaigns.id, { onDelete: 'cascade' }),
   tracks: text('tracks', { mode: 'json' }).$type<JukeboxTrack[]>().notNull().default([]),
 });
+
+/** Biblioteca de escenas de cada usuario: escenas guardadas para usarlas en cualquiera de sus partidas. */
+export const sceneLibrary = sqliteTable(
+  'scene_library',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    widthCells: integer('width_cells').notNull(),
+    heightCells: integer('height_cells').notNull(),
+    itemCount: integer('item_count').notNull().default(0),
+    /** La escena empaquetada (ScenePackage en JSON con gzip, imágenes incluidas). */
+    data: blob('data', { mode: 'buffer' }).notNull(),
+    ...timestamps,
+  },
+  (t) => [index('scene_library_user_idx').on(t.userId)],
+);

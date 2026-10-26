@@ -561,3 +561,12 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--border); 
 .tool-menu-panel .switch { margin: 0; white-space: nowrap; }
 .tool-menu-panel > button { align-self: flex-start; }
 .tool-menu-row { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* Biblioteca de escenas */
+.scene-actions { flex-wrap: wrap; gap: 4px; margin: 8px 0 4px; }
+.notice-line { margin: 6px 0; padding: 6px 8px; border-radius: 6px; background: rgba(214, 168, 74, 0.12); font-size: 0.9rem; }
+.modal.scene-library { width: min(680px, 100%); display: flex; flex-direction: column; gap: 10px; }
+.library-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; max-height: 50vh; overflow-y: auto; }
+.library-row { flex-wrap: nowrap; border-bottom: 1px solid rgba(255,255,255,0.06); padding: 4px 0; }
+.library-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.library-import { align-items: center; gap: 8px; flex-wrap: wrap; }

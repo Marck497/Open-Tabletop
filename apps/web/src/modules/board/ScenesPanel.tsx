@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { DIAGONAL_LABELS, DIAGONAL_RULES, type CampaignMember, type DiagonalRule, type Scene, type UpdateSceneInput } from '@vtt/shared';
 import { api } from '../../core/api';
 import { newFolder, newScene, SceneTree, useSceneList } from './SceneTree';
+import { duplicateScene, exportSceneUrl, saveToLibrary } from '../scenelib/api';
+import { LibraryWindow } from '../scenelib/LibraryWindow';
 
 interface Props {
   campaignId: string;
@@ -15,7 +17,34 @@ interface Props {
 export function ScenesPanel({ campaignId, activeSceneId, viewingId, members, onView }: Props) {
   const { scenes, folders } = useSceneList(campaignId);
   const [editing, setEditing] = useState(false);
+  const [library, setLibrary] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
   const viewing = scenes.find((s) => s.id === viewingId);
+
+  async function run(work: () => Promise<string | void>) {
+    setMessage(null);
+    try {
+      const done = await work();
+      if (done) setMessage(done);
+    } catch (e) {
+      setMessage((e as Error).message);
+    }
+  }
+
+  const duplicate = (scene: Scene) =>
+    run(async () => {
+      const copy = await duplicateScene(scene.id);
+      onView(copy.id);
+      return `Copia creada: «${copy.name}».`;
+    });
+
+  const keep = (scene: Scene) =>
+    run(async () => {
+      const name = prompt('Nombre en tu biblioteca', scene.name)?.trim();
+      if (!name) return;
+      await saveToLibrary(scene.id, name);
+      return `«${name}» guardada en tu biblioteca: ábrela con 📚 Biblioteca desde cualquiera de tus partidas.`;
+    });
 
   async function remove(scene: Scene) {
     if (!confirm(`¿Borrar la escena "${scene.name}" y todo lo que contiene?`)) return;
@@ -27,6 +56,9 @@ export function ScenesPanel({ campaignId, activeSceneId, viewingId, members, onV
       <div className="row spread">
         <h3>Escenas</h3>
         <span className="row">
+          <button className="ghost small" onClick={() => setLibrary(true)} title="Escenas guardadas para usarlas en cualquier partida, e importar archivos de escena">
+            📚 Biblioteca
+          </button>
           <button className="ghost small" onClick={() => void newFolder(campaignId)}>
             + Carpeta
           </button>
@@ -38,12 +70,25 @@ export function ScenesPanel({ campaignId, activeSceneId, viewingId, members, onV
       <SceneTree campaignId={campaignId} scenes={scenes} folders={folders} members={members} partySceneId={activeSceneId} viewingId={viewingId} onView={onView} />
       {viewing && (
         <>
+          <div className="row scene-actions">
+            <button className="ghost small" onClick={() => void duplicate(viewing)} title="Copia esta escena (mapa, paredes, objetos y enemigos) justo debajo, sin los tokens de los jugadores">
+              ⧉ Duplicar
+            </button>
+            <button className="ghost small" onClick={() => void keep(viewing)} title="Guarda una copia para usarla en cualquiera de tus partidas">
+              📚 Guardar en biblioteca
+            </button>
+            <a className="button-like ghost small" href={exportSceneUrl(viewing.id)} download title="Descarga la escena como archivo (con sus imágenes) para pasarla a otro DM o a otro servidor">
+              ⬇ Exportar
+            </a>
+          </div>
           <button className="ghost small" onClick={() => setEditing((e) => !e)}>
             {editing ? 'Ocultar ajustes' : 'Ajustes de la escena'}
           </button>
           {editing && <SceneSettings key={viewing.id} scene={viewing} onDelete={() => void remove(viewing)} />}
         </>
       )}
+      {message && <p className="notice-line">{message}</p>}
+      {library && <LibraryWindow campaignId={campaignId} onClose={() => setLibrary(false)} onCreated={(scene) => onView(scene.id)} />}
     </div>
   );
 }
