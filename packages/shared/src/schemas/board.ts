@@ -166,8 +166,11 @@ export function buildSceneTree(folders: SceneFolder[], scenes: Scene[]): { folde
   };
 }
 
-/** Dibujos sobre el tablero: trazos a mano alzada, líneas, rectángulos, elipses, textos y sellos (un emoji que ocupa su caja). */
-export const DRAWING_TYPES = ['path', 'line', 'rect', 'ellipse', 'text', 'stamp'] as const;
+/**
+ * Dibujos sobre el tablero: trazos a mano alzada, líneas, rectángulos, elipses, textos, sellos (un emoji
+ * que ocupa su caja) y notas numeradas del DM (un círculo con su número en `text`; título en el nombre y texto en las notas del DM).
+ */
+export const DRAWING_TYPES = ['path', 'line', 'rect', 'ellipse', 'text', 'stamp', 'note'] as const;
 export type DrawingType = (typeof DRAWING_TYPES)[number];
 
 export const drawingSchema = z.object({

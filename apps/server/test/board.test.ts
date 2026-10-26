@@ -532,6 +532,22 @@ describe('notas privadas del DM', () => {
   });
 });
 
+describe('notas numeradas del DM', () => {
+  it('se guardan en la capa del DM con su número, título y texto; los jugadores no las reciben', async () => {
+    const { sceneId, gmC, plC, token } = await setup();
+    const note = await token('gm', { x: 300, y: 200, name: 'Sala del trono', gmNotes: 'El rey es un impostor', drawing: { type: 'note', text: '3' } });
+    expect(note.drawing).toMatchObject({ type: 'note', text: '3' });
+    expect(ok(await call<SceneState>(plC, 'scene:view', { sceneId })).items.find((i) => i.id === note.id)).toBeUndefined();
+    // Al cambiarle el número, al jugador no le llega nada.
+    let leaked = false;
+    plC.once('item:upserted', () => (leaked = true));
+    ok(await call(gmC, 'item:update', { sceneId, id: note.id, patch: { drawing: { ...note.drawing!, text: '4' } } }));
+    await new Promise((r) => setTimeout(r, 100));
+    expect(leaked).toBe(false);
+    expect(ok(await call<SceneState>(gmC, 'scene:view', { sceneId })).items.find((i) => i.id === note.id)?.drawing?.text).toBe('4');
+  });
+});
+
 describe('editor de mapas', () => {
   it('el DM pinta el suelo con sus paredes; los jugadores lo reciben y no pueden pintar', async () => {
     const { app, gm, sceneId, gmC, plC } = await setup();

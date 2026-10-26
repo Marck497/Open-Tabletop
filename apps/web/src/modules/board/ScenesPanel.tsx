@@ -4,6 +4,8 @@ import { api } from '../../core/api';
 import { newFolder, newScene, SceneTree, useSceneList } from './SceneTree';
 import { duplicateScene, exportSceneUrl, IMPORT_ACCEPT, importSceneFile, saveToLibrary } from '../scenelib/api';
 import { LibraryWindow } from '../scenelib/LibraryWindow';
+import { NotesList } from '../notes/NotesList';
+import { useBoard } from './store';
 
 interface Props {
   campaignId: string;
@@ -20,6 +22,7 @@ export function ScenesPanel({ campaignId, activeSceneId, viewingId, members, onV
   const [library, setLibrary] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const viewing = scenes.find((s) => s.id === viewingId);
+  const boardSceneId = useBoard((s) => s.scene?.id);
 
   async function run(work: () => Promise<string | void>) {
     setMessage(null);
@@ -103,6 +106,7 @@ export function ScenesPanel({ campaignId, activeSceneId, viewingId, members, onV
             {editing ? 'Ocultar ajustes' : 'Ajustes de la escena'}
           </button>
           {editing && <SceneSettings key={viewing.id} scene={viewing} onDelete={() => void remove(viewing)} />}
+          {boardSceneId === viewing.id && <NotesList campaignId={campaignId} />}
         </>
       )}
       {message && <p className="notice-line">{message}</p>}

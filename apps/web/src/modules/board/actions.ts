@@ -12,7 +12,7 @@ export function addItem(input: Omit<CreateItemInput, 'x' | 'y'>) {
   // Si ya hay algo en esa casilla de la misma capa, correrlo a la derecha para que no se apilen.
   const occupied = (px: number) =>
     Object.values(items).some(
-      (i) => i.layer === input.layer && !i.drawing && i.x < px + input.width - 1 && px < i.x + i.width - 1 && i.y < y + input.height - 1 && y < i.y + i.height - 1,
+      (i) => i.layer === input.layer && (!i.drawing || (i.drawing.type === 'note' && input.drawing?.type === 'note')) && i.x < px + input.width - 1 && px < i.x + i.width - 1 && i.y < y + input.height - 1 && y < i.y + i.height - 1,
     );
   for (let n = 0; n < 20 && occupied(x); n++) x += g;
   return createItem(scene.id, { ...input, x, y }).then((item) => select(item.id));
