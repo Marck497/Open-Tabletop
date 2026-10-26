@@ -86,6 +86,14 @@ Abre `http://IP-DE-LA-PI:3000` desde cualquier equipo de tu red. La primera comp
 - **Mensajes nuevos**: si estás en otra pestaña (o con la barra escondida), un número rojo te avisa de los mensajes del chat y de los documentos que el DM te comparte en el Diario.
 - **Pestañas**: *Mayús+1, 2, 3…* abre cada una. El DM tiene además **⚙️ Ajustes** con la invitación, las copias de seguridad y el rendimiento.
 
+### Ajustar la cuadrícula de una imagen
+
+Si subes un mapa que ya trae su cuadrícula dibujada y no coincide con la de la escena, selecciónalo (capa *Mapa*) y pulsa **📐 Ajustar cuadrícula**:
+
+- Arrastra sobre la imagen un rectángulo que cubra justo unas casillas de su cuadrícula y di cuántas son (por ejemplo 3 × 2). Unas líneas naranjas parten el rectángulo para comprobar que caen sobre las de la imagen. Cuantas más casillas marques, más preciso.
+- O, si sabes cuánto mide el mapa entero, escribe su ancho en casillas (el alto sale en proporción).
+- **Aplicar** escala y mueve la imagen para que sus casillas coincidan con las de la escena. Con *Ajustar la escena a la imagen* (activado), además la lleva a la esquina y cambia el tamaño de la escena para que quepa entera. Ctrl+Z deshace; Esc cancela.
+
 ## Editor de mapas
 
 Botón **🗺️ Editor de mapas** (solo el DM). Abre una paleta a la derecha del tablero para construir el mapa sin necesitar imágenes:

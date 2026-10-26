@@ -10,6 +10,7 @@ export * from './mapgen/prefabs.js';
 export * from './mapgen/generator.js';
 export * from './mapgen/uvtt.js';
 export * from './mapgen/scatter.js';
+export * from './mapgen/calibrate.js';
 export * from './schemas/explored.js';
 export * from './schemas/lights.js';
 export * from './schemas/ai.js';

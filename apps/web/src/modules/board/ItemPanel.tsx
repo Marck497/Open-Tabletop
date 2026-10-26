@@ -24,6 +24,7 @@ import { LAYER_LABELS, useBoard } from './store';
 import { useSheets } from '../sheets/store';
 import { AiPanel } from '../ai/AiPanel';
 import { DamagePanel } from '../damage/DamagePanel';
+import { startCalibration } from '../gridcal/store';
 
 /** Propiedades del elemento seleccionado (solo DM). */
 export function ItemPanel({ campaignId, members }: { campaignId: string; members: CampaignMember[] }) {
@@ -156,6 +157,11 @@ export function ItemPanel({ campaignId, members }: { campaignId: string; members
             onClick={() => updateSelected({ x: 0, y: 0, width: scene.widthCells * g, height: scene.heightCells * g, rotation: 0 })}
           >
             Ajustar a la escena
+          </button>
+        )}
+        {item.layer === 'map' && item.assetId && !item.drawing && (
+          <button className="ghost small" title="Haz que la cuadrícula dibujada en la imagen coincida con la de la escena" onClick={() => startCalibration(item.id)}>
+            📐 Ajustar cuadrícula
           </button>
         )}
         <button className="ghost small danger" onClick={() => void deleteItem(scene.id, item.id)}>

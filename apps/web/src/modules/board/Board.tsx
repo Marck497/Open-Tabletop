@@ -20,6 +20,8 @@ import { MapEditorPanel } from '../mapeditor/MapEditorPanel';
 import { TerrainLayer } from '../mapeditor/TerrainLayer';
 import { useMapEditor } from '../mapeditor/store';
 import { useMapPointer } from '../mapeditor/useMapPointer';
+import { GridCalOverlay, GridCalPanel } from '../gridcal/GridCalPanel';
+import { stopCalibration, useGridCal } from '../gridcal/store';
 
 interface Props {
   isGm: boolean;
@@ -52,6 +54,8 @@ export function Board({ isGm, meId }: Props) {
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [view, setView] = useState<Viewport>({ x: 0, y: 0, scale: 1 });
   const [fogDraft, setFogDraft] = useState<{ x0: number; y0: number; x1: number; y1: number } | null>(null);
+  /** Rectángulo que se marca al calibrar la cuadrícula de una imagen. */
+  const [calDraft, setCalDraft] = useState<{ x0: number; y0: number; x1: number; y1: number } | null>(null);
   /** Dibujo en curso (coordenadas de escena). */
   const [drawDraft, setDrawDraft] = useState<number[] | null>(null);
   /** Midiendo ahora mismo (botón pulsado). */
@@ -137,6 +141,7 @@ export function Board({ isGm, meId }: Props) {
         }
       }
       if (e.key === 'Escape') {
+        if (useBoard.getState().tool === 'calibrate') return stopCalibration();
         select(null);
         useBoard.getState().clearTargets();
         clearMeasure(isGm);
@@ -182,7 +187,8 @@ export function Board({ isGm, meId }: Props) {
   const pingTool = tool === 'ping';
   const drawTool = tool === 'draw';
   const wallTool = isGm && tool === 'walls';
-  const freeTool = !fogTool && !measureTool && !pingTool && !drawTool && !wallTool && !mapTool;
+  const calTool = isGm && tool === 'calibrate';
+  const freeTool = !fogTool && !measureTool && !pingTool && !drawTool && !wallTool && !mapTool && !calTool;
   const terrain = terrainDraft ?? scene.terrain;
 
   function pointerInScene(stage: Konva.Stage) {
@@ -198,6 +204,11 @@ export function Board({ isGm, meId }: Props) {
     const stage = e.target.getStage()!;
     if (!freeTool && 'button' in e.evt && e.evt.button !== 0) {
       pan.current = { sx: e.evt.clientX, sy: e.evt.clientY, vx: view.x, vy: view.y };
+      return;
+    }
+    if (calTool) {
+      const p = pointerInScene(stage);
+      setCalDraft({ x0: p.x, y0: p.y, x1: p.x, y1: p.y });
       return;
     }
     if (mapTool) {
@@ -291,12 +302,23 @@ export function Board({ isGm, meId }: Props) {
       if (b.x !== wallDraft.b.x || b.y !== wallDraft.b.y) setWallDraft({ ...wallDraft, b });
       return;
     }
+    if (calDraft) {
+      const p = pointerInScene(e.target.getStage()!);
+      setCalDraft({ ...calDraft, x1: p.x, y1: p.y });
+      return;
+    }
     if (!fogDraft) return;
     const p = pointerInScene(e.target.getStage()!);
     setFogDraft({ ...fogDraft, x1: p.x, y1: p.y });
   }
 
   function onStageMouseUp() {
+    if (calDraft) {
+      const r = normRect(calDraft);
+      setCalDraft(null);
+      if (r.w * view.scale >= 6 && r.h * view.scale >= 6) useGridCal.getState().set({ marked: { x: r.x, y: r.y, width: r.w, height: r.h } });
+      return;
+    }
     if (wallDraft) {
       const { a, b } = wallDraft;
       setWallDraft(null);
@@ -475,6 +497,7 @@ export function Board({ isGm, meId }: Props) {
           )}
           {drawDraft && <DraftShape pts={drawDraft} />}
           {mapTool && mapPointer.overlay}
+          {calTool && <GridCalOverlay draft={calDraft ? rectProps(normRect(calDraft)) : null} scale={view.scale} />}
           <MeasuresLayer scene={scene} scale={view.scale} dragMeasure={dragMeasure} />
         </Layer>
         <FxLayer scene={scene} scale={view.scale} />
@@ -482,6 +505,7 @@ export function Board({ isGm, meId }: Props) {
       {eyes && !eyes.length && !isGm && <div className="board-notice">Visión activada: no tienes ningún token en esta escena, así que no ves nada.</div>}
       {notice && <div className="board-notice">{notice}</div>}
       {mapTool && <MapEditorPanel scene={scene} />}
+      {calTool && <GridCalPanel scene={scene} />}
     </div>
   );
 }
