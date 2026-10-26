@@ -90,7 +90,15 @@ Botón **🗺️ Editor de mapas** (solo el DM). Abre una paleta a la derecha de
 - **Paredes automáticas**: se ponen solas donde el suelo toca el vacío o un muro y se rehacen al pintar; las que pongas a mano se respetan.
 - **🌲 Objetos** (O): árboles, rocas, muebles, cofres, calaveras, señales… de 1 a 4 casillas. Se colocan en la capa *Mapa* y se mueven o giran con ✋. Un objeto también puede **dar luz** (una hoguera, una vela): selecciónalo y elige la luz en su panel.
 - **🏛️ Salas prediseñadas** (S): taberna, tienda, habitación de posada, herrería, plaza con fuente, templo, sala del trono, biblioteca, cripta, celdas, altar ritual y campamento. Clic en el mapa y aparece la sala con su suelo, paredes, puertas (las de las celdas, con llave), muebles y luces; **T** (o *↻ Girar*) la gira antes de colocarla. Luego se retoca como cualquier otra cosa. Las de exterior (plaza y campamento) no llevan paredes: quedan mejor sobre hierba o tierra ya pintada.
-- **Generar al azar**: una mazmorra (salas, pasillos y puertas) o una cueva, del tamaño de la escena.
+- **Generar al azar**, del tamaño de la escena. Elige el estilo:
+  - **🏰 Mazmorra**: salas de piedra y pasillos de adoquines.
+  - **⚰️ Cripta**: tumbas, osarios y capillas con velas.
+  - **👑 Castillo**: salas grandes de mármol, como el trono, el comedor, la armería o la biblioteca.
+  - **🌊 Alcantarillas**: canales de agua entre salas de adoquín.
+  - **⛏️ Mina**: galerías de tierra entre cámaras con vetas y derrumbes.
+  - **🕳️ Cueva**: natural, rodeada de roca.
+
+  Elige también cuántas salas quieres (pocas, normal o muchas). Con **Amueblar** (activado por defecto), a cada sala le toca un uso (almacén, cuartel, tumbas, armería…) y se llena con sus objetos y alguna antorcha o vela que da luz, sin tapar entradas ni puertas. **🎲 Generar** se puede pulsar varias veces hasta que guste: cada vez se quitan los muebles del mapa anterior (los objetos que pusiste a mano se quedan) y Ctrl+Z vuelve al anterior. *Limpiar* borra el suelo y los muebles generados.
 - **Deshacer y rehacer** con Ctrl+Z / Ctrl+Y, también los objetos y las salas que pongas.
 
 Con el editor abierto, el zoom va con la rueda y el mapa se desplaza con el botón central o el derecho. Mientras está abierto, las letras son atajos de sus herramientas (no de las del tablero); **M** lo cierra.
