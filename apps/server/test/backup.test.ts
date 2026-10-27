@@ -117,12 +117,44 @@ describe('copias de seguridad', () => {
       return app.inject({ method: 'POST', url: '/api/campaigns/import', payload: mp.payload, headers: { ...mp.headers, cookie: u.cookie } });
     };
     expect((await send(Buffer.from('hola'))).statusCode).toBe(400);
-    expect((await send(Buffer.from(JSON.stringify({ format: 'otra-cosa' })))).statusCode).toBe(400);
+    const bad = await send(Buffer.from(JSON.stringify({ format: 'otra-cosa' })));
+    expect(bad.statusCode).toBe(400);
+    // El error con datos llega también como plantilla, para que la web lo traduzca entero.
+    expect(bad.json()).toMatchObject({ text: 'Copia no válida ({field}: {error})', vars: { field: 'format' } });
+    expect(bad.json().error).toContain('Copia no válida (format:');
     expect((await send(Buffer.from([0x1f, 0x8b, 1, 2, 3]))).statusCode).toBe(400);
     // Una copia mínima sin escenas: partida nueva con su escena vacía de siempre.
     const res = await send(zlib.gzipSync(JSON.stringify({ format: 'vtt-backup', version: 1, exportedAt: 'x', campaign: { name: 'Vacía' } })));
     expect(res.statusCode).toBe(201);
     const list = (await app.inject({ method: 'GET', url: '/api/campaigns', headers: { cookie: u.cookie } })).json().campaigns;
     expect(list.map((c: { name: string }) => c.name)).toEqual(['Vacía']);
+  });
+
+  it('una copia con carpetas en bucle se restaura dejándolas en la raíz', async () => {
+    server = await listenWithRealtime();
+    const { app } = server;
+    const u = await registerUser(app, 'alguien');
+    const backup = {
+      format: 'vtt-backup',
+      version: 1,
+      exportedAt: 'x',
+      campaign: { name: 'Bucle' },
+      sceneFolders: [
+        { id: 'a', name: 'A', parentId: 'b' },
+        { id: 'b', name: 'B', parentId: 'a' },
+        { id: 'c', name: 'C', parentId: 'c' },
+        { id: 'd', name: 'D', parentId: 'a' },
+      ],
+      scenes: [{ id: 's', name: 'Escena', folderId: 'a' }],
+    };
+    const mp = multipart(zlib.gzipSync(JSON.stringify(backup)), 'x', 'application/gzip');
+    const res = await app.inject({ method: 'POST', url: '/api/campaigns/import', payload: mp.payload, headers: { ...mp.headers, cookie: u.cookie } });
+    expect(res.statusCode).toBe(201);
+    const { folders } = (await app.inject({ method: 'GET', url: `/api/campaigns/${res.json().summary.campaignId}/scenes`, headers: { cookie: u.cookie } })).json();
+    const byName = Object.fromEntries(folders.map((f: { id: string; name: string; parentId: string | null }) => [f.name, f]));
+    expect(byName.C.parentId).toBeNull();
+    // Solo uno de los dos del bucle puede quedar dentro del otro.
+    expect([byName.A.parentId, byName.B.parentId].filter(Boolean)).toHaveLength(1);
+    expect(byName.D.parentId).toBe(byName.A.id);
   });
 });

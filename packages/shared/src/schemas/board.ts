@@ -155,13 +155,15 @@ export interface SceneTreeNode {
 export function buildSceneTree(folders: SceneFolder[], scenes: Scene[]): { folders: SceneTreeNode[]; scenes: Scene[] } {
   const ids = new Set(folders.map((f) => f.id));
   const byOrder = <T extends { sortOrder: number; name: string }>(a: T, b: T) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name);
-  const node = (f: SceneFolder): SceneTreeNode => ({
-    folder: f,
-    folders: folders.filter((c) => c.parentId === f.id && c.id !== f.id).sort(byOrder).map(node),
-    scenes: scenes.filter((s) => s.folderId === f.id).sort(byOrder),
-  });
   // Raíz: sin padre, o con un padre que no existe o en bucle.
   const roots = folders.filter((f) => !f.parentId || !ids.has(f.parentId) || folderCycle(folders, f.id, f.parentId));
+  const rootIds = new Set(roots.map((f) => f.id));
+  // Lo que ya va en la raíz no se repite dentro de otra carpeta: así un bucle no se recorre sin fin.
+  const node = (f: SceneFolder): SceneTreeNode => ({
+    folder: f,
+    folders: folders.filter((c) => c.parentId === f.id && !rootIds.has(c.id)).sort(byOrder).map(node),
+    scenes: scenes.filter((s) => s.folderId === f.id).sort(byOrder),
+  });
   return {
     folders: roots.sort(byOrder).map((f) => node({ ...f, parentId: null })),
     scenes: scenes.filter((s) => !s.folderId || !ids.has(s.folderId)).sort(byOrder),

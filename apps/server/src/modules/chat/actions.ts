@@ -156,7 +156,7 @@ export function createSheetActions(ctx: AppContext) {
           } else if (parts.length) {
             const [first, ...rest] = parts;
             message = chat.insert({ ...base, kind: 'roll', text: '', roll: { ...first!, label: `${name}${bonus ? ` (${bonus})` : ''}: ${first!.label.toLowerCase()}`, parts: rest } });
-          } else throw badRequest(`${name} no tiene tirada de ataque ni de daño`);
+          } else throw badRequest('{name} no tiene tirada de ataque ni de daño', { name });
           break;
         }
         case 'cast': {

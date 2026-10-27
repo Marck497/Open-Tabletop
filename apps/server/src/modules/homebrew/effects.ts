@@ -149,7 +149,7 @@ export function createHomebrewEffects(ctx: AppContext) {
       return { message, patch: Object.keys(patch).length ? patch : null, selfStatus: d.selfStatus };
     } catch (e) {
       if (e instanceof ActionError) throw badRequest(e.message);
-      if (e instanceof ExprError) throw badRequest(`${entry.name}: tirada no válida (${e.message}). Revísala en ⚗ Creaciones.`);
+      if (e instanceof ExprError) throw badRequest('{name}: tirada no válida ({error}). Revísala en ⚗ Creaciones.', { name: entry.name, error: e.message });
       throw e;
     }
   }

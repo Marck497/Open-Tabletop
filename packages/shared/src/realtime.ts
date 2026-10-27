@@ -6,6 +6,7 @@ import type { BoardItem, CreateItemInput, Fog, Scene, SceneState, UpdateItemInpu
 import type { Measure, Point } from './schemas/measure.js';
 import type { BoardFx } from './fx.js';
 import type { WallInput } from './schemas/walls.js';
+import type { TextVars } from './i18n/index.js';
 import type { AiSettings } from './schemas/ai.js';
 import type { Character } from './schemas/character.js';
 import type { Handout } from './schemas/journal.js';
@@ -20,7 +21,8 @@ export interface PresenceUser {
 }
 
 /** Respuesta estándar de los eventos con acknowledgement. */
-export type AckResult<T = undefined> = { ok: true; data: T } | { ok: false; error: string };
+/** Si el error lleva datos, `text` es su plantilla (en español) y `vars` lo que la rellena: así se traduce entera. */
+export type AckResult<T = undefined> = { ok: true; data: T } | { ok: false; error: string; text?: string; vars?: TextVars };
 export type Ack<T = undefined> = (res: AckResult<T>) => void;
 
 /** Resumen del turno de un enemigo con IA. */

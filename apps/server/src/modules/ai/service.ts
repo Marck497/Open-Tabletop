@@ -193,7 +193,7 @@ export function createAiService(ctx: AppContext) {
     try {
       return evaluate(expr, { resolve, rng: secureRng });
     } catch (e) {
-      if (e instanceof ExprError) throw badRequest(`Tirada no válida (${expr}): ${e.message}`);
+      if (e instanceof ExprError) throw badRequest('Tirada no válida ({expr}): {error}', { expr, error: e.message });
       throw e;
     }
   }

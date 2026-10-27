@@ -72,7 +72,10 @@ export function createTriggerRunner(ctx: AppContext) {
       const t = zone.trigger!;
       if (t.who === 'players' && !after.ownerIds.length) continue;
       if (!pathEntersRect(points, { x: zone.x, y: zone.y, w: zone.width, h: zone.height })) continue;
-      await fire(scene, zone as unknown as BoardItem, after);
+      // Mientras se disparaba la anterior otro movimiento ha podido desarmarla o borrarla: se relee.
+      const now = db.select().from(boardItems).where(eq(boardItems.id, zone.id)).get();
+      if (!now?.trigger?.active) continue;
+      await fire(scene, now as unknown as BoardItem, after);
     }
   };
 

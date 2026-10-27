@@ -172,7 +172,8 @@ export function createSceneLibraryService(ctx: AppContext) {
     const bytes = Math.floor(((pkg.assets?.[0]?.data.length ?? 0) * 3) / 4);
     if (bytes > MAX_ASSET_BYTES) {
       throw badRequest(
-        `La imagen del mapa pesa ${(bytes / 1024 / 1024).toFixed(0)} MB y el máximo es ${MAX_ASSET_BYTES / 1024 / 1024} MB. Expórtalo con menos píxeles por casilla (por ejemplo 100) o en WEBP.`,
+        'La imagen del mapa pesa {size} MB y el máximo es {max} MB. Expórtalo con menos píxeles por casilla (por ejemplo 100) o en WEBP.',
+        { size: (bytes / 1024 / 1024).toFixed(0), max: MAX_ASSET_BYTES / 1024 / 1024 },
       );
     }
     return pkg;
@@ -182,7 +183,7 @@ export function createSceneLibraryService(ctx: AppContext) {
     const parsed = scenePackageSchema.safeParse(json);
     if (!parsed.success) {
       const issue = parsed.error.issues[0];
-      throw badRequest(`Escena no válida${issue ? ` (${issue.path.join('.')}: ${issue.message})` : ''}`);
+      throw issue ? badRequest('Escena no válida ({field}: {error})', { field: issue.path.join('.'), error: issue.message }) : badRequest('Escena no válida');
     }
     return parsed.data;
   }
@@ -268,7 +269,7 @@ export function createSceneLibraryService(ctx: AppContext) {
 
   function saveToLibrary(sceneId: string, userId: string, name?: string): SceneLibraryEntry {
     const count = db.select({ n: sql<number>`count(*)` }).from(sceneLibrary).where(eq(sceneLibrary.userId, userId)).get()?.n ?? 0;
-    if (count >= MAX_LIBRARY_ENTRIES) throw badRequest(`La biblioteca está llena (máx. ${MAX_LIBRARY_ENTRIES} escenas): borra alguna`);
+    if (count >= MAX_LIBRARY_ENTRIES) throw badRequest('La biblioteca está llena (máx. {max} escenas): borra alguna', { max: MAX_LIBRARY_ENTRIES });
     const { row, pkg } = pack(sceneId, userId);
     const id = randomUUID();
     db.insert(sceneLibrary)

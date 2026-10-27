@@ -46,6 +46,15 @@ describe('traducciones', () => {
     expect([...errors].filter((e) => !(e in EN))).toEqual([]);
   });
 
+  it('los errores del servidor no meten datos con `…${}`: van en huecos {…} para poder traducirlos', () => {
+    const wrong: string[] = [];
+    for (const file of sourceFiles(join(ROOT, 'apps/server/src'))) {
+      const src = readFileSync(file, 'utf8');
+      for (const m of src.matchAll(/\b(?:badRequest|notFound|forbidden|conflict|unauthorized)\(\s*`([^`]*)`/g)) wrong.push(`${file.slice(ROOT.length + 1)}: ${m[1]}`);
+    }
+    expect(wrong).toEqual([]);
+  });
+
   it('las traducciones no usan huecos {…} que el original no tiene', () => {
     const wrong = Object.entries(EN).filter(([es, en]) => (en.match(/(?<!@)\{\w+\}/g) ?? []).some((p) => !es.includes(p)));
     expect(wrong).toEqual([]);

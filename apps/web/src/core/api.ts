@@ -18,7 +18,7 @@ async function request<T>(method: string, url: string, body?: unknown): Promise<
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new ApiError(res.status, data.error ? tr(data.error) : tr('Error {status}', { status: res.status }));
+  if (!res.ok) throw new ApiError(res.status, data.text ? tr(data.text, data.vars) : data.error ? tr(data.error) : tr('Error {status}', { status: res.status }));
   return data as T;
 }
 

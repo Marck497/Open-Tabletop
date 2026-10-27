@@ -26,7 +26,7 @@ type AckEventName = { [K in keyof AckEvents]: AckEvents[K] extends never ? never
 export function emitAck<K extends AckEventName>(event: K, payload: AckEvents[K][0]): Promise<AckEvents[K][1]> {
   return new Promise((resolve, reject) => {
     (getSocket().emit as (...args: unknown[]) => void)(event, payload, (res: AckResult<AckEvents[K][1]>) =>
-      res.ok ? resolve(res.data) : reject(new Error(tr(res.error))),
+      res.ok ? resolve(res.data) : reject(new Error(res.text ? tr(res.text, res.vars) : tr(res.error))),
     );
   });
 }
