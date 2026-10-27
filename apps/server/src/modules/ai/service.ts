@@ -1,6 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 import {
   tr,
+  damagePatch,
   fxForHomebrew,
   fxForRow,
   applyDefenses,
@@ -368,17 +369,19 @@ export function createAiService(ctx: AppContext) {
     result.damage = total;
 
     let applied = '';
-    const combat = combatOf(template);
-    const hpField = combat?.hp ? allFields(template).find((f) => f.key === combat.hp && f.type === 'number') : undefined;
-    if (hit && opts.applyDamage && target.character && hpField && target.hp !== null) {
-      const hp = Math.max(0, target.hp - total);
-      const before = target.character;
-      db.update(characters)
-        .set({ values: { ...before.values, [hpField.key]: hp }, updatedAt: new Date().toISOString() })
-        .where(eq(characters.id, before.id))
-        .run();
-      await broadcastCharacter(ctx, before, sheets.row(before.id));
-      applied = hp === 0 ? tr(' ({name} cae a 0)', { name: target.name }) : ` (${target.hp} → ${hp})`;
+    if (hit && opts.applyDamage && target.character && target.hp !== null) {
+      // La hoja se vuelve a leer ahora: mientras el enemigo se movía, alguien ha podido cambiarla
+      // (curarse, gastar algo…), y solo se tocan los PG (primero los temporales).
+      const before = sheets.row(target.character.id);
+      const p = damagePatch(template, before.values, total);
+      if (p) {
+        db.update(characters)
+          .set({ values: { ...before.values, ...p.patch }, updatedAt: new Date().toISOString() })
+          .where(eq(characters.id, before.id))
+          .run();
+        await broadcastCharacter(ctx, before, sheets.row(before.id));
+        applied = p.after === 0 ? tr(' ({name} cae a 0)', { name: target.name }) : ` (${p.before} → ${p.after})`;
+      }
     }
     await say(base, 'roll', '', { label: tr('Daño a {name}{1}{why}{applied}', { name: target.name, '1': crit ? tr(' (crítico)') : '', why, applied }), expression: [attack.damage, attack.extra].filter(Boolean).join(' + '), total: typed.reduce((s, p) => s + p.amount, 0), rolls });
     return result;

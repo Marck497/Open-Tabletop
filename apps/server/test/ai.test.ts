@@ -90,6 +90,19 @@ describe('IA de enemigos', () => {
     expect((await call(plC.c, 'ai:act', { campaignId: campaign.id })).ok).toBe(false);
   });
 
+  it('el daño gasta antes los PG temporales y no pisa lo que se cambia en la hoja mientras se mueve', async () => {
+    const { app, gm, pl, campaign, gmC, ana, init } = await setup();
+    await app.inject({ method: 'PATCH', url: `/api/characters/${ana.id}`, headers: { cookie: gm.cookie }, payload: { values: { pg_temporales: 3 } } });
+    await init({ type: 'start' });
+    const acting = call<AiTurnResult>(gmC.c, 'ai:act', { campaignId: campaign.id });
+    // Mientras el orco anda, la jugadora apunta algo en su hoja.
+    await sleep(60);
+    await app.inject({ method: 'PATCH', url: `/api/characters/${ana.id}`, headers: { cookie: pl.cookie }, payload: { values: { notas: 'Poción bebida' } } });
+    ok(await acting);
+    const after = (await app.inject({ url: `/api/characters/${ana.id}`, headers: { cookie: gm.cookie } })).json().character as Character;
+    expect(after.values).toMatchObject({ pg_temporales: 0, pg_actuales: 9, notas: 'Poción bebida' });
+  });
+
   it('sin ataque propio usa la tabla de ataques de su hoja (plantilla 5e)', async () => {
     const { app, gm, campaign, gmC, plC, orc, init } = await setup();
     const { character: npc } = (
