@@ -1,5 +1,6 @@
 import type { HomebrewData, HomebrewKind } from './schemas/homebrew.js';
 import type { Measure } from './schemas/measure.js';
+import { tr } from './i18n/index.js';
 
 /**
  * Animaciones del tablero al atacar o lanzar un hechizo. Son datos: cada creación elige su estilo
@@ -10,15 +11,15 @@ export const FX_STYLES = ['auto', 'none', 'slash', 'arrow', 'bolt', 'beam', 'bur
 export type FxStyle = (typeof FX_STYLES)[number];
 export type FxCueStyle = Exclude<FxStyle, 'auto' | 'none'>;
 export const FX_STYLE_LABELS: Record<FxStyle, string> = {
-  auto: 'Automática',
-  none: 'Sin animación',
-  slash: '⚔ Tajo (cuerpo a cuerpo)',
-  arrow: '🏹 Flecha (a distancia)',
-  bolt: '✨ Proyectil mágico',
-  beam: '⚡ Rayo continuo',
-  burst: '💥 Explosión',
-  heal: '💚 Curación',
-  aura: '🔆 Aura',
+  auto: tr('Automática'),
+  none: tr('Sin animación'),
+  slash: tr('⚔ Tajo (cuerpo a cuerpo)'),
+  arrow: tr('🏹 Flecha (a distancia)'),
+  bolt: tr('✨ Proyectil mágico'),
+  beam: tr('⚡ Rayo continuo'),
+  burst: tr('💥 Explosión'),
+  heal: tr('💚 Curación'),
+  aura: tr('🔆 Aura'),
 };
 
 /** Lo que hay que animar (sin posiciones: las pone el servidor con los tokens). */
@@ -72,7 +73,7 @@ export function damageColor(text: string): string | null {
 /** Color para la animación: el elegido, el del tipo de daño, verde si cura o el de por defecto. */
 function colorOf(chosen: string | undefined, damageText: string, heals: boolean, magic: boolean) {
   if (chosen && /^#[0-9a-f]{6}$/i.test(chosen)) return chosen;
-  const magical = damageColor(damageText.replace(/cortante|perforante|contundente/gi, ''));
+  const magical = damageColor(damageText.replace(/cortante|perforante|contundente|slashing|piercing|bludgeoning/gi, ''));
   if (magical) return magical;
   if (heals) return HEAL_COLOR;
   return damageColor(damageText) ?? (magic ? DEFAULT_SPELL : DEFAULT_WEAPON);
@@ -109,7 +110,7 @@ const RANGED_WEAPON = /arco|ballesta|honda|dardo|jabalina|flecha|virote|cerbatan
 export function fxForRow(kind: 'attack' | 'cast', name: string, damageText: string, crit = false): FxCue {
   const t = plain(`${name} ${damageText}`);
   if (kind === 'cast') {
-    const heals = /cura|sana|heal/.test(t) && !damageColor(damageText.replace(/cortante|perforante|contundente/gi, ''));
+    const heals = /cura|sana|heal/.test(t) && !damageColor(damageText.replace(/cortante|perforante|contundente|slashing|piercing|bludgeoning/gi, ''));
     return { style: heals ? 'heal' : 'bolt', color: colorOf(undefined, damageText, heals, true), crit };
   }
   return { style: RANGED_WEAPON.test(t) ? 'arrow' : 'slash', color: colorOf(undefined, damageText, false, false), crit };

@@ -4,6 +4,7 @@ import type { CampaignDetail, CampaignSummary } from '@vtt/shared';
 import { api } from '../../core/api';
 import { TopBar } from '../../components/TopBar';
 import { restoreBackup } from '../backup/restore';
+import { lang, tr } from '../../core/i18n';
 
 export function CampaignsPage() {
   const navigate = useNavigate();
@@ -20,7 +21,7 @@ export function CampaignsPage() {
   async function create(e: FormEvent) {
     e.preventDefault();
     try {
-      const { campaign } = await api.post<{ campaign: CampaignDetail }>('/campaigns', { name });
+      const { campaign } = await api.post<{ campaign: CampaignDetail }>('/campaigns', { name, lang });
       navigate(`/c/${campaign.id}`);
     } catch (err) {
       setError((err as Error).message);
@@ -43,7 +44,7 @@ export function CampaignsPage() {
     setError(null);
     try {
       const summary = await restoreBackup(file);
-      if (summary.skippedAssets) alert(`Restaurada, pero ${summary.skippedAssets} archivos no venían en la copia o no eran válidos.`);
+      if (summary.skippedAssets) alert(tr('Restaurada, pero {skippedAssets} archivos no venían en la copia o no eran válidos.', { skippedAssets: summary.skippedAssets }));
       navigate(`/c/${summary.campaignId}`);
     } catch (err) {
       setError((err as Error).message);
@@ -55,19 +56,19 @@ export function CampaignsPage() {
     <>
       <TopBar />
       <main className="container">
-        <h1>Tus partidas</h1>
+        <h1>{tr('Tus partidas')}</h1>
         {error && <p className="error">{error}</p>}
         {campaigns === null ? (
-          <p className="muted">Cargando…</p>
+          <p className="muted">{tr('Cargando…')}</p>
         ) : campaigns.length === 0 ? (
-          <p className="muted">Todavía no estás en ninguna partida. Crea una o únete con un código.</p>
+          <p className="muted">{tr('Todavía no estás en ninguna partida. Crea una o únete con un código.')}</p>
         ) : (
           <ul className="campaign-grid">
             {campaigns.map((c) => (
               <li key={c.id}>
                 <Link to={`/c/${c.id}`} className="card campaign-card">
                   <strong>{c.name}</strong>
-                  <span className={`badge ${c.role}`}>{c.role === 'gm' ? 'DM' : 'Jugador'}</span>
+                  <span className={`badge ${c.role}`}>{c.role === 'gm' ? 'DM' : tr('Jugador')}</span>
                   {c.description && <p className="muted">{c.description}</p>}
                 </Link>
               </li>
@@ -77,27 +78,27 @@ export function CampaignsPage() {
 
         <div className="two-cols">
           <form className="card" onSubmit={create}>
-            <h2>Nueva partida</h2>
+            <h2>{tr('Nueva partida')}</h2>
             <label>
-              Nombre
-              <input value={name} onChange={(e) => setName(e.target.value)} required maxLength={80} placeholder="La Mina Perdida de Phandelver" />
+              {tr('Nombre')}
+              <input value={name} onChange={(e) => setName(e.target.value)} required maxLength={80} placeholder={tr('La Mina Perdida de Phandelver')} />
             </label>
-            <button className="primary">Crear (serás el DM)</button>
+            <button className="primary">{tr('Crear (serás el DM)')}</button>
           </form>
           <form className="card" onSubmit={join}>
-            <h2>Unirse a una partida</h2>
+            <h2>{tr('Unirse a una partida')}</h2>
             <label>
-              Código de invitación
+              {tr('Código de invitación')}
               <input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} required placeholder="ABCD2345" />
             </label>
-            <button>Unirse</button>
+            <button>{tr('Unirse')}</button>
           </form>
         </div>
         <div className="card restore-card">
-          <h2>Restaurar una copia de seguridad</h2>
-          <p className="muted">Crea una partida nueva a partir de un archivo <code>.vtt.json.gz</code> descargado desde la pestaña Ajustes de la mesa. Serás su DM; luego invita otra vez a los jugadores.</p>
+          <h2>{tr('Restaurar una copia de seguridad')}</h2>
+          <p className="muted">{tr('Crea una partida nueva a partir de un archivo')}{' '}<code>.vtt.json.gz</code>{' '}{tr('descargado desde la pestaña Ajustes de la mesa. Serás su DM; luego invita otra vez a los jugadores.')}</p>
           <label className="button-like">
-            {restoring ? 'Restaurando…' : '⬆ Elegir archivo'}
+            {restoring ? tr('Restaurando…') : tr('⬆ Elegir archivo')}
             <input type="file" accept=".gz,.json,application/gzip,application/json" hidden disabled={restoring} onChange={(e) => void restore(e.target.files?.[0])} />
           </label>
         </div>

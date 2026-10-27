@@ -4,6 +4,7 @@ import zlib from 'node:zlib';
 import { randomUUID } from 'node:crypto';
 import { and, asc, desc, eq, gt, max, sql } from 'drizzle-orm';
 import {
+  tr,
   looksLikeUvtt,
   MAX_LIBRARY_ENTRIES,
   SCENE_PACKAGE_FORMAT,
@@ -75,7 +76,7 @@ export function createSceneLibraryService(ctx: AppContext) {
       const { id: _i, createdAt: _c, sortOrder, name, explored: _e, ...rest } = src;
       const order = slotAfter(src.campaignId, sortOrder);
       tx.insert(scenes)
-        .values({ ...rest, id, name: `${name} (copia)`.slice(0, 80), sortOrder: order, explored: '' })
+        .values({ ...rest, id, name: tr('{name} (copia)', { name }).slice(0, 80), sortOrder: order, explored: '' })
         .run();
       for (const { id: _iid, createdAt: _ic, sceneId: _s, ...item } of itemsOf(src.id).filter((i) => !isPlayerStuff(i))) {
         tx.insert(boardItems)
@@ -140,7 +141,7 @@ export function createSceneLibraryService(ctx: AppContext) {
    * Lee un archivo de escena (con o sin gzip) y lo valida. También acepta mapas Universal VTT
    * (.dd2vtt de Dungeondraft, .uvtt…), que se convierten; `name` es el nombre que tendrá entonces la escena.
    */
-  function parse(file: Buffer, name = 'Mapa importado'): ScenePackage {
+  function parse(file: Buffer, name = tr('Mapa importado')): ScenePackage {
     let text: string;
     try {
       text = (file[0] === 0x1f && file[1] === 0x8b ? zlib.gunzipSync(file) : file).toString('utf8');

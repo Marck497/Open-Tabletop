@@ -4,6 +4,7 @@ import { emitAck } from '../../core/socket';
 import { useBoard } from '../board/store';
 import { useSheets } from '../sheets/store';
 import { useInitiative } from './store';
+import { tr } from '../../core/i18n';
 
 interface Props {
   campaignId: string;
@@ -44,57 +45,57 @@ export function InitiativeTracker({ campaignId, isGm, meId }: Props) {
   function addSelected() {
     const { selectedId, items } = useBoard.getState();
     const item = selectedId ? items[selectedId] : undefined;
-    if (!item) return alert('Selecciona primero un token en el tablero');
-    const name = item.name || (item.characterId && characters[item.characterId]?.name) || 'Token';
-    const value = Number(prompt(`Iniciativa de ${name}`, '10'));
+    if (!item) return alert(tr('Selecciona primero un token en el tablero'));
+    const name = item.name || (item.characterId && characters[item.characterId]?.name) || tr('Token');
+    const value = Number(prompt(tr('Iniciativa de {name}', { name }), '10'));
     if (Number.isNaN(value)) return;
     void act({ type: 'add', entry: { name, value, itemId: item.id, characterId: item.characterId, hidden: item.layer === 'gm' } });
   }
 
   function addManual() {
-    const name = prompt('Nombre');
+    const name = prompt(tr('Nombre'));
     if (!name) return;
-    const value = Number(prompt(`Iniciativa de ${name}`, '10'));
+    const value = Number(prompt(tr('Iniciativa de {name}', { name }), '10'));
     if (!Number.isNaN(value)) void act({ type: 'add', entry: { name, value, itemId: null, characterId: null, hidden: false } });
   }
 
   return (
     <div className={`initiative card ${collapsed ? 'collapsed' : ''}`} data-tour="initiative">
       <div className="initiative-head">
-        <button className="ghost small" onClick={() => setCollapsed((c) => !c)} title={collapsed ? 'Mostrar' : 'Ocultar'}>
+        <button className="ghost small" onClick={() => setCollapsed((c) => !c)} title={collapsed ? tr('Mostrar') : tr('Ocultar')}>
           {collapsed ? '▸' : '▾'}
         </button>
-        <strong>Iniciativa</strong>
-        {state.active && <span className="muted">Ronda {state.round}</span>}
+        <strong>{tr('Iniciativa')}</strong>
+        {state.active && <span className="muted">{tr('Ronda')}{' '}{state.round}</span>}
         <span className="row end">
           {isGm && !state.active && state.entries.length > 0 && (
             <button className="small primary" onClick={() => void act({ type: 'start' })}>
-              Empezar
+              {tr('Empezar')}
             </button>
           )}
           {isGm && state.active && current?.itemId && items[current.itemId] && (
-            <button className="small" disabled={acting} onClick={aiAct} title="Este token juega su turno con la IA: se mueve, ataca y lo anota en el chat">
-              {acting ? '🤖 …' : '🤖 Actuar'}
+            <button className="small" disabled={acting} onClick={aiAct} title={tr('Este token juega su turno con la IA: se mueve, ataca y lo anota en el chat')}>
+              {acting ? '🤖 …' : tr('🤖 Actuar')}
             </button>
           )}
           {isGm && state.active && (
             <>
-              <button className="ghost small" onClick={() => void act({ type: 'prev' })} title="Turno anterior">
+              <button className="ghost small" onClick={() => void act({ type: 'prev' })} title={tr('Turno anterior')}>
                 ◀
               </button>
               <button className="small primary" onClick={() => void act({ type: 'next' })}>
-                Siguiente ▶
+                {tr('Siguiente ▶')}
               </button>
             </>
           )}
           {!isGm && mineMissing && (
-            <button className="small primary" onClick={() => void act({ type: 'rollMine' })} title="Tira 1d20 más el bono de iniciativa de tu hoja">
-              🎲 Tirar mi iniciativa
+            <button className="small primary" onClick={() => void act({ type: 'rollMine' })} title={tr('Tira 1d20 más el bono de iniciativa de tu hoja')}>
+              {tr('🎲 Tirar mi iniciativa')}
             </button>
           )}
           {!isGm && myTurn && (
             <button className="small primary" onClick={() => void act({ type: 'next' })}>
-              Terminar mi turno
+              {tr('Terminar mi turno')}
             </button>
           )}
         </span>
@@ -105,61 +106,61 @@ export function InitiativeTracker({ campaignId, isGm, meId }: Props) {
             {state.entries.map((e, i) => (
               <Entry key={e.id} entry={e} active={state.active && i === state.turn} isGm={isGm} act={act} ai={isGm && !!(e.itemId && items[e.itemId]?.ai?.enabled)} />
             ))}
-            {state.active && state.turn === -1 && <li className="muted">Turno de alguien oculto…</li>}
+            {state.active && state.turn === -1 && <li className="muted">{tr('Turno de alguien oculto…')}</li>}
           </ol>
           {isGm && (
             <div className="row">
               <button
                 className="small primary"
-                onClick={() => (!state.entries.length || confirm('¿Volver a tirar la iniciativa de todos los tokens de la escena?')) && void act({ type: 'rollAll', scope: 'all' })}
-                title="Tira 1d20 + el bono de iniciativa de la hoja de cada token de la escena y los ordena (a igualdad, gana el bono más alto)"
+                onClick={() => (!state.entries.length || confirm(tr('¿Volver a tirar la iniciativa de todos los tokens de la escena?'))) && void act({ type: 'rollAll', scope: 'all' })}
+                title={tr('Tira 1d20 + el bono de iniciativa de la hoja de cada token de la escena y los ordena (a igualdad, gana el bono más alto)')}
               >
-                🎲 Tirar a todos
+                {tr('🎲 Tirar a todos')}
               </button>
               {state.entries.length > 0 && (
-                <button className="ghost small" onClick={() => void act({ type: 'rollAll', scope: 'missing' })} title="Tira solo para los tokens que aún no están en la lista">
-                  🎲 Los que faltan
+                <button className="ghost small" onClick={() => void act({ type: 'rollAll', scope: 'missing' })} title={tr('Tira solo para los tokens que aún no están en la lista')}>
+                  {tr('🎲 Los que faltan')}
                 </button>
               )}
-              <button className="ghost small" onClick={() => void act({ type: 'rollAll', scope: 'npcs' })} title="Vuelve a tirar solo la de los enemigos y PNJ">
-                🎲 Enemigos
+              <button className="ghost small" onClick={() => void act({ type: 'rollAll', scope: 'npcs' })} title={tr('Vuelve a tirar solo la de los enemigos y PNJ')}>
+                {tr('🎲 Enemigos')}
               </button>
             </div>
           )}
           {isGm && (
             <div className="row">
-              <button className="ghost small" onClick={addSelected} title="Añade el token seleccionado">
-                + Token seleccionado
+              <button className="ghost small" onClick={addSelected} title={tr('Añade el token seleccionado')}>
+                {tr('+ Token seleccionado')}
               </button>
               <button className="ghost small" onClick={addManual}>
-                + Otro
+                {tr('+ Otro')}
               </button>
               <button className="ghost small" onClick={() => void act({ type: 'sort' })}>
-                Ordenar
+                {tr('Ordenar')}
               </button>
               {state.active && (
                 <button className="ghost small" onClick={() => void act({ type: 'end' })}>
-                  Fin del combate
+                  {tr('Fin del combate')}
                 </button>
               )}
-              <button className="ghost small danger" onClick={() => confirm('¿Vaciar la iniciativa?') && void act({ type: 'clear' })}>
-                Vaciar
+              <button className="ghost small danger" onClick={() => confirm(tr('¿Vaciar la iniciativa?')) && void act({ type: 'clear' })}>
+                {tr('Vaciar')}
               </button>
             </div>
           )}
           {isGm && (
             <div className="row ai-settings">
-              <label className="switch" title="Los enemigos con IA juegan su turno solos y pasan al siguiente">
+              <label className="switch" title={tr('Los enemigos con IA juegan su turno solos y pasan al siguiente')}>
                 <input type="checkbox" checked={state.ai.auto} onChange={(e) => void act({ type: 'aiSettings', settings: { auto: e.target.checked } })} />
-                🤖 IA automática
+                {tr('🤖 IA automática')}
               </label>
-              <label className="switch" title="Resta el daño de los ataques de la IA a la vida del objetivo">
+              <label className="switch" title={tr('Resta el daño de los ataques de la IA a la vida del objetivo')}>
                 <input type="checkbox" checked={state.ai.applyDamage} onChange={(e) => void act({ type: 'aiSettings', settings: { applyDamage: e.target.checked } })} />
-                Aplicar daño
+                {tr('Aplicar daño')}
               </label>
             </div>
           )}
-          {!isGm && state.entries.length === 0 && <p className="muted hint">Tira tu iniciativa para entrar en el combate.</p>}
+          {!isGm && state.entries.length === 0 && <p className="muted hint">{tr('Tira tu iniciativa para entrar en el combate.')}</p>}
         </>
       )}
     </div>
@@ -188,20 +189,20 @@ function Entry({ entry, active, isGm, act, ai }: { entry: InitiativeEntry; activ
       <span className="init-name">
         {entry.name}
         {entry.die != null && (
-          <small className="muted init-roll" title="Dado + bono de iniciativa">
+          <small className="muted init-roll" title={tr('Dado + bono de iniciativa')}>
             {' '}
             ({entry.die}
             {entry.bonus ? ` ${entry.bonus > 0 ? '+' : '−'} ${Math.abs(entry.bonus)}` : ''})
           </small>
         )}
-        {ai && <span title="Tiene IA"> 🤖</span>}
+        {ai && <span title={tr('Tiene IA')}> 🤖</span>}
       </span>
       {isGm && (
         <span className="row end" onClick={(e) => e.stopPropagation()}>
-          <button className="ghost small" title={entry.hidden ? 'Mostrar a los jugadores' : 'Ocultar a los jugadores'} onClick={() => act({ type: 'update', id: entry.id, patch: { hidden: !entry.hidden } })}>
+          <button className="ghost small" title={entry.hidden ? tr('Mostrar a los jugadores') : tr('Ocultar a los jugadores')} onClick={() => act({ type: 'update', id: entry.id, patch: { hidden: !entry.hidden } })}>
             {entry.hidden ? '🙈' : '👁'}
           </button>
-          <button className="ghost small danger" title="Quitar" onClick={() => act({ type: 'remove', id: entry.id })}>
+          <button className="ghost small danger" title={tr('Quitar')} onClick={() => act({ type: 'remove', id: entry.id })}>
             ✕
           </button>
         </span>
@@ -220,9 +221,9 @@ export function TurnBanner({ meId }: { meId: string }) {
   const mine = !!current?.characterId && !!characters[current.characterId]?.controlledBy.includes(meId);
   return (
     <div className={`turn-banner ${mine ? 'mine' : ''}`} role="status">
-      <span className="muted">Ronda {state.round}</span>
-      <strong>{mine ? '¡Es tu turno!' : current ? `Turno de ${current.name}` : 'Turno de alguien oculto'}</strong>
-      {next && next !== current && <span className="muted">Después: {next.name}</span>}
+      <span className="muted">{tr('Ronda')}{' '}{state.round}</span>
+      <strong>{mine ? tr('¡Es tu turno!') : current ? tr('Turno de {name}', { name: current.name }) : tr('Turno de alguien oculto')}</strong>
+      {next && next !== current && <span className="muted">{tr('Después:')}{' '}{next.name}</span>}
     </div>
   );
 }
@@ -246,8 +247,8 @@ export function InitiativeAnnounce({ meId }: { meId: string }) {
 function AnnounceCard({ state, isMine }: { state: InitiativeState; isMine: (e: InitiativeEntry) => boolean }) {
   const close = () => useInitiative.getState().hideAnnounce();
   return (
-    <div className="initiative-announce card" role="dialog" aria-label="Orden de iniciativa" onClick={close}>
-      <h2>⚔️ Orden de iniciativa</h2>
+    <div className="initiative-announce card" role="dialog" aria-label={tr('Orden de iniciativa')} onClick={close}>
+      <h2>{tr('⚔️ Orden de iniciativa')}</h2>
       <ol>
         {state.entries.map((e, i) => (
           <li key={e.id} className={`${isMine(e) ? 'mine' : ''} ${e.hidden ? 'hidden-entry' : ''}`}>
@@ -258,7 +259,7 @@ function AnnounceCard({ state, isMine }: { state: InitiativeState; isMine: (e: I
           </li>
         ))}
       </ol>
-      <p className="muted hint">Toca para cerrar</p>
+      <p className="muted hint">{tr('Toca para cerrar')}</p>
     </div>
   );
 }

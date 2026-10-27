@@ -1,5 +1,6 @@
 import { io, type Socket } from 'socket.io-client';
 import type { AckResult, ClientToServerEvents, ServerToClientEvents } from '@vtt/shared';
+import { tr } from './i18n';
 
 export type VttSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 
@@ -25,7 +26,7 @@ type AckEventName = { [K in keyof AckEvents]: AckEvents[K] extends never ? never
 export function emitAck<K extends AckEventName>(event: K, payload: AckEvents[K][0]): Promise<AckEvents[K][1]> {
   return new Promise((resolve, reject) => {
     (getSocket().emit as (...args: unknown[]) => void)(event, payload, (res: AckResult<AckEvents[K][1]>) =>
-      res.ok ? resolve(res.data) : reject(new Error(res.error)),
+      res.ok ? resolve(res.data) : reject(new Error(tr(res.error))),
     );
   });
 }

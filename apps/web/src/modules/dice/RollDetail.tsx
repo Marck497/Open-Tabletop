@@ -1,5 +1,6 @@
 import type { ChatMessage, ChatRoll, ChatRollPart } from '@vtt/shared';
 import { EffectCard } from '../homebrew/EffectCard';
+import { tr } from '../../core/i18n';
 
 /** Muestra una tirada: quién, qué, los dados (los descartados tachados) y el total; y el efecto de una creación. */
 export function RollDetail({ message, roll, isGm }: { message: ChatMessage; roll: ChatRoll; isGm?: boolean }) {
@@ -8,7 +9,7 @@ export function RollDetail({ message, roll, isGm }: { message: ChatMessage; roll
     <div className="roll">
       <div className="roll-head">
         <strong>{who}</strong>
-        {message.secret && <span className="badge gm">Secreta</span>}
+        {message.secret && <span className="badge gm">{tr('Secreta')}</span>}
       </div>
       {roll.label && <div className="roll-label">{roll.label}</div>}
       {roll.expression && <RollLine roll={roll} />}

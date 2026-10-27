@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { Point } from './measure.js';
 import { hasLineOfSight, type Wall } from './walls.js';
+import { tr } from '../i18n/index.js';
 
 /**
  * Luces y visión en la oscuridad. Con la escena a oscuras (`scene.lighting`), un jugador
@@ -20,12 +21,12 @@ export type LightInput = z.input<typeof lightSchema>;
 
 /** Luces típicas de 5e (radio brillante + tenue adicional, en pies). */
 export const LIGHT_PRESETS: { label: string; light: Light }[] = [
-  { label: 'Vela', light: { bright: 5, dim: 5, color: '#ffcc80' } },
-  { label: 'Antorcha', light: { bright: 20, dim: 20, color: '#ffb74d' } },
-  { label: 'Lámpara', light: { bright: 15, dim: 30, color: '#ffd180' } },
-  { label: 'Linterna', light: { bright: 30, dim: 30, color: '#ffe0b2' } },
-  { label: 'Luz (truco)', light: { bright: 20, dim: 20, color: '#fff8e1' } },
-  { label: 'Luz del día (conjuro)', light: { bright: 60, dim: 60, color: '#fffde7' } },
+  { label: tr('Vela'), light: { bright: 5, dim: 5, color: '#ffcc80' } },
+  { label: tr('Antorcha'), light: { bright: 20, dim: 20, color: '#ffb74d' } },
+  { label: tr('Lámpara'), light: { bright: 15, dim: 30, color: '#ffd180' } },
+  { label: tr('Linterna'), light: { bright: 30, dim: 30, color: '#ffe0b2' } },
+  { label: tr('Luz (truco)'), light: { bright: 20, dim: 20, color: '#fff8e1' } },
+  { label: tr('Luz del día (conjuro)'), light: { bright: 60, dim: 60, color: '#fffde7' } },
 ];
 
 /** Visión en la oscuridad típica (pies). */

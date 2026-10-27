@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { Point } from './measure.js';
 import { eyeSees, type Eye, type LightSource } from './lights.js';
+import { tr } from '../i18n/index.js';
 
 /**
  * Paredes, puertas y visión. Las paredes son segmentos en coordenadas de escena:
@@ -13,10 +14,10 @@ export const WALL_KINDS = ['wall', 'door', 'window', 'secret'] as const;
 export type WallKind = (typeof WALL_KINDS)[number];
 
 export const WALL_LABELS: Record<WallKind, string> = {
-  wall: 'Pared',
-  door: 'Puerta',
-  window: 'Ventana',
-  secret: 'Puerta secreta',
+  wall: tr('Pared'),
+  door: tr('Puerta'),
+  window: tr('Ventana'),
+  secret: tr('Puerta secreta'),
 };
 
 export const WALL_COLORS: Record<WallKind, string> = {

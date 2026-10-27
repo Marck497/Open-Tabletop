@@ -1,0 +1,1 @@
+ALTER TABLE `campaigns` ADD `lang` text DEFAULT 'es' NOT NULL;

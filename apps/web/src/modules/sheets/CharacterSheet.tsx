@@ -26,6 +26,7 @@ import { newRowId, SheetFieldView } from './SheetField';
 import { useHomebrew } from '../homebrew/store';
 import { useSheets } from './store';
 import { useFloatingWindow } from '../layout/floating';
+import { tr } from '../../core/i18n';
 
 interface Props {
   character: Character;
@@ -54,15 +55,15 @@ export function CharacterSheet({ character, template, isGm, meId, members, index
   const act = (action: SheetAction) =>
     void emitAck('sheet:action', { characterId: character.id, action, fx: action.kind === 'rest' || action.kind === 'use' ? undefined : currentFxTarget() }).catch((e: Error) => alert(e.message));
   const rest = (kind: 'short' | 'long') => {
-    const what = kind === 'long' ? 'un descanso largo (PG, espacios de conjuro y recursos)' : 'un descanso corto (recursos de descanso corto y espacios de pacto)';
-    if (confirm(`¿${character.name} hace ${what}?`)) act({ kind: 'rest', rest: kind });
+    const what = kind === 'long' ? tr('un descanso largo (PG, espacios de conjuro y recursos)') : tr('un descanso corto (recursos de descanso corto y espacios de pacto)');
+    if (confirm(tr('¿{name} hace {what}?', { name: character.name, what }))) act({ kind: 'rest', rest: kind });
   };
   const num = (v: unknown) => (typeof v === 'number' ? v : Number(v) || 0);
 
   /** Creación enlazada a una fila: el botón lo dice al pasar el ratón. */
   const linkedTitle = (row: SheetRow) => {
     const e = typeof row._ref === 'string' ? homebrew[row._ref] : undefined;
-    return e ? `⚗ ${e.name}: ${homebrewSummary(e) || 'usar'}` : undefined;
+    return e ? `⚗ ${e.name}: ${homebrewSummary(e) || tr('usar')}` : undefined;
   };
 
   /** Botón de cada fila en las tablas de ataques, conjuros y recursos. */
@@ -70,7 +71,7 @@ export function CharacterSheet({ character, template, isGm, meId, members, index
     if (!canEdit) return undefined;
     if (actions.attacks?.list === listKey)
       return (row) => (
-        <button className="ghost small action-btn" title={linkedTitle(row) ?? 'Atacar: tirada de ataque y de daño (crítico incluido)'} onClick={() => act({ kind: 'attack', rowId: row._id })}>
+        <button className="ghost small action-btn" title={linkedTitle(row) ?? tr('Atacar: tirada de ataque y de daño (crítico incluido)')} onClick={() => act({ kind: 'attack', rowId: row._id })}>
           ⚔
         </button>
       );
@@ -85,7 +86,7 @@ export function CharacterSheet({ character, template, isGm, meId, members, index
         <button
           className="ghost small action-btn"
           disabled={num(row[r.uses]) <= 0}
-          title={linkedTitle(row) ?? 'Usar (gasta un uso)'}
+          title={linkedTitle(row) ?? tr('Usar (gasta un uso)')}
           onClick={() => act(typeof row._ref === 'string' && homebrew[row._ref] ? { kind: 'homebrew', entryId: row._ref } : { kind: 'use', rowId: row._id })}
         >
           ▶
@@ -112,7 +113,7 @@ export function CharacterSheet({ character, template, isGm, meId, members, index
 
   const doRoll = (field: SheetField, row?: { listKey: string; row: SheetRow }) => {
     if (!field.roll) return;
-    const label = field.rollLabel ?? field.label;
+    const label = tr(field.rollLabel ?? field.label);
     const rowName = row ? String(row.row.nombre ?? row.row.objeto ?? '') : '';
     void roll({
       campaignId: character.campaignId,
@@ -132,10 +133,10 @@ export function CharacterSheet({ character, template, isGm, meId, members, index
       onPointerDownCapture={() => !isFront && useSheets.getState().openSheet(character.id)}
     >
       <header className="sheet-header" {...win.handleProps}>
-        <span className="drag-grip" aria-hidden title="Arrastra para mover la hoja">
+        <span className="drag-grip" aria-hidden title={tr('Arrastra para mover la hoja')}>
           ⠿
         </span>
-        <button className="avatar" disabled={!canEdit} onClick={() => setPicker(true)} title={canEdit ? 'Cambiar imagen' : undefined}>
+        <button className="avatar" disabled={!canEdit} onClick={() => setPicker(true)} title={canEdit ? tr('Cambiar imagen') : undefined}>
           {character.avatarAssetId ? <img src={assetUrl(character.avatarAssetId)} alt="" /> : <span>{character.name.slice(0, 1)}</span>}
         </button>
         <input
@@ -147,35 +148,35 @@ export function CharacterSheet({ character, template, isGm, meId, members, index
         />
         {canEdit && !win.minimized && (actions.hp || actions.slots || actions.resources) && (
           <>
-            <button className="ghost small" onClick={() => rest('short')} title="Descanso corto: recursos de descanso corto y espacios de pacto">
+            <button className="ghost small" onClick={() => rest('short')} title={tr('Descanso corto: recursos de descanso corto y espacios de pacto')}>
               ☾
             </button>
-            <button className="ghost small" onClick={() => rest('long')} title="Descanso largo: PG, espacios de conjuro y recursos">
+            <button className="ghost small" onClick={() => rest('long')} title={tr('Descanso largo: PG, espacios de conjuro y recursos')}>
               ☀
             </button>
           </>
         )}
         {isGm && !win.minimized && (
-          <button className="ghost small" onClick={() => setSettings((v) => !v)} title="Permisos y opciones">
+          <button className="ghost small" onClick={() => setSettings((v) => !v)} title={tr('Permisos y opciones')}>
             ⚙
           </button>
         )}
-        <button className="ghost small" onClick={win.toggleMinimized} title={win.minimized ? 'Desplegar la hoja' : 'Minimizar la hoja'}>
+        <button className="ghost small" onClick={win.toggleMinimized} title={win.minimized ? tr('Desplegar la hoja') : tr('Minimizar la hoja')}>
           {win.minimized ? '▢' : '▁'}
         </button>
-        <button className="ghost small" onClick={() => closeSheet(character.id)} title="Cerrar">
+        <button className="ghost small" onClick={() => closeSheet(character.id)} title={tr('Cerrar')}>
           ✕
         </button>
       </header>
 
       {isGm && settings && <GmSettings character={character} members={members} onSave={save} />}
-      {!canEdit && <p className="muted hint">Solo lectura.</p>}
+      {!canEdit && <p className="muted hint">{tr('Solo lectura.')}</p>}
 
       <div className="sheet-body">
         {template.sections.map((section) => (
           <section key={section.id} className="sheet-section">
             <h4 onClick={() => setCollapsed((c) => ({ ...c, [section.id]: !c[section.id] }))}>
-              {collapsed[section.id] ? '▸' : '▾'} {section.title}
+              {collapsed[section.id] ? '▸' : '▾'} {tr(section.title)}
             </h4>
             {!collapsed[section.id] && (
               <div className="sheet-grid" style={{ gridTemplateColumns: `repeat(${section.columns}, minmax(0, 1fr))` }}>
@@ -230,15 +231,15 @@ function GmSettings({ character, members, onSave }: { character: Character; memb
     onSave({ controlledBy: character.controlledBy.includes(id) ? character.controlledBy.filter((x) => x !== id) : [...character.controlledBy, id] });
 
   async function remove() {
-    if (!confirm(`¿Borrar a "${character.name}"? Sus tokens quedarán sin vincular.`)) return;
+    if (!confirm(tr('¿Borrar a "{name}"? Sus tokens quedarán sin vincular.', { name: character.name }))) return;
     await api.delete(`/characters/${character.id}`);
   }
 
   return (
     <div className="sheet-settings">
       <fieldset className="owners">
-        <legend>Lo controlan (pueden editar la hoja y mover sus tokens)</legend>
-        {players.length === 0 && <span className="muted">Aún no hay jugadores en la partida.</span>}
+        <legend>{tr('Lo controlan (pueden editar la hoja y mover sus tokens)')}</legend>
+        {players.length === 0 && <span className="muted">{tr('Aún no hay jugadores en la partida.')}</span>}
         {players.map((p) => (
           <label key={p.id} className="switch">
             <input type="checkbox" checked={character.controlledBy.includes(p.id)} onChange={() => toggle(p.id)} />
@@ -248,14 +249,14 @@ function GmSettings({ character, members, onSave }: { character: Character; memb
       </fieldset>
       <label className="switch">
         <input type="checkbox" checked={character.visibleToAll} onChange={(e) => onSave({ visibleToAll: e.target.checked })} />
-        Todos los jugadores pueden ver la hoja
+        {tr('Todos los jugadores pueden ver la hoja')}
       </label>
       <div className="row">
         <button className="small" onClick={() => void addCharacterToken(character)}>
-          Poner token en el tablero
+          {tr('Poner token en el tablero')}
         </button>
         <button className="ghost small danger" onClick={() => void remove()}>
-          Borrar personaje
+          {tr('Borrar personaje')}
         </button>
       </div>
     </div>
@@ -294,13 +295,13 @@ function ListField({ field, rows, readOnly, template, values, onChange, onRoll, 
 
   return (
     <div className="sheet-list" style={{ gridColumn: '1 / -1' }}>
-      <div className="sheet-label">{field.label}</div>
+      <div className="sheet-label">{tr(field.label)}</div>
       <table>
         <thead>
           <tr>
             {rowAction && <th />}
             {cols.map((c) => (
-              <th key={c.key}>{c.label}</th>
+              <th key={c.key}>{tr(c.label)}</th>
             ))}
             {!readOnly && <th />}
           </tr>
@@ -324,7 +325,7 @@ function ListField({ field, rows, readOnly, template, values, onChange, onRoll, 
               ))}
               {!readOnly && (
                 <td>
-                  <button className="ghost small danger" title="Quitar fila" onClick={() => onChange(rows.filter((r) => r._id !== row._id))}>
+                  <button className="ghost small danger" title={tr('Quitar fila')} onClick={() => onChange(rows.filter((r) => r._id !== row._id))}>
                     ✕
                   </button>
                 </td>
@@ -335,7 +336,7 @@ function ListField({ field, rows, readOnly, template, values, onChange, onRoll, 
       </table>
       {!readOnly && (
         <button className="ghost small" onClick={addRow}>
-          + Añadir fila
+          {tr('+ Añadir fila')}
         </button>
       )}
     </div>
@@ -350,17 +351,17 @@ function CastButton({ level, slots, hint, onCast }: { level: number; slots: { le
   const chosen = slot ?? firstFree;
   if (level <= 0)
     return (
-      <button className="ghost small action-btn" title={hint ?? 'Lanzar (truco)'} onClick={() => onCast()}>
+      <button className="ghost small action-btn" title={hint ?? tr('Lanzar (truco)')} onClick={() => onCast()}>
         ✨
       </button>
     );
   return (
     <span className="cast">
-      <button className="ghost small action-btn" disabled={!chosen} title={chosen ? `${hint ? `${hint}\n` : ''}Lanzar con un espacio de nivel ${chosen}` : 'No te quedan espacios'} onClick={() => onCast(chosen)}>
+      <button className="ghost small action-btn" disabled={!chosen} title={chosen ? tr('{0}Lanzar con un espacio de nivel {chosen}', { '0': hint ? `${hint}\n` : '', chosen }) : tr('No te quedan espacios')} onClick={() => onCast(chosen)}>
         ✨
       </button>
       {usable.length > 1 && (
-        <select className="slot-pick" value={chosen ?? ''} onChange={(e) => setSlot(Number(e.target.value))} title="Nivel del espacio">
+        <select className="slot-pick" value={chosen ?? ''} onChange={(e) => setSlot(Number(e.target.value))} title={tr('Nivel del espacio')}>
           {usable.map((s) => (
             <option key={s.level} value={s.level} disabled={s.used >= s.max}>
               {s.level} ({s.max - s.used}/{s.max})

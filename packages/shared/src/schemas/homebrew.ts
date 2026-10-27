@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { checkSyntax } from '../expr.js';
 import { FX_STYLES } from '../fx.js';
+import { tr } from '../i18n/index.js';
 
 /**
  * Creaciones de la mesa: hechizos, ataques y objetos hechos (o copiados del SRD y retocados)
@@ -9,17 +10,17 @@ import { FX_STYLES } from '../fx.js';
  */
 export const HOMEBREW_KINDS = ['spell', 'attack', 'item'] as const;
 export type HomebrewKind = (typeof HOMEBREW_KINDS)[number];
-export const HOMEBREW_KIND_LABELS: Record<HomebrewKind, string> = { spell: 'Hechizo', attack: 'Ataque', item: 'Objeto' };
+export const HOMEBREW_KIND_LABELS: Record<HomebrewKind, string> = { spell: tr('Hechizo'), attack: tr('Ataque'), item: tr('Objeto') };
 export const HOMEBREW_KIND_ICONS: Record<HomebrewKind, string> = { spell: '✨', attack: '⚔', item: '🎒' };
 
 export const ATTACK_KINDS = ['none', 'melee', 'ranged'] as const;
 export type AttackKind = (typeof ATTACK_KINDS)[number];
-export const ATTACK_KIND_LABELS: Record<AttackKind, string> = { none: 'Sin tirada de ataque', melee: 'Cuerpo a cuerpo', ranged: 'A distancia' };
+export const ATTACK_KIND_LABELS: Record<AttackKind, string> = { none: tr('Sin tirada de ataque'), melee: tr('Cuerpo a cuerpo'), ranged: tr('A distancia') };
 
 /** Formas de área; son las mismas que las plantillas del tablero. */
 export const AREA_SHAPES = ['none', 'circle', 'cone', 'line', 'square'] as const;
 export type AreaShape = (typeof AREA_SHAPES)[number];
-export const AREA_SHAPE_LABELS: Record<AreaShape, string> = { none: 'Sin área', circle: 'Esfera / círculo (radio)', cone: 'Cono (largo)', line: 'Línea (largo)', square: 'Cubo (lado)' };
+export const AREA_SHAPE_LABELS: Record<AreaShape, string> = { none: tr('Sin área'), circle: tr('Esfera / círculo (radio)'), cone: tr('Cono (largo)'), line: tr('Línea (largo)'), square: tr('Cubo (lado)') };
 
 export const RECHARGES = ['largo', 'corto', ''] as const;
 
@@ -90,11 +91,11 @@ export const homebrewDataSchema = z
       const err = value ? checkSyntax(value) : null;
       if (err) ctx.addIssue({ code: 'custom', path, message: `${what}: ${err}` });
     };
-    check(d.attackBonus, ['attackBonus'], 'Bono de ataque');
-    check(d.saveDc, ['saveDc'], 'CD de salvación');
-    check(d.heal, ['heal'], 'Curación');
-    check(d.upcast, ['upcast'], 'Mejora por nivel');
-    d.damage.forEach((p, i) => check(p.dice, ['damage', i, 'dice'], `Daño ${i + 1}`));
+    check(d.attackBonus, ['attackBonus'], tr('Bono de ataque'));
+    check(d.saveDc, ['saveDc'], tr('CD de salvación'));
+    check(d.heal, ['heal'], tr('Curación'));
+    check(d.upcast, ['upcast'], tr('Mejora por nivel'));
+    d.damage.forEach((p, i) => check(p.dice, ['damage', i, 'dice'], tr('Daño {0}', { '0': i + 1 })));
   });
 export type HomebrewData = z.infer<typeof homebrewDataSchema>;
 export type HomebrewDataInput = z.input<typeof homebrewDataSchema>;

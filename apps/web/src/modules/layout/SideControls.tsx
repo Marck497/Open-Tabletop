@@ -1,5 +1,6 @@
 import { useRef, type PointerEvent as ReactPointerEvent } from 'react';
 import { useLayout } from './store';
+import { tr } from '../../core/i18n';
 
 /** Borde izquierdo de la barra lateral: arrástralo para cambiar su ancho (doble clic, ancho normal). */
 export function SideResizer() {
@@ -25,8 +26,8 @@ export function SideResizer() {
       className="side-resizer"
       role="separator"
       aria-orientation="vertical"
-      aria-label="Ancho de la barra lateral"
-      title="Arrastra para cambiar el ancho (doble clic: ancho normal)"
+      aria-label={tr('Ancho de la barra lateral')}
+      title={tr('Arrastra para cambiar el ancho (doble clic: ancho normal)')}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
@@ -44,10 +45,10 @@ export function SideToggle({ unread }: { unread: number }) {
     <button
       className="ghost small side-toggle"
       onClick={() => toggleSide()}
-      title={hidden ? 'Mostrar la barra lateral (B)' : 'Esconder la barra lateral para ver más tablero (B)'}
+      title={hidden ? tr('Mostrar la barra lateral (B)') : tr('Esconder la barra lateral para ver más tablero (B)')}
       aria-pressed={!hidden}
     >
-      {hidden ? '⇤ Panel' : 'Panel ⇥'}
+      {hidden ? tr('⇤ Panel') : tr('Panel ⇥')}
       {hidden && unread > 0 && <span className="unread">{unread > 99 ? '99+' : unread}</span>}
     </button>
   );

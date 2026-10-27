@@ -36,6 +36,8 @@ export const campaigns = sqliteTable('campaigns', {
   inviteCode: text('invite_code').notNull().unique(),
   /** Escena donde están los jugadores. Sin FK para evitar el ciclo campaigns <-> scenes. */
   activeSceneId: text('active_scene_id'),
+  /** Idioma de lo que escribe el servidor en esta partida (chat, escenas nuevas…). */
+  lang: text('lang', { enum: ['es', 'en'] }).notNull().default('es'),
   ...timestamps,
 });
 

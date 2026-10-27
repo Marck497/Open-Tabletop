@@ -8,6 +8,7 @@ import { NotesList } from '../notes/NotesList';
 import { AdventureWindow } from '../adventure/AdventureWindow';
 import { TriggersList } from '../triggers/TriggersList';
 import { useBoard } from './store';
+import { tr } from '../../core/i18n';
 
 interface Props {
   campaignId: string;
@@ -41,7 +42,7 @@ export function ScenesPanel({ campaignId, activeSceneId, viewingId, members, onV
     run(async () => {
       const copy = await duplicateScene(scene.id);
       onView(copy.id);
-      return `Copia creada: «${copy.name}».`;
+      return tr('Copia creada: «{name}».', { name: copy.name });
     });
 
   const [importing, setImporting] = useState(false);
@@ -52,7 +53,7 @@ export function ScenesPanel({ campaignId, activeSceneId, viewingId, members, onV
       try {
         const scene = await importSceneFile(campaignId, file);
         onView(scene.id);
-        return `«${scene.name}» importada: ${scene.widthCells} × ${scene.heightCells} casillas${scene.walls.length ? `, ${scene.walls.length} paredes y puertas` : ''}.`;
+        return tr('«{name}» importada: {widthCells} × {heightCells} casillas{3}.', { name: scene.name, widthCells: scene.widthCells, heightCells: scene.heightCells, '3': scene.walls.length ? tr(', {length} paredes y puertas', { length: scene.walls.length }) : '' });
       } finally {
         setImporting(false);
       }
@@ -60,37 +61,37 @@ export function ScenesPanel({ campaignId, activeSceneId, viewingId, members, onV
 
   const keep = (scene: Scene) =>
     run(async () => {
-      const name = prompt('Nombre en tu biblioteca', scene.name)?.trim();
+      const name = prompt(tr('Nombre en tu biblioteca'), scene.name)?.trim();
       if (!name) return;
       await saveToLibrary(scene.id, name);
-      return `«${name}» guardada en tu biblioteca: ábrela con 📚 Biblioteca desde cualquiera de tus partidas.`;
+      return tr('«{name}» guardada en tu biblioteca: ábrela con 📚 Biblioteca desde cualquiera de tus partidas.', { name });
     });
 
   async function remove(scene: Scene) {
-    if (!confirm(`¿Borrar la escena "${scene.name}" y todo lo que contiene?`)) return;
+    if (!confirm(tr('¿Borrar la escena "{name}" y todo lo que contiene?', { name: scene.name }))) return;
     await api.delete(`/scenes/${scene.id}`);
   }
 
   return (
     <div className="panel">
       <div className="row spread">
-        <h3>Escenas</h3>
+        <h3>{tr('Escenas')}</h3>
         <span className="row">
-          <button className="ghost small" onClick={() => setLibrary(true)} title="Escenas guardadas para usarlas en cualquier partida, e importar archivos de escena">
-            📚 Biblioteca
+          <button className="ghost small" onClick={() => setLibrary(true)} title={tr('Escenas guardadas para usarlas en cualquier partida, e importar archivos de escena')}>
+            {tr('📚 Biblioteca')}
           </button>
-          <label className="button-like ghost small" title="Importa un mapa de Dungeondraft, Dungeon Alchemist… (.dd2vtt, .uvtt) con sus paredes, puertas y luces, o una escena exportada">
-            {importing ? 'Importando…' : '⬆ Importar'}
+          <label className="button-like ghost small" title={tr('Importa un mapa de Dungeondraft, Dungeon Alchemist… (.dd2vtt, .uvtt) con sus paredes, puertas y luces, o una escena exportada')}>
+            {importing ? tr('Importando…') : tr('⬆ Importar')}
             <input type="file" accept={IMPORT_ACCEPT} hidden disabled={importing} onChange={(e) => void importFile(e.target.files?.[0])} />
           </label>
           <button className="ghost small" onClick={() => void newFolder(campaignId)}>
-            + Carpeta
+            {tr('+ Carpeta')}
           </button>
           <button className="ghost small" onClick={() => void newScene(campaignId, scenes.length).then((s) => s && onView(s.id))}>
-            + Nueva
+            {tr('+ Nueva')}
           </button>
-          <button className="ghost small" onClick={() => setAdventure(true)} title="Crea una escena lista para jugar: mapa amueblado, notas, encuentros escondidos, trampas y tesoro">
-            ✨ Aventura rápida
+          <button className="ghost small" onClick={() => setAdventure(true)} title={tr('Crea una escena lista para jugar: mapa amueblado, notas, encuentros escondidos, trampas y tesoro')}>
+            {tr('✨ Aventura rápida')}
           </button>
         </span>
       </div>
@@ -98,18 +99,18 @@ export function ScenesPanel({ campaignId, activeSceneId, viewingId, members, onV
       {viewing && (
         <>
           <div className="row scene-actions">
-            <button className="ghost small" onClick={() => void duplicate(viewing)} title="Copia esta escena (mapa, paredes, objetos y enemigos) justo debajo, sin los tokens de los jugadores">
-              ⧉ Duplicar
+            <button className="ghost small" onClick={() => void duplicate(viewing)} title={tr('Copia esta escena (mapa, paredes, objetos y enemigos) justo debajo, sin los tokens de los jugadores')}>
+              {tr('⧉ Duplicar')}
             </button>
-            <button className="ghost small" onClick={() => void keep(viewing)} title="Guarda una copia para usarla en cualquiera de tus partidas">
-              📚 Guardar en biblioteca
+            <button className="ghost small" onClick={() => void keep(viewing)} title={tr('Guarda una copia para usarla en cualquiera de tus partidas')}>
+              {tr('📚 Guardar en biblioteca')}
             </button>
-            <a className="button-like ghost small" href={exportSceneUrl(viewing.id)} download title="Descarga la escena como archivo (con sus imágenes) para pasarla a otro DM o a otro servidor">
-              ⬇ Exportar
+            <a className="button-like ghost small" href={exportSceneUrl(viewing.id)} download title={tr('Descarga la escena como archivo (con sus imágenes) para pasarla a otro DM o a otro servidor')}>
+              {tr('⬇ Exportar')}
             </a>
           </div>
           <button className="ghost small" onClick={() => setEditing((e) => !e)}>
-            {editing ? 'Ocultar ajustes' : 'Ajustes de la escena'}
+            {editing ? tr('Ocultar ajustes') : tr('Ajustes de la escena')}
           </button>
           {editing && <SceneSettings key={viewing.id} scene={viewing} onDelete={() => void remove(viewing)} />}
           {boardSceneId === viewing.id && <NotesList campaignId={campaignId} />}
@@ -146,32 +147,32 @@ function SceneSettings({ scene, onDelete }: { scene: Scene; onDelete: () => void
   return (
     <div className="scene-settings">
       <label>
-        Nombre
+        {tr('Nombre')}
         <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} onBlur={() => form.name && form.name !== scene.name && save({ name: form.name })} />
       </label>
       <div className="field-row">
         <label>
-          Ancho (casillas)
+          {tr('Ancho (casillas)')}
           <input min={1} max={200} {...num('widthCells')} />
         </label>
         <label>
-          Alto (casillas)
+          {tr('Alto (casillas)')}
           <input min={1} max={200} {...num('heightCells')} />
         </label>
       </div>
       <div className="field-row">
         <label>
-          Tamaño casilla (px)
+          {tr('Tamaño casilla (px)')}
           <input min={10} max={300} {...num('gridSize')} />
         </label>
         <label>
-          Fondo
+          {tr('Fondo')}
           <input type="color" value={form.backgroundColor} onChange={(e) => setForm({ ...form, backgroundColor: e.target.value })} onBlur={() => save({ backgroundColor: form.backgroundColor })} />
         </label>
       </div>
       <div className="field-row">
         <label>
-          Cada casilla son
+          {tr('Cada casilla son')}
           <input
             type="number"
             min={0.1}
@@ -182,12 +183,12 @@ function SceneSettings({ scene, onDelete }: { scene: Scene; onDelete: () => void
           />
         </label>
         <label>
-          Unidad
+          {tr('Unidad')}
           <input value={form.distanceUnit} maxLength={16} onChange={(e) => setForm({ ...form, distanceUnit: e.target.value })} onBlur={() => form.distanceUnit !== scene.distanceUnit && save({ distanceUnit: form.distanceUnit })} />
         </label>
       </div>
       <label>
-        Diagonales
+        {tr('Diagonales')}
         <select
           value={form.diagonalRule}
           onChange={(e) => {
@@ -212,10 +213,10 @@ function SceneSettings({ scene, onDelete }: { scene: Scene; onDelete: () => void
             save({ gridVisible: e.target.checked });
           }}
         />
-        Mostrar cuadrícula
+        {tr('Mostrar cuadrícula')}
       </label>
       <button className="ghost small danger" onClick={onDelete}>
-        Borrar escena
+        {tr('Borrar escena')}
       </button>
     </div>
   );

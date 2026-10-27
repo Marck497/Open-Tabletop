@@ -3,6 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { count, eq, inArray } from 'drizzle-orm';
 import {
+  tr,
   formatBytes,
   heavyAsset,
   PERF_LIMITS,
@@ -120,18 +121,18 @@ export function createPerformanceService(ctx: AppContext) {
 
     const warnings: PerfWarning[] = [];
     const warn = (level: PerfWarning['level'], text: string) => warnings.push({ level, text });
-    if (free !== null && free < PERF_LIMITS.freeBytes) warn('bad', `Queda poco espacio en el disco: ${formatBytes(free)}. Borra archivos sin usar o copias viejas.`);
-    if (temp !== null && temp >= PERF_LIMITS.cpuTemp) warn(temp >= 80 ? 'bad' : 'warn', `La CPU está a ${temp} °C: la Pi baja la velocidad para enfriarse. Ponle disipador o ventilador.`);
-    if (rss > PERF_LIMITS.rssBytes) warn('warn', `El servidor usa ${formatBytes(rss)} de memoria. Reiniciarlo la libera.`);
-    if (database > PERF_LIMITS.dbBytes) warn('warn', `La base de datos ocupa ${formatBytes(database)}.`);
-    if (heavy.length) warn('warn', `${heavy.length} ${heavy.length === 1 ? 'archivo pesado' : 'archivos pesados'}: tardan en cargar en los móviles y en la wifi.`);
+    if (free !== null && free < PERF_LIMITS.freeBytes) warn('bad', tr('Queda poco espacio en el disco: {0}. Borra archivos sin usar o copias viejas.', { '0': formatBytes(free) }));
+    if (temp !== null && temp >= PERF_LIMITS.cpuTemp) warn(temp >= 80 ? 'bad' : 'warn', tr('La CPU está a {temp} °C: la Pi baja la velocidad para enfriarse. Ponle disipador o ventilador.', { temp }));
+    if (rss > PERF_LIMITS.rssBytes) warn('warn', tr('El servidor usa {0} de memoria. Reiniciarlo la libera.', { '0': formatBytes(rss) }));
+    if (database > PERF_LIMITS.dbBytes) warn('warn', tr('La base de datos ocupa {0}.', { '0': formatBytes(database) }));
+    if (heavy.length) warn('warn', tr('{length} {1}: tardan en cargar en los móviles y en la wifi.', { length: heavy.length, '1': heavy.length === 1 ? tr('archivo pesado') : tr('archivos pesados') }));
     for (const s of sceneStats) {
-      if (s.items > PERF_LIMITS.sceneItems) warn('warn', `La escena «${s.name}» tiene ${s.items} objetos: puede ir a tirones. Junta dibujos o pásalos a la imagen del mapa.`);
-      if (s.walls > PERF_LIMITS.sceneWalls) warn('warn', `La escena «${s.name}» tiene ${s.walls} paredes: la visión se calcula más despacio.`);
+      if (s.items > PERF_LIMITS.sceneItems) warn('warn', tr('La escena «{name}» tiene {items} objetos: puede ir a tirones. Junta dibujos o pásalos a la imagen del mapa.', { name: s.name, items: s.items }));
+      if (s.walls > PERF_LIMITS.sceneWalls) warn('warn', tr('La escena «{name}» tiene {walls} paredes: la visión se calcula más despacio.', { name: s.name, walls: s.walls }));
     }
-    if (chat > PERF_LIMITS.chatMessages) warn('warn', `El chat tiene ${chat} mensajes: se cargan al entrar, aunque solo se ven los últimos.`);
-    if (unused.length) warn('warn', `${unused.length} ${unused.length === 1 ? 'archivo no lo usa' : 'archivos no los usa'} nada: ${formatBytes(unused.reduce((a, u) => a + u.size, 0))} que puedes liberar.`);
-    if (orphans.files.length) warn('warn', `${orphans.files.length} restos de subidas fallidas (${formatBytes(orphans.bytes)}).`);
+    if (chat > PERF_LIMITS.chatMessages) warn('warn', tr('El chat tiene {chat} mensajes: se cargan al entrar, aunque solo se ven los últimos.', { chat }));
+    if (unused.length) warn('warn', tr('{length} {1} nada: {2} que puedes liberar.', { length: unused.length, '1': unused.length === 1 ? tr('archivo no lo usa') : tr('archivos no los usa'), '2': formatBytes(unused.reduce((a, u) => a + u.size, 0)) }));
+    if (orphans.files.length) warn('warn', tr('{length} restos de subidas fallidas ({1}).', { length: orphans.files.length, '1': formatBytes(orphans.bytes) }));
 
     return {
       server: {

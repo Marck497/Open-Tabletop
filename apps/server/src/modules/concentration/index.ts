@@ -1,5 +1,5 @@
 import { and, eq, inArray } from 'drizzle-orm';
-import { allFields, concentrationDc, createResolver, evaluate, saveOptions, statusesOf, type BoardItem, type ChatRollPart } from '@vtt/shared';
+import { tr, allFields, concentrationDc, createResolver, evaluate, saveOptions, statusesOf, type BoardItem, type ChatRollPart } from '@vtt/shared';
 import type { AppContext, ServerModule } from '../../core/module.js';
 import { boardItems, campaignMembers, users } from '../../db/schema.js';
 import { createBoardBroadcaster } from '../board/broadcast.js';
@@ -70,7 +70,7 @@ export function createConcentrationService(ctx: AppContext) {
       }
       const total = Math.round(r.value);
       lost = total < dc;
-      part = { label: `Salvación de ${opt?.label ?? status.concentration} (CD ${dc}) ${lost ? '✘ falla' : '✔ salva'}`, expression, total, rolls: r.rolls };
+      part = { label: tr('Salvación de {0} (CD {dc}) {2}', { '0': tr(opt?.label ?? status.concentration ?? ''), dc, '2': lost ? tr('✘ falla') : tr('✔ salva') }), expression, total, rolls: r.rolls };
     }
 
     if (lost) {
@@ -79,7 +79,7 @@ export function createConcentrationService(ctx: AppContext) {
         await broadcaster.itemChanged(scene, before, after);
       }
     }
-    const verdict = lost ? (hp <= 0 ? 'cae a 0 PG y pierde la concentración' : 'pierde la concentración') : 'mantiene la concentración';
+    const verdict = lost ? (hp <= 0 ? tr('cae a 0 PG y pierde la concentración') : tr('pierde la concentración')) : tr('mantiene la concentración');
     const message = chat.insert({
       campaignId,
       userId: gm.id,

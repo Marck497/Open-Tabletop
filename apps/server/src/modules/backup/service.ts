@@ -27,7 +27,7 @@ export function createBackupService(ctx: AppContext) {
       format: BACKUP_FORMAT,
       version: BACKUP_VERSION,
       exportedAt: new Date().toISOString(),
-      campaign: { name: c.name, description: c.description, systemId: c.systemId, activeSceneId: c.activeSceneId },
+      campaign: { name: c.name, description: c.description, systemId: c.systemId, lang: c.lang, activeSceneId: c.activeSceneId },
       template: db.select().from(sheetTemplates).where(eq(sheetTemplates.campaignId, campaignId)).get()?.definition ?? null,
       scenes: sceneRows.map(({ campaignId: _c, createdAt: _t, ...s }) => s),
       sceneFolders: db
@@ -127,6 +127,7 @@ export function createBackupService(ctx: AppContext) {
       name: backup.campaign.name,
       description: backup.campaign.description,
       systemId: backup.campaign.systemId,
+      lang: backup.campaign.lang,
     });
     try {
       return restore(campaignId, userId, backup);

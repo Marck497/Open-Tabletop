@@ -16,6 +16,7 @@ import { updateSelected } from '../board/actions';
 import { deleteItem } from '../board/history';
 import { useBoard } from '../board/store';
 import { useSheets } from '../sheets/store';
+import { tr } from '../../core/i18n';
 
 /** Panel de una trampa o zona de aviso seleccionada (solo el DM). */
 export function TriggerPanel({ item, notes }: { item: BoardItem; notes: ReactNode }) {
@@ -53,15 +54,15 @@ export function TriggerPanel({ item, notes }: { item: BoardItem; notes: ReactNod
     <div className="panel">
       <h3>
         {TRIGGER_ICONS[t.kind]} {TRIGGER_LABELS[t.kind]}
-        {!t.active && <span className="muted"> · ya saltó</span>}
+        {!t.active && <span className="muted">{' '}{tr('· ya saltó')}</span>}
       </h3>
       <div className="field-row">
         <label>
-          Nombre
+          {tr('Nombre')}
           <input value={form.name} maxLength={80} onChange={(e) => setForm({ ...form, name: e.target.value })} onBlur={() => form.name !== item.name && updateSelected({ name: form.name })} />
         </label>
         <label>
-          Tipo
+          {tr('Tipo')}
           <select value={t.kind} onChange={(e) => void setKind(e.target.value as TriggerKind)}>
             {TRIGGER_KINDS.map((k) => (
               <option key={k} value={k}>
@@ -73,14 +74,14 @@ export function TriggerPanel({ item, notes }: { item: BoardItem; notes: ReactNod
       </div>
       <label className="switch">
         <input type="checkbox" checked={t.active} onChange={(e) => void save({ active: e.target.checked })} />
-        Armada (salta cuando un token entra)
+        {tr('Armada (salta cuando un token entra)')}
       </label>
       <label className="switch">
         <input type="checkbox" checked={t.once} onChange={(e) => void save({ once: e.target.checked })} />
-        Solo una vez (luego se desarma)
+        {tr('Solo una vez (luego se desarma)')}
       </label>
       <label>
-        La dispara
+        {tr('La dispara')}
         <select value={t.who} onChange={(e) => void save({ who: e.target.value as Trigger['who'] })}>
           {TRIGGER_WHO.map((w) => (
             <option key={w} value={w}>
@@ -90,12 +91,12 @@ export function TriggerPanel({ item, notes }: { item: BoardItem; notes: ReactNod
         </select>
       </label>
       <label>
-        Mensaje para todos en el chat
+        {tr('Mensaje para todos en el chat')}
         <textarea
           rows={2}
           maxLength={1000}
           value={form.message}
-          placeholder={trap ? '¡El suelo cede bajo tus pies!' : 'Se oye un crujido entre los árboles…'}
+          placeholder={trap ? tr('¡El suelo cede bajo tus pies!') : tr('Se oye un crujido entre los árboles…')}
           onChange={(e) => setForm({ ...form, message: e.target.value })}
           onBlur={() => form.message !== t.message && save({ message: form.message })}
         />
@@ -103,12 +104,12 @@ export function TriggerPanel({ item, notes }: { item: BoardItem; notes: ReactNod
 
       {trap && (
         <fieldset className="owners">
-          <legend>Salvación y daño (se tiran y se aplican solos al token)</legend>
+          <legend>{tr('Salvación y daño (se tiran y se aplican solos al token)')}</legend>
           <div className="field-row">
             <label>
-              Salvación
+              {tr('Salvación')}
               <select value={t.save} onChange={(e) => void save({ save: e.target.value })}>
-                <option value="">Ninguna</option>
+                <option value="">{tr('Ninguna')}</option>
                 {saves.map((o) => (
                   <option key={o.value} value={o.value}>
                     {o.label}
@@ -118,7 +119,7 @@ export function TriggerPanel({ item, notes }: { item: BoardItem; notes: ReactNod
             </label>
             {t.save && (
               <label style={{ maxWidth: 70 }}>
-                CD
+                {tr('CD')}
                 <input
                   type="number"
                   min={1}
@@ -132,22 +133,22 @@ export function TriggerPanel({ item, notes }: { item: BoardItem; notes: ReactNod
           </div>
           <div className="field-row">
             <label>
-              Daño
+              {tr('Daño')}
               <input value={form.damage} maxLength={60} placeholder="2d10" onChange={(e) => setForm({ ...form, damage: e.target.value })} onBlur={() => form.damage !== t.damage && save({ damage: form.damage.trim() })} />
             </label>
             <label>
-              Tipo
+              {tr('Tipo')}
               <input
                 list="trap-damage-types"
                 value={form.damageType}
                 maxLength={40}
-                placeholder="contundente"
+                placeholder={tr('contundente')}
                 onChange={(e) => setForm({ ...form, damageType: e.target.value })}
                 onBlur={() => form.damageType !== t.damageType && save({ damageType: form.damageType.trim() })}
               />
               <datalist id="trap-damage-types">
                 {DAMAGE_TYPE_SUGGESTIONS.map((d) => (
-                  <option key={d} value={d} />
+                  <option key={d} value={tr(d)} />
                 ))}
               </datalist>
             </label>
@@ -155,23 +156,23 @@ export function TriggerPanel({ item, notes }: { item: BoardItem; notes: ReactNod
           {t.save && t.damage && (
             <label className="switch">
               <input type="checkbox" checked={t.half} onChange={(e) => void save({ half: e.target.checked })} />
-              Mitad del daño si salva (si no, nada)
+              {tr('Mitad del daño si salva (si no, nada)')}
             </label>
           )}
         </fieldset>
       )}
 
-      <label className="switch" title={trap ? 'Al saltar, la trampa se ve y lo escondido dentro en la capa del DM aparece' : 'Al saltar, lo escondido dentro en la capa del DM (p. ej. los monstruos de una emboscada) aparece'}>
+      <label className="switch" title={trap ? tr('Al saltar, la trampa se ve y lo escondido dentro en la capa del DM aparece') : tr('Al saltar, lo escondido dentro en la capa del DM (p. ej. los monstruos de una emboscada) aparece')}>
         <input type="checkbox" checked={t.reveal} onChange={(e) => void save({ reveal: e.target.checked })} />
-        {trap ? 'Descubrirla al saltar (y lo escondido dentro)' : 'Descubrir lo escondido dentro (emboscada)'}
+        {trap ? tr('Descubrirla al saltar (y lo escondido dentro)') : tr('Descubrir lo escondido dentro (emboscada)')}
       </label>
       {notes}
       <div className="row">
         <button className="ghost small danger" onClick={() => void deleteItem(scene.id, item.id)}>
-          Borrar
+          {tr('Borrar')}
         </button>
       </div>
-      <p className="muted hint">Está en la capa del DM: los jugadores no la ven. Con la capa DM activa, arrástrala o cambia su tamaño desde las esquinas.</p>
+      <p className="muted hint">{tr('Está en la capa del DM: los jugadores no la ven. Con la capa DM activa, arrástrala o cambia su tamaño desde las esquinas.')}</p>
     </div>
   );
 }

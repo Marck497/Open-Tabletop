@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { BoardItem, BoardLayer, DrawingType, Fog, LightSource, Measure, MeasureShape, PointerAuthor, Scene, SceneState, Wall, WallKind } from '@vtt/shared';
+import { tr } from '../../core/i18n';
 
 export type Tool = 'select' | 'measure' | 'ping' | 'draw' | 'walls' | 'map' | 'calibrate' | 'fog-reveal' | 'fog-hide';
 
@@ -173,4 +174,4 @@ export const useBoard = create<BoardState>((set) => ({
   },
 }));
 
-export const LAYER_LABELS: Record<BoardLayer, string> = { map: 'Mapa', token: 'Tokens', gm: 'DM (oculta)' };
+export const LAYER_LABELS: Record<BoardLayer, string> = { map: tr('Mapa'), token: tr('Tokens'), gm: tr('DM (oculta)') };

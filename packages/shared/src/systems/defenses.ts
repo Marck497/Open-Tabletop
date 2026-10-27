@@ -20,20 +20,40 @@ export interface DamagePiece {
 }
 
 /** Palabras que significan «cualquier tipo de daño». */
-const ALL = new Set(['todo', 'todos', 'cualquiera', 'all']);
+const ALL = new Set(['todo', 'todos', 'cualquiera', 'all', 'any']);
 
-/** Minúsculas y sin tildes, para comparar «Relámpago» con «relampago». */
-export const normalizeDamageType = (t: string) =>
-  t
+/** Los tipos de daño en inglés cuentan como su nombre en español, para mezclar hojas y mesas de los dos idiomas. */
+const ENGLISH_TYPES: Record<string, string> = {
+  acid: 'acido',
+  bludgeoning: 'contundente',
+  slashing: 'cortante',
+  cold: 'frio',
+  fire: 'fuego',
+  force: 'fuerza',
+  necrotic: 'necrotico',
+  piercing: 'perforante',
+  psychic: 'psiquico',
+  radiant: 'radiante',
+  lightning: 'relampago',
+  thunder: 'trueno',
+  poison: 'veneno',
+  everything: 'todo',
+};
+
+/** Minúsculas, sin tildes y en español, para comparar «Relámpago» con «relampago» o «lightning». */
+export const normalizeDamageType = (t: string) => {
+  const n = t
     .trim()
     .toLowerCase()
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '');
+  return n.replace(/^[a-z]+/, (w) => ENGLISH_TYPES[w] ?? w);
+};
 
 /** «fuego, frío y veneno» → ['fuego', 'frio', 'veneno'] (normalizados). */
 export function parseDamageTypes(text: string): string[] {
   return text
-    .split(/[,;/\n]|\s+y\s+|\s+e\s+/)
+    .split(/[,;/\n]|\s+(?:y|e|and)\s+/)
     .map(normalizeDamageType)
     .filter(Boolean);
 }
@@ -90,7 +110,7 @@ export function applyDefenses(pieces: DamagePiece[], def: Defenses): { total: nu
 
 /** Tipos de daño conocidos que aparecen en un texto (p. ej. «1d6 fuego» → ['fuego']). */
 export function damageTypesIn(text: string, known: string[]): string[] {
-  const t = ` ${normalizeDamageType(text)} `;
+  const t = ` ${normalizeDamageType(text).replace(/[a-z]+/g, (w) => ENGLISH_TYPES[w] ?? w)} `;
   return known.filter((k) => new RegExp(`[^a-z]${normalizeDamageType(k)}[^a-z]`).test(t));
 }
 

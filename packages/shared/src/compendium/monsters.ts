@@ -3,6 +3,7 @@ import { allFields, type SheetTemplate, type SheetValues } from '../schemas/shee
 import { combatOf } from '../systems/index.js';
 import { traitDefenses } from '../systems/defenses.js';
 import { DAMAGE_TYPE_SUGGESTIONS } from '../schemas/homebrew.js';
+import { tr } from '../i18n/index.js';
 
 /**
  * Compendio de monstruos del SRD 5.1 de D&D (contenido bajo licencia CC-BY-4.0,
@@ -167,19 +168,23 @@ export function monsterValues(template: SheetTemplate, m: Monster): SheetValues 
     const hasType = allFields(template).some((f) => f.key === list && f.columns?.some((c) => c.key === 'tipo'));
     out[list] = m.attacks.map((a, i) => ({
       _id: `a${i}`,
-      [name]: a.name,
+      [name]: tr(a.name),
       [attack]: a.bonus,
       [damage]: a.damage,
-      ...(hasType ? { tipo: a.ranged ? `${a.type}, a distancia ${a.reach * 5} pies` : a.reach > 1 ? `${a.type}, alcance ${a.reach * 5} pies` : a.type } : {}),
+      ...(hasType
+        ? { tipo: a.ranged ? tr('{type}, a distancia {feet} pies', { type: tr(a.type), feet: a.reach * 5 }) : a.reach > 1 ? tr('{type}, alcance {feet} pies', { type: tr(a.type), feet: a.reach * 5 }) : tr(a.type) }
+        : {}),
     }));
   }
   ABILITY_KEYS.forEach((k, i) => put(k, m.abilities[i]!));
   // El bono de competencia de la plantilla de 5e sale del nivel: se elige uno que dé el del VD.
   put('nivel', (proficiencyOf(m.cr) - 2) * 4 + 1);
-  put('clase', `Monstruo (VD ${m.cr})`);
-  put('raza', `${m.type}, ${m.size}`);
+  put('clase', tr('Monstruo (VD {cr})', { cr: m.cr }));
+  put('raza', `${tr(m.type)}, ${tr(m.size)}`);
   put('dados_golpe', m.hitDice);
-  const notes = [m.speedNote ? `Velocidad: ${m.speed} pies, ${m.speedNote}.` : '', m.traits, `${m.en} — SRD 5.1 (CC-BY-4.0).`].filter(Boolean).join('\n\n');
+  const notes = [m.speedNote ? tr('Velocidad: {speed} pies, {note}.', { speed: m.speed, note: tr(m.speedNote) }) : '', m.traits && tr(m.traits), `${m.en} — SRD 5.1 (CC-BY-4.0).`]
+    .filter(Boolean)
+    .join('\n\n');
   // Resistencias, inmunidades y vulnerabilidades escritas en los rasgos, a los campos de la hoja.
   const def = traitDefenses(m.traits, DAMAGE_TYPE_SUGGESTIONS);
   const map = combat?.defenses;

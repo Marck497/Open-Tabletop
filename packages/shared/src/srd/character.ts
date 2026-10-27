@@ -1,5 +1,6 @@
 import { allFields, type SheetTemplate, type SheetValues } from '../schemas/sheet.js';
 import { SRD_ABILITIES, type SrdAbility, type SrdClass, type SrdData, type SrdGear, type SrdItem, type SrdRace, type SrdSpell, type SrdSubrace } from './types.js';
+import { localName, tr } from '../i18n/index.js';
 
 /** Elecciones del creador de personajes. Todo es por id del SRD; la hoja se rellena con `srdCharacterValues`. */
 export interface SrdBuild {
@@ -135,8 +136,8 @@ export function weaponAttack(item: SrdItem, scores: Record<SrdAbility, number>, 
   const str = abilityMod(scores.fue);
   const dex = abilityMod(scores.des);
   const mod = w.finesse ? Math.max(str, dex) : w.ranged ? dex : str;
-  const extra = [w.twoHanded ? `${w.twoHanded} a dos manos` : '', w.range ? `${w.range} pies` : ''].filter(Boolean).join(', ');
-  return { nombre: item.name, bono: signed(proficiencyBonus(level) + mod), dano: withMod(w.damage, mod), tipo: extra ? `${w.type}, ${extra}` : w.type };
+  const extra = [w.twoHanded ? tr('{twoHanded} a dos manos', { twoHanded: w.twoHanded }) : '', w.range ? tr('{range} pies', { range: w.range }) : ''].filter(Boolean).join(', ');
+  return { nombre: localName(item), bono: signed(proficiencyBonus(level) + mod), dano: withMod(w.damage, mod), tipo: extra ? `${w.type}, ${extra}` : w.type };
 }
 
 /** Dados de daño (o curación) de un conjuro al nivel más bajo en que se lanza. */
@@ -163,10 +164,10 @@ export function spellNotes(s: SrdSpell): string {
     s.time,
     s.range,
     s.area,
-    s.attack ? 'ataque de conjuro' : '',
-    s.save ? `salv. ${SAVE_ABBR[s.save]}` : '',
+    s.attack ? tr('ataque de conjuro') : '',
+    s.save ? tr('salv. {0}', { '0': SAVE_ABBR[s.save] }) : '',
     s.damage?.map((d) => d.type).filter(Boolean).join('/'),
-    s.concentration ? 'concentración' : '',
+    s.concentration ? tr('concentración') : '',
     s.ritual ? 'ritual' : '',
     s.duration !== 'Instantánea' ? s.duration : '',
   ]
@@ -206,10 +207,10 @@ export function srdCharacterValues(template: SheetTemplate, build: SrdBuild, dat
   const listHas = (list: string, col: string) => fields.some((f) => f.key === list && f.columns?.some((c) => c.key === col));
 
   for (const a of SRD_ABILITIES) put(a, scores[a]);
-  put('clase', cls ? (subclass ? `${cls.name} (${subclass.name})` : cls.name) : '');
+  put('clase', cls ? (subclass ? `${localName(cls)} (${localName(subclass)})` : localName(cls)) : '');
   put('nivel', level);
-  put('raza', sub?.name ?? race?.name ?? '');
-  put('trasfondo', bg?.name ?? build.backgroundName ?? '');
+  put('raza', sub ? localName(sub) : race ? localName(race) : '');
+  put('trasfondo', bg ? localName(bg) : (build.backgroundName ?? ''));
   if (build.alignment) put('alineamiento', build.alignment);
   put('velocidad', race?.speed ?? 30);
 
@@ -245,8 +246,8 @@ export function srdCharacterValues(template: SheetTemplate, build: SrdBuild, dat
     if (s.level !== 0 || !s.damage) continue;
     const dmg = spellEffect(s, level, spellMod);
     attacks.push({
-      nombre: s.name,
-      bono: s.attack ? signed(proficiencyBonus(level) + spellMod) : `CD ${8 + proficiencyBonus(level) + spellMod} ${s.save ? SAVE_ABBR[s.save] : ''}`.trim(),
+      nombre: localName(s),
+      bono: s.attack ? signed(proficiencyBonus(level) + spellMod) : tr('CD {0} {1}', { '0': 8 + proficiencyBonus(level) + spellMod, '1': s.save ? SAVE_ABBR[s.save] : '' }).trim(),
       dano: dmg,
       tipo: [s.damage.map((d) => d.type).join('/'), s.range].filter(Boolean).join(', '),
     });
@@ -259,7 +260,7 @@ export function srdCharacterValues(template: SheetTemplate, build: SrdBuild, dat
     });
   }
   if (keys.has('conjuros')) {
-    out.conjuros = spells.map((s, i) => ({ _id: `c${i}`, nivel: s.level, nombre: s.name, preparado: true, efecto: spellEffect(s, level, spellMod), notas: spellNotes(s) }));
+    out.conjuros = spells.map((s, i) => ({ _id: `c${i}`, nivel: s.level, nombre: localName(s), preparado: true, efecto: spellEffect(s, level, spellMod), notas: spellNotes(s) }));
   }
   if (sc) {
     put('conj_caracteristica', sc.ability);
@@ -267,14 +268,14 @@ export function srdCharacterValues(template: SheetTemplate, build: SrdBuild, dat
     slots.forEach((n, i) => put(`espacios_${i + 1}_max`, n));
   }
   if (keys.has('inventario')) {
-    out.inventario = inventory.map(({ id, qty, item }, i) => ({ _id: `i${i}`, objeto: item?.name ?? id, cantidad: qty, peso: item?.weight ?? 0 }));
+    out.inventario = inventory.map(({ id, qty, item }, i) => ({ _id: `i${i}`, objeto: item ? localName(item) : id, cantidad: qty, peso: item?.weight ?? 0 }));
   }
   if (bg?.gold) put('po', bg.gold);
 
   // Competencias, idiomas y rasgos como texto.
   const profs = [...(cls?.proficiencies ?? []), ...(race?.proficiencies ?? []), ...(sub?.proficiencies ?? [])];
   const languages = [...new Set([...(race?.languages ?? []), ...build.languages])];
-  put('competencias', [profs.length ? `Competencias: ${profs.join(', ')}.` : '', languages.length ? `Idiomas: ${languages.join(', ')}.` : ''].filter(Boolean).join('\n'));
+  put('competencias', [profs.length ? tr('Competencias: {0}.', { '0': profs.join(', ') }) : '', languages.length ? tr('Idiomas: {0}.', { '0': languages.join(', ') }) : ''].filter(Boolean).join('\n'));
   const pick = (name: string, options?: { name: string }[]) => {
     const chosen = options?.length ? build.options[name] : undefined;
     if (!chosen) return name;
@@ -285,10 +286,10 @@ export function srdCharacterValues(template: SheetTemplate, build: SrdBuild, dat
   if (raceTraits.length) lines.push(`${sub?.name ?? race?.name}: ${raceTraits.map((t) => pick(t.name, t.options)).join(', ')}.`);
   if (cls) {
     const feats = [...cls.features, ...(subclass?.features ?? [])].filter((f) => f.level <= level).sort((a, b) => a.level - b.level);
-    for (const f of feats) lines.push(`Nv ${f.level} · ${pick(f.name, f.options)}`);
+    for (const f of feats) lines.push(tr('Nv {level} · {1}', { level: f.level, '1': pick(f.name, f.options) }));
   }
   if (bg) lines.push(`${bg.name}: ${bg.feature.name}.`);
-  lines.push('SRD 5.1 (CC-BY-4.0): las descripciones completas están en 📚 Reglas (pestaña Personajes).');
+  lines.push(tr('SRD 5.1 (CC-BY-4.0): las descripciones completas están en 📚 Reglas (pestaña Personajes).'));
   put('rasgos', lines.join('\n'));
   return out;
 }

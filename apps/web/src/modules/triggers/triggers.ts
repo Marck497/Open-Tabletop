@@ -2,6 +2,7 @@ import { TRIGGER_COLORS, TRIGGER_ICONS, type BoardItem, type TriggerKind } from 
 import { addItem } from '../board/actions';
 import { updateItem } from '../board/history';
 import { useBoard } from '../board/store';
+import { tr } from '../../core/i18n';
 
 /** Trampas y zonas de aviso de la escena abierta (rectángulos de la capa del DM con `trigger`). */
 export const isTrigger = (i: BoardItem) => !!i.trigger;
@@ -21,7 +22,7 @@ export function addTrigger(kind: TriggerKind) {
     layer: 'gm',
     width: size,
     height: size,
-    name: `${kind === 'trap' ? 'Trampa' : 'Zona'} ${n}`,
+    name: `${kind === 'trap' ? tr('Trampa') : tr('Zona')} ${n}`,
     drawing: { type: 'zone', text: TRIGGER_ICONS[kind], stroke: TRIGGER_COLORS[kind] },
     trigger: kind === 'trap' ? { kind, save: '', damage: '' } : { kind },
   });

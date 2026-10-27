@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
+  localName,
   crValue,
   DIFFICULTY_LABELS,
   monsterById,
@@ -14,6 +15,7 @@ import {
 import { api } from '../../core/api';
 import { useBoard } from '../board/store';
 import { useSheets } from '../sheets/store';
+import { lang, tr } from '../../core/i18n';
 
 const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 const PARTY_KEY = (campaignId: string) => `vtt:encounters:party:${campaignId}`;
@@ -22,14 +24,15 @@ const PARTY_KEY = (campaignId: string) => `vtt:encounters:party:${campaignId}`;
 export const monstersSummary = (list: EncounterMonster[]) =>
   list
     .map((m) => {
-      const name = monsterById(m.monsterId)?.name ?? m.monsterId;
+      const def = monsterById(m.monsterId);
+      const name = def ? localName(def) : m.monsterId;
       return m.count > 1 ? `${m.count} × ${name}` : name;
     })
-    .join(', ') || 'Sin monstruos';
+    .join(', ') || tr('Sin monstruos');
 
 function DifficultyBadge({ difficulty, xp }: { difficulty: Difficulty; xp: number }) {
   return (
-    <span className={`badge difficulty-${difficulty}`} title={`${xp} PX ajustados para el grupo`}>
+    <span className={`badge difficulty-${difficulty}`} title={tr('{xp} PX ajustados para el grupo', { xp })}>
       {DIFFICULTY_LABELS[difficulty]}
     </span>
   );
@@ -98,13 +101,13 @@ export function EncountersWindow({ campaignId, onClose }: { campaignId: string; 
   const deploy = (e: Encounter) =>
     run(async () => {
       const { scene: current, viewCenter } = useBoard.getState();
-      if (!current) return 'Abre una escena primero.';
+      if (!current) return tr('Abre una escena primero.');
       const res = await api.post<{ characters: number }>(`/encounters/${e.id}/deploy`, { sceneId: current.id, x: viewCenter.x, y: viewCenter.y, hidden });
-      return `«${e.name}»: ${res.characters} ${res.characters === 1 ? 'monstruo' : 'monstruos'} en «${current.name}»${hidden ? ', escondidos en la capa del DM' : ''}, con su hoja y la IA activada.`;
+      return tr('«{name}»: {characters} {2} en «{name2}»{4}, con su hoja y la IA activada.', { name: e.name, characters: res.characters, '2': res.characters === 1 ? tr('monstruo') : tr('monstruos'), name2: current.name, '4': hidden ? tr(', escondidos en la capa del DM') : '' });
     });
 
   const remove = (e: Encounter) => {
-    if (confirm(`¿Borrar el encuentro «${e.name}»? Los monstruos que ya soltaste no se borran.`))
+    if (confirm(tr('¿Borrar el encuentro «{name}»? Los monstruos que ya soltaste no se borran.', { name: e.name })))
       void run(async () => {
         await api.delete(`/encounters/${e.id}`);
         await load();
@@ -113,10 +116,10 @@ export function EncountersWindow({ campaignId, onClose }: { campaignId: string; 
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="card modal encounters" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Encuentros preparados">
+      <div className="card modal encounters" onClick={(e) => e.stopPropagation()} role="dialog" aria-label={tr('Encuentros preparados')}>
         <div className="row spread">
-          <h2>⚔ Encuentros preparados</h2>
-          <button className="ghost small" onClick={onClose} title="Cerrar">
+          <h2>{tr('⚔ Encuentros preparados')}</h2>
+          <button className="ghost small" onClick={onClose} title={tr('Cerrar')}>
             ✕
           </button>
         </div>
@@ -131,7 +134,7 @@ export function EncountersWindow({ campaignId, onClose }: { campaignId: string; 
             onDone={(saved) => {
               setEditing(null);
               if (saved) {
-                setMessage(`«${saved.name}» guardado.`);
+                setMessage(tr('«{name}» guardado.', { name: saved.name }));
                 void load();
               }
             }}
@@ -139,18 +142,18 @@ export function EncountersWindow({ campaignId, onClose }: { campaignId: string; 
         ) : (
           <>
             <div className="row spread">
-              <label className="switch" title="Los pone en la capa del DM: los jugadores no los ven hasta que los pases a la de tokens">
+              <label className="switch" title={tr('Los pone en la capa del DM: los jugadores no los ven hasta que los pases a la de tokens')}>
                 <input type="checkbox" checked={hidden} onChange={(e) => setHidden(e.target.checked)} />
-                Soltarlos escondidos (capa del DM)
+                {tr('Soltarlos escondidos (capa del DM)')}
               </label>
               <button className="small primary" onClick={() => setEditing('new')}>
-                + Nuevo encuentro
+                {tr('+ Nuevo encuentro')}
               </button>
             </div>
             {list === null ? (
-              <p className="muted">Cargando…</p>
+              <p className="muted">{tr('Cargando…')}</p>
             ) : list.length === 0 ? (
-              <p className="muted">Aún no hay encuentros. Crea uno con los monstruos del compendio y suéltalo en el tablero con un clic cuando llegue el momento.</p>
+              <p className="muted">{tr('Aún no hay encuentros. Crea uno con los monstruos del compendio y suéltalo en el tablero con un clic cuando llegue el momento.')}</p>
             ) : (
               <ul className="encounter-list">
                 {list.map((e) => {
@@ -159,21 +162,21 @@ export function EncountersWindow({ campaignId, onClose }: { campaignId: string; 
                     <li key={e.id} className="encounter-row">
                       <div className="row spread">
                         <span className="encounter-name">
-                          <strong>{e.name}</strong> <DifficultyBadge difficulty={rating.difficulty} xp={rating.adjustedXp} /> <small className="muted">{rating.xp} PX</small>
+                          <strong>{e.name}</strong> <DifficultyBadge difficulty={rating.difficulty} xp={rating.adjustedXp} /> <small className="muted">{rating.xp} {tr('PX')}</small>
                         </span>
                         <span className="row">
                           <button
                             className="small primary"
                             disabled={busy || !scene || !e.monsters.length}
                             onClick={() => void deploy(e)}
-                            title={scene ? `Crea las hojas y pone los tokens en «${scene.name}», donde estás mirando` : 'Abre una escena primero'}
+                            title={scene ? tr('Crea las hojas y pone los tokens en «{name}», donde estás mirando', { name: scene.name }) : tr('Abre una escena primero')}
                           >
-                            ▶ Al tablero
+                            {tr('▶ Al tablero')}
                           </button>
-                          <button className="ghost small" disabled={busy} onClick={() => setEditing(e)} title="Editar">
+                          <button className="ghost small" disabled={busy} onClick={() => setEditing(e)} title={tr('Editar')}>
                             ✎
                           </button>
-                          <button className="ghost small danger" disabled={busy} onClick={() => remove(e)} title="Borrar">
+                          <button className="ghost small danger" disabled={busy} onClick={() => remove(e)} title={tr('Borrar')}>
                             ✕
                           </button>
                         </span>
@@ -186,8 +189,7 @@ export function EncountersWindow({ campaignId, onClose }: { campaignId: string; 
               </ul>
             )}
             <p className="muted hint">
-              La dificultad sigue las reglas del SRD 5.1 (PX de los monstruos, multiplicador según cuántos son y umbrales del grupo). Al soltar un encuentro, cada monstruo tiene su hoja (Goblin 1,
-              Goblin 2…) y aparece en casillas libres alrededor del centro de tu vista, sin atravesar paredes.
+              {tr('La dificultad sigue las reglas del SRD 5.1 (PX de los monstruos, multiplicador según cuántos son y umbrales del grupo). Al soltar un encuentro, cada monstruo tiene su hoja (Goblin 1, Goblin 2…) y aparece en casillas libres alrededor del centro de tu vista, sin atravesar paredes.')}
             </p>
           </>
         )}
@@ -202,18 +204,18 @@ export function PartyLine({ party }: { party: ReturnType<typeof useParty> }) {
   const level = Math.round(levels.reduce((a, b) => a + b, 0) / Math.max(1, size));
   return (
     <div className="row party-line">
-      <span>Grupo:</span>
-      <input type="number" className="tiny-number" min={1} max={10} value={size} onChange={(e) => save({ size: Math.max(1, Math.min(10, Number(e.target.value) || 1)), level })} aria-label="Personajes" />
-      <span>personajes de nivel</span>
-      <input type="number" className="tiny-number" min={1} max={20} value={level} onChange={(e) => save({ size, level: Math.max(1, Math.min(20, Number(e.target.value) || 1)) })} aria-label="Nivel" />
+      <span>{tr('Grupo:')}</span>
+      <input type="number" className="tiny-number" min={1} max={10} value={size} onChange={(e) => save({ size: Math.max(1, Math.min(10, Number(e.target.value) || 1)), level })} aria-label={tr('Personajes')} />
+      <span>{tr('personajes de nivel')}</span>
+      <input type="number" className="tiny-number" min={1} max={20} value={level} onChange={(e) => save({ size, level: Math.max(1, Math.min(20, Number(e.target.value) || 1)) })} aria-label={tr('Nivel')} />
       {manual ? (
         detected.length > 0 && (
-          <button className="ghost small" onClick={() => save(null)} title={`Usar los ${detected.length} PJ de la partida`}>
-            Usar los PJ
+          <button className="ghost small" onClick={() => save(null)} title={tr('Usar los {length} PJ de la partida', { length: detected.length })}>
+            {tr('Usar los PJ')}
           </button>
         )
       ) : (
-        <small className="muted">{detected.length ? `(los ${detected.length} PJ de la partida: niveles ${detected.join(', ')})` : '(no hay PJ con jugador: cámbialo a mano)'}</small>
+        <small className="muted">{detected.length ? tr('(los {length} PJ de la partida: niveles {1})', { length: detected.length, '1': detected.join(', ') }) : tr('(no hay PJ con jugador: cámbialo a mano)')}</small>
       )}
     </div>
   );
@@ -232,7 +234,7 @@ function EncounterEditor({ campaignId, initial, levels, onDone }: { campaignId: 
   const results = useMemo(() => {
     const q = norm(query.trim());
     if (!q) return [];
-    return MONSTERS.filter((m) => norm(`${m.name} ${m.en} ${m.type}`).includes(q))
+    return MONSTERS.filter((m) => norm(`${m.name} ${m.en} ${m.type} ${tr(m.type)}`).includes(q))
       .sort((a, b) => crValue(a.cr) - crValue(b.cr))
       .slice(0, 8);
   }, [query]);
@@ -243,15 +245,15 @@ function EncounterEditor({ campaignId, initial, levels, onDone }: { campaignId: 
 
   function suggest() {
     const list = suggestEncounter(levels, target);
-    if (!list.length) return setError('No he encontrado una combinación para ese grupo. Prueba otra dificultad.');
+    if (!list.length) return setError(tr('No he encontrado una combinación para ese grupo. Prueba otra dificultad.'));
     setError(null);
     setMonsters(list);
-    if (!name.trim()) setName(`Encuentro ${DIFFICULTY_LABELS[target].toLowerCase()}`);
+    if (!name.trim()) setName(tr('Encuentro {0}', { '0': DIFFICULTY_LABELS[target].toLowerCase() }));
   }
 
   async function save() {
-    if (!name.trim()) return setError('Ponle un nombre.');
-    if (total > 40) return setError('Como mucho 40 monstruos por encuentro.');
+    if (!name.trim()) return setError(tr('Ponle un nombre.'));
+    if (total > 40) return setError(tr('Como mucho 40 monstruos por encuentro.'));
     try {
       const body = { name: name.trim(), notes, monsters };
       const { encounter } = initial
@@ -266,42 +268,42 @@ function EncounterEditor({ campaignId, initial, levels, onDone }: { campaignId: 
   return (
     <div className="encounter-editor">
       <label>
-        Nombre
-        <input value={name} maxLength={80} placeholder="Emboscada goblin" onChange={(e) => setName(e.target.value)} autoFocus />
+        {tr('Nombre')}
+        <input value={name} maxLength={80} placeholder={tr('Emboscada goblin')} onChange={(e) => setName(e.target.value)} autoFocus />
       </label>
 
       <div className="row encounter-suggest">
-        <span>🎲 Sugerir uno</span>
-        <select value={target} onChange={(e) => setTarget(e.target.value as typeof target)} aria-label="Dificultad">
+        <span>{tr('🎲 Sugerir uno')}</span>
+        <select value={target} onChange={(e) => setTarget(e.target.value as typeof target)} aria-label={tr('Dificultad')}>
           {(['easy', 'medium', 'hard', 'deadly'] as const).map((d) => (
             <option key={d} value={d}>
               {DIFFICULTY_LABELS[d]}
             </option>
           ))}
         </select>
-        <button className="small" onClick={suggest} title="Elige monstruos del compendio al azar para esa dificultad (puedes pulsar varias veces)">
-          Sugerir
+        <button className="small" onClick={suggest} title={tr('Elige monstruos del compendio al azar para esa dificultad (puedes pulsar varias veces)')}>
+          {tr('Sugerir')}
         </button>
       </div>
 
       <div className="encounter-picked">
-        {monsters.length === 0 && <p className="muted">Busca monstruos abajo y pulsa + para añadirlos, o pide una sugerencia.</p>}
+        {monsters.length === 0 && <p className="muted">{tr('Busca monstruos abajo y pulsa + para añadirlos, o pide una sugerencia.')}</p>}
         {monsters.map((m) => {
           const def = monsterById(m.monsterId);
           return (
             <div key={m.monsterId} className="row spread encounter-picked-row">
               <span>
-                <strong>{def?.name ?? m.monsterId}</strong>{' '}
+                <strong>{def ? localName(def) : m.monsterId}</strong>{' '}
                 <small className="muted">
-                  VD {def?.cr} · {def ? xpOfCr(def.cr) : 0} PX
+                  {tr('VD')} {def?.cr} · {def ? xpOfCr(def.cr) : 0} {tr('PX')}
                 </small>
               </span>
               <span className="row">
-                <button className="ghost small" onClick={() => setCount(m.monsterId, m.count - 1)} aria-label="Uno menos">
+                <button className="ghost small" onClick={() => setCount(m.monsterId, m.count - 1)} aria-label={tr('Uno menos')}>
                   −
                 </button>
-                <input type="number" className="tiny-number" min={0} max={40} value={m.count} onChange={(e) => setCount(m.monsterId, Math.round(Number(e.target.value)) || 0)} aria-label="Cuántos" />
-                <button className="ghost small" onClick={() => setCount(m.monsterId, m.count + 1)} aria-label="Uno más">
+                <input type="number" className="tiny-number" min={0} max={40} value={m.count} onChange={(e) => setCount(m.monsterId, Math.round(Number(e.target.value)) || 0)} aria-label={tr('Cuántos')} />
+                <button className="ghost small" onClick={() => setCount(m.monsterId, m.count + 1)} aria-label={tr('Uno más')}>
                   +
                 </button>
               </span>
@@ -310,27 +312,27 @@ function EncounterEditor({ campaignId, initial, levels, onDone }: { campaignId: 
         })}
         {monsters.length > 0 && (
           <p className="encounter-rating">
-            {total} {total === 1 ? 'monstruo' : 'monstruos'} · {rating.xp} PX (× {rating.multiplier} = {rating.adjustedXp}) → <DifficultyBadge difficulty={rating.difficulty} xp={rating.adjustedXp} />{' '}
+            {total} {total === 1 ? tr('monstruo') : tr('monstruos')} · {rating.xp}{' '}{tr('PX (×')}{' '}{rating.multiplier} = {rating.adjustedXp}) → <DifficultyBadge difficulty={rating.difficulty} xp={rating.adjustedXp} />{' '}
             <small className="muted">
-              (fácil {rating.thresholds.easy}, media {rating.thresholds.medium}, difícil {rating.thresholds.hard}, mortal {rating.thresholds.deadly})
+              {tr('(fácil')}{' '}{rating.thresholds.easy}{tr(', media')}{' '}{rating.thresholds.medium}{tr(', difícil')}{' '}{rating.thresholds.hard}{tr(', mortal')}{' '}{rating.thresholds.deadly})
             </small>
           </p>
         )}
       </div>
 
-      <input placeholder="Buscar monstruo (nombre, inglés o tipo)" value={query} onChange={(e) => setQuery(e.target.value)} />
+      <input placeholder={tr('Buscar monstruo (nombre, inglés o tipo)')} value={query} onChange={(e) => setQuery(e.target.value)} />
       {results.length > 0 && (
         <ul className="encounter-results">
           {results.map((m) => (
             <li key={m.id} className="row spread">
               <span>
-                {m.name} <small className="muted">{m.en}</small>
+                {localName(m)} {lang === 'es' && <small className="muted">{m.en}</small>}
               </span>
               <span className="row">
                 <small className="muted">
-                  VD {m.cr} · {xpOfCr(m.cr)} PX
+                  {tr('VD')} {m.cr} · {xpOfCr(m.cr)} {tr('PX')}
                 </small>
-                <button className="small" onClick={() => add(m.id)} title="Añadir uno">
+                <button className="small" onClick={() => add(m.id)} title={tr('Añadir uno')}>
                   +
                 </button>
               </span>
@@ -340,16 +342,16 @@ function EncounterEditor({ campaignId, initial, levels, onDone }: { campaignId: 
       )}
 
       <label>
-        Notas (solo tú)
-        <textarea rows={2} maxLength={5000} value={notes} placeholder="Dónde están, cómo atacan, qué botín llevan…" onChange={(e) => setNotes(e.target.value)} />
+        {tr('Notas (solo tú)')}
+        <textarea rows={2} maxLength={5000} value={notes} placeholder={tr('Dónde están, cómo atacan, qué botín llevan…')} onChange={(e) => setNotes(e.target.value)} />
       </label>
       {error && <p className="error">{error}</p>}
       <div className="row">
         <button className="primary" onClick={() => void save()}>
-          Guardar
+          {tr('Guardar')}
         </button>
         <button className="ghost" onClick={() => onDone(null)}>
-          Cancelar
+          {tr('Cancelar')}
         </button>
       </div>
     </div>

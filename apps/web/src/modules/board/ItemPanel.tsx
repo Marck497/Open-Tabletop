@@ -27,6 +27,7 @@ import { DamagePanel } from '../damage/DamagePanel';
 import { startCalibration } from '../gridcal/store';
 import { isNote, readablePart, readNote } from '../notes/notes';
 import { TriggerPanel } from '../triggers/TriggerPanel';
+import { tr } from '../../core/i18n';
 
 /** Propiedades del elemento seleccionado (solo DM). */
 export function ItemPanel({ campaignId, members }: { campaignId: string; members: CampaignMember[] }) {
@@ -47,34 +48,34 @@ export function ItemPanel({ campaignId, members }: { campaignId: string; members
     updateSelected({ ownerIds: item.ownerIds.includes(userId) ? item.ownerIds.filter((id) => id !== userId) : [...item.ownerIds, userId] });
 
   if (isNote(item)) return <NotePanel campaignId={campaignId} item={item} name={name} setName={setName} />;
-  if (item.trigger) return <TriggerPanel item={item} notes={<GmNotes item={item} label="📝 Notas del DM (te llegan al saltar)" placeholder="Qué hay, cómo se ve si la buscan (Percepción CD 15), cómo se desactiva…" />} />;
+  if (item.trigger) return <TriggerPanel item={item} notes={<GmNotes item={item} label={tr('📝 Notas del DM (te llegan al saltar)')} placeholder={tr('Qué hay, cómo se ve si la buscan (Percepción CD 15), cómo se desactiva…')} />} />;
 
   return (
     <div className="panel">
-      <h3>{item.drawing ? 'Dibujo seleccionado' : 'Elemento seleccionado'}</h3>
+      <h3>{item.drawing ? tr('Dibujo seleccionado') : tr('Elemento seleccionado')}</h3>
       <label>
-        Nombre
+        {tr('Nombre')}
         <input value={name} maxLength={80} onChange={(e) => setName(e.target.value)} onBlur={() => name !== item.name && updateSelected({ name })} />
       </label>
       <label className="switch">
         <input type="checkbox" checked={item.showName} onChange={(e) => updateSelected({ showName: e.target.checked })} />
-        Mostrar nombre en el tablero
+        {tr('Mostrar nombre en el tablero')}
       </label>
 
       <div className="field-row">
         <label>
-          Ancho (casillas)
+          {tr('Ancho (casillas)')}
           <input type="number" min={0.25} step={0.25} value={+(item.width / g).toFixed(2)} onChange={(e) => +e.target.value > 0 && updateSelected({ width: +e.target.value * g })} />
         </label>
         <label>
-          Alto (casillas)
+          {tr('Alto (casillas)')}
           <input type="number" min={0.25} step={0.25} value={+(item.height / g).toFixed(2)} onChange={(e) => +e.target.value > 0 && updateSelected({ height: +e.target.value * g })} />
         </label>
       </div>
 
       <div className="field-row">
         <label>
-          Capa
+          {tr('Capa')}
           <select value={item.layer} onChange={(e) => updateSelected({ layer: e.target.value as BoardLayer })}>
             {BOARD_LAYERS.map((l) => (
               <option key={l} value={l}>
@@ -85,7 +86,7 @@ export function ItemPanel({ campaignId, members }: { campaignId: string; members
         </label>
         {!item.assetId && (
           <label>
-            Color
+            {tr('Color')}
             <input type="color" value={item.color} onChange={(e) => updateSelected({ color: e.target.value })} />
           </label>
         )}
@@ -93,7 +94,7 @@ export function ItemPanel({ campaignId, members }: { campaignId: string; members
 
       {!item.drawing && (
         <label>
-          Personaje vinculado
+          {tr('Personaje vinculado')}
           <select
             value={item.characterId ?? ''}
             onChange={(e) => {
@@ -102,7 +103,7 @@ export function ItemPanel({ campaignId, members }: { campaignId: string; members
               void updateSelected(c ? { characterId: c.id, ownerIds: c.controlledBy } : { characterId: null });
             }}
           >
-            <option value="">Ninguno</option>
+            <option value="">{tr('Ninguno')}</option>
             {Object.values(characters)
               .sort((a, b) => a.name.localeCompare(b.name))
               .map((c) => (
@@ -115,7 +116,7 @@ export function ItemPanel({ campaignId, members }: { campaignId: string; members
       )}
       {item.characterId && characters[item.characterId] && (
         <button className="ghost small" onClick={() => useSheets.getState().openSheet(item.characterId!)}>
-          Abrir hoja
+          {tr('Abrir hoja')}
         </button>
       )}
 
@@ -131,7 +132,7 @@ export function ItemPanel({ campaignId, members }: { campaignId: string; members
 
       {players.length > 0 && (
         <fieldset className="owners">
-          <legend>Pueden moverlo</legend>
+          <legend>{tr('Pueden moverlo')}</legend>
           {players.map((p) => (
             <label key={p.id} className="switch">
               <input type="checkbox" checked={item.ownerIds.includes(p.id)} onChange={() => toggleOwner(p.id)} />
@@ -143,37 +144,37 @@ export function ItemPanel({ campaignId, members }: { campaignId: string; members
 
       <div className="row">
         <button className="small" onClick={() => setPicker(true)}>
-          {item.assetId ? 'Cambiar imagen' : 'Poner imagen'}
+          {item.assetId ? tr('Cambiar imagen') : tr('Poner imagen')}
         </button>
         {item.assetId && (
           <button className="ghost small" onClick={() => updateSelected({ assetId: null })}>
-            Quitar imagen
+            {tr('Quitar imagen')}
           </button>
         )}
-        <button className="ghost small" onClick={() => updateSelected({ z: Math.max(...zs) + 1 })} title="Traer al frente">
-          ⬆ Frente
+        <button className="ghost small" onClick={() => updateSelected({ z: Math.max(...zs) + 1 })} title={tr('Traer al frente')}>
+          {tr('⬆ Frente')}
         </button>
-        <button className="ghost small" onClick={() => updateSelected({ z: Math.min(...zs) - 1 })} title="Enviar al fondo">
-          ⬇ Fondo
+        <button className="ghost small" onClick={() => updateSelected({ z: Math.min(...zs) - 1 })} title={tr('Enviar al fondo')}>
+          {tr('⬇ Fondo')}
         </button>
         {item.layer === 'map' && (
           <button
             className="ghost small"
             onClick={() => updateSelected({ x: 0, y: 0, width: scene.widthCells * g, height: scene.heightCells * g, rotation: 0 })}
           >
-            Ajustar a la escena
+            {tr('Ajustar a la escena')}
           </button>
         )}
         {item.layer === 'map' && item.assetId && !item.drawing && (
-          <button className="ghost small" title="Haz que la cuadrícula dibujada en la imagen coincida con la de la escena" onClick={() => startCalibration(item.id)}>
-            📐 Ajustar cuadrícula
+          <button className="ghost small" title={tr('Haz que la cuadrícula dibujada en la imagen coincida con la de la escena')} onClick={() => startCalibration(item.id)}>
+            {tr('📐 Ajustar cuadrícula')}
           </button>
         )}
         <button className="ghost small danger" onClick={() => void deleteItem(scene.id, item.id)}>
-          Borrar
+          {tr('Borrar')}
         </button>
       </div>
-      <p className="muted hint">Arrastra para mover (se ajusta a la cuadrícula; mantén Alt para moverlo libre). Supr para borrar; Ctrl+Z deshace y Ctrl+Y rehace.</p>
+      <p className="muted hint">{tr('Arrastra para mover (se ajusta a la cuadrícula; mantén Alt para moverlo libre). Supr para borrar; Ctrl+Z deshace y Ctrl+Y rehace.')}</p>
 
       {picker && (
         <AssetPicker
@@ -196,10 +197,10 @@ function NotePanel({ campaignId, item, name, setName }: { campaignId: string; it
   useEffect(() => setNum(item.drawing!.text), [item.id, item.drawing]);
   return (
     <div className="panel">
-      <h3>📍 Nota {item.drawing!.text}</h3>
+      <h3>{tr('📍 Nota')}{' '}{item.drawing!.text}</h3>
       <div className="field-row">
         <label style={{ maxWidth: 80 }}>
-          Número
+          {tr('Número')}
           <input
             value={num}
             maxLength={4}
@@ -208,25 +209,25 @@ function NotePanel({ campaignId, item, name, setName }: { campaignId: string; it
           />
         </label>
         <label>
-          Título
-          <input value={name} maxLength={80} placeholder="Entrada, Sala del trono…" onChange={(e) => setName(e.target.value)} onBlur={() => name !== item.name && updateSelected({ name })} />
+          {tr('Título')}
+          <input value={name} maxLength={80} placeholder={tr('Entrada, Sala del trono…')} onChange={(e) => setName(e.target.value)} onBlur={() => name !== item.name && updateSelected({ name })} />
         </label>
       </div>
-      <GmNotes item={item} label="📝 Texto (solo lo ves tú)" placeholder={'Lo que ven al entrar (se lee con 📣).\n---\nLo de después de la raya es solo para ti: secretos, monstruos, qué pasa si…'} />
+      <GmNotes item={item} label={tr('📝 Texto (solo lo ves tú)')} placeholder={tr('Lo que ven al entrar (se lee con 📣).\n---\nLo de después de la raya es solo para ti: secretos, monstruos, qué pasa si…')} />
       <div className="row">
-        <button className="small" disabled={!item.name.trim() && !readablePart(item)} onClick={() => void readNote(campaignId, item)} title="Manda al chat, para todos, el título y lo que va antes de la línea ---">
-          📣 Leer en el chat
+        <button className="small" disabled={!item.name.trim() && !readablePart(item)} onClick={() => void readNote(campaignId, item)} title={tr('Manda al chat, para todos, el título y lo que va antes de la línea ---')}>
+          {tr('📣 Leer en el chat')}
         </button>
         <button className="ghost small danger" onClick={() => void deleteItem(scene.id, item.id)}>
-          Borrar
+          {tr('Borrar')}
         </button>
       </div>
-      <p className="muted hint">Está en la capa del DM: los jugadores no la ven. Arrástrala con la capa DM activa. 📣 lee el título y lo que va antes de una línea con <b>---</b>; lo de después nunca sale.</p>
+      <p className="muted hint">{tr('Está en la capa del DM: los jugadores no la ven. Arrástrala con la capa DM activa. 📣 lee el título y lo que va antes de una línea con')}{' '}<b>---</b>{tr('; lo de después nunca sale.')}</p>
     </div>
   );
 }
 
-const AC_VIEW_LABELS: Record<AcView, string> = { gm: 'Solo el DM', all: 'Todos' };
+const AC_VIEW_LABELS: Record<AcView, string> = { gm: tr('Solo el DM'), all: tr('Todos') };
 
 /** Qué ven los jugadores de la vida y la CA del token (el DM y los dueños lo ven siempre). */
 function StatsVisibility() {
@@ -241,12 +242,12 @@ function StatsVisibility() {
     enemies.forEach((i) => void updateItem(scene.id, i.id, { hpView: item.hpView, acView: item.acView }));
   return (
     <fieldset className="owners">
-      <legend>Lo que ven los jugadores</legend>
+      <legend>{tr('Lo que ven los jugadores')}</legend>
       <div className="field-row">
         <label>
-          Vida
+          {tr('Vida')}
           <select value={item.hpView ?? ''} onChange={(e) => void updateSelected({ hpView: (e.target.value || null) as HpView | null })}>
-            <option value="">Automático ({autoHp})</option>
+            <option value="">{tr('Automático (')}{autoHp})</option>
             {HP_VIEWS.map((v) => (
               <option key={v} value={v}>
                 {HP_VIEW_LABELS[v]}
@@ -255,9 +256,9 @@ function StatsVisibility() {
           </select>
         </label>
         <label>
-          CA
+          {tr('CA')}
           <select value={item.acView ?? ''} onChange={(e) => void updateSelected({ acView: (e.target.value || null) as AcView | null })}>
-            <option value="">Automático ({autoAc})</option>
+            <option value="">{tr('Automático (')}{autoAc})</option>
             {AC_VIEWS.map((v) => (
               <option key={v} value={v}>
                 {AC_VIEW_LABELS[v]}
@@ -267,8 +268,8 @@ function StatsVisibility() {
         </label>
       </div>
       {!item.ownerIds.length && enemies.length > 0 && (
-        <button className="ghost small" onClick={applyToEnemies} title="Copia estas dos opciones a los demás tokens con hoja y sin dueño de esta escena">
-          Aplicar a los {enemies.length} enemigos de la escena
+        <button className="ghost small" onClick={applyToEnemies} title={tr('Copia estas dos opciones a los demás tokens con hoja y sin dueño de esta escena')}>
+          {tr('Aplicar a los')}{' '}{enemies.length}{' '}{tr('enemigos de la escena')}
         </button>
       )}
     </fieldset>
@@ -277,14 +278,14 @@ function StatsVisibility() {
 
 /** Luz que da el elemento y su visión en la oscuridad (cuentan con la escena a oscuras). */
 function LightPanel({ item, scene }: { item: BoardItem; scene: Scene }) {
-  const unit = scene.distanceUnit || 'pies';
+  const unit = scene.distanceUnit || tr('pies');
   const preset = item.light ? LIGHT_PRESETS.find((p) => p.light.bright === item.light!.bright && p.light.dim === item.light!.dim) : undefined;
   const num = (v: string) => Math.max(0, Math.min(1000, Number(v) || 0));
   return (
     <fieldset className="owners">
-      <legend>Luz y visión{!scene.lighting && ' (activa «🌙 A oscuras» en la escena)'}</legend>
+      <legend>{tr('Luz y visión')}{!scene.lighting && tr(' (activa «🌙 A oscuras» en la escena)')}</legend>
       <label>
-        Luz
+        {tr('Luz')}
         <select
           value={item.light ? (preset?.label ?? 'custom') : ''}
           onChange={(e) => {
@@ -294,34 +295,34 @@ function LightPanel({ item, scene }: { item: BoardItem; scene: Scene }) {
             else void updateSelected({ light: item.light ?? { bright: 10, dim: 10, color: '#ffb74d' } });
           }}
         >
-          <option value="">Ninguna</option>
+          <option value="">{tr('Ninguna')}</option>
           {LIGHT_PRESETS.map((p) => (
             <option key={p.label} value={p.label}>
               {p.label} ({p.light.bright}/{p.light.dim})
             </option>
           ))}
-          <option value="custom">Personalizada</option>
+          <option value="custom">{tr('Personalizada')}</option>
         </select>
       </label>
       {item.light && (
         <div className="field-row">
           <label>
-            Brillante ({unit})
+            {tr('Brillante (')}{unit})
             <input type="number" min={0} step={5} value={item.light.bright} onChange={(e) => void updateSelected({ light: { ...item.light!, bright: num(e.target.value) } })} />
           </label>
           <label>
-            Tenue, además ({unit})
+            {tr('Tenue, además (')}{unit})
             <input type="number" min={0} step={5} value={item.light.dim} onChange={(e) => void updateSelected({ light: { ...item.light!, dim: num(e.target.value) } })} />
           </label>
           <label>
-            Color
+            {tr('Color')}
             <input type="color" value={item.light.color} onChange={(e) => void updateSelected({ light: { ...item.light!, color: e.target.value } })} />
           </label>
         </div>
       )}
       {item.layer === 'token' && (
         <label>
-          Visión en la oscuridad ({unit})
+          {tr('Visión en la oscuridad (')}{unit})
           <input type="number" min={0} step={5} list="darkvision-presets" value={item.darkvision} onChange={(e) => void updateSelected({ darkvision: num(e.target.value) })} />
           <datalist id="darkvision-presets">
             {DARKVISION_PRESETS.map((d) => (
@@ -335,7 +336,7 @@ function LightPanel({ item, scene }: { item: BoardItem; scene: Scene }) {
 }
 
 /** Notas privadas del DM sobre el elemento (PNJ, trampas, secretos). Se guardan al salir del cuadro. */
-function GmNotes({ item, label = '📝 Notas del DM (los jugadores no las ven)', placeholder = 'Quién es, qué sabe, qué lleva encima, qué pasa si…' }: { item: BoardItem; label?: string; placeholder?: string }) {
+function GmNotes({ item, label = tr('📝 Notas del DM (los jugadores no las ven)'), placeholder = tr('Quién es, qué sabe, qué lleva encima, qué pasa si…') }: { item: BoardItem; label?: string; placeholder?: string }) {
   const [text, setText] = useState(item.gmNotes);
   useEffect(() => setText(item.gmNotes), [item.id, item.gmNotes]);
   return (

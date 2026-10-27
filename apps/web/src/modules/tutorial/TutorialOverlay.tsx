@@ -1,5 +1,6 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import { useTutorial } from './store';
+import { tr } from '../../core/i18n';
 
 const CARD_W = 340;
 const GAP = 12;
@@ -93,16 +94,16 @@ export function TutorialOverlay() {
         <p>{step.body}</p>
         <div className="row spread">
           <button className="ghost small" onClick={close}>
-            Saltar
+            {tr('Saltar')}
           </button>
           <span className="row">
             {index > 0 && (
               <button className="small" onClick={() => go(index - 1)}>
-                Anterior
+                {tr('Anterior')}
               </button>
             )}
             <button className="small primary" onClick={() => go(index + 1)} autoFocus>
-              {last ? 'Terminar' : 'Siguiente'}
+              {last ? tr('Terminar') : tr('Siguiente')}
             </button>
           </span>
         </div>

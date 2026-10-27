@@ -1,5 +1,6 @@
 import { and, eq } from 'drizzle-orm';
 import {
+  tr,
   evaluate,
   pathEntersRect,
   saveOptions,
@@ -80,8 +81,8 @@ export function createTriggerRunner(ctx: AppContext) {
     const gm = gmOf(scene.campaignId);
     if (!gm) return;
     const character = token.characterId ? db.select().from(characters).where(eq(characters.id, token.characterId)).get() : undefined;
-    const who = token.name || character?.name || 'Un token';
-    const title = zone.name || (t.kind === 'trap' ? 'Trampa' : 'Zona');
+    const who = token.name || character?.name || tr('Un token');
+    const title = zone.name || (t.kind === 'trap' ? tr('Trampa') : tr('Zona'));
     const base = { campaignId: scene.campaignId, userId: gm.id, userName: gm.displayName, characterId: null, characterName: null, whisperTo: null };
 
     // Primero se desarma (si es de una vez), para que dos movimientos seguidos no la disparen dos veces.
@@ -92,7 +93,7 @@ export function createTriggerRunner(ctx: AppContext) {
 
     // Aviso al DM, con sus notas.
     const notes = zone.gmNotes.trim();
-    await broadcastMessage(ctx, chat.insert({ ...base, kind: 'system', text: `${TRIGGER_ICONS[t.kind]} ${who} ha activado «${title}» (${scene.name}).${notes ? `\n${notes}` : ''}`, roll: null, secret: true }));
+    await broadcastMessage(ctx, chat.insert({ ...base, kind: 'system', text: tr('{0} {who} ha activado «{title}» ({name}).{4}', { '0': TRIGGER_ICONS[t.kind], who, title, name: scene.name, '4': notes ? `\n${notes}` : '' }), roll: null, secret: true }));
     if (t.message) await broadcastMessage(ctx, chat.insert({ ...base, kind: 'system', text: t.message, roll: null, secret: false }));
 
     // Salvación y daño: se tira y se aplica al token que la ha pisado.
@@ -125,7 +126,7 @@ export function createTriggerRunner(ctx: AppContext) {
         ...base,
         kind: 'roll',
         text: '',
-        roll: { label: `${TRIGGER_ICONS.trap} ${title}${t.damage ? `: daño${t.damageType ? ` ${t.damageType}` : ''}` : ''}`, expression: t.damage, total: damage, rolls, effect },
+        roll: { label: `${TRIGGER_ICONS.trap} ${title}${t.damage ? tr(': daño{0}', { '0': t.damageType ? ` ${tr(t.damageType)}` : '' }) : ''}`, expression: t.damage, total: damage, rolls, effect },
         secret: false,
       });
       await broadcastMessage(ctx, card);

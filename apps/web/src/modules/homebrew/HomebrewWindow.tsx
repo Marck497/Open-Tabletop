@@ -18,6 +18,7 @@ import { norm } from '../srd/useSrd';
 import { addToSheet, runEntry } from './actions';
 import { HomebrewEditor, type HomebrewDraft } from './HomebrewEditor';
 import { useHomebrew } from './store';
+import { tr } from '../../core/i18n';
 
 interface Props {
   campaignId: string;
@@ -66,7 +67,7 @@ export function HomebrewWindow({ campaignId, isGm, meId, members, initialDraft, 
     if (!target || !template) return;
     try {
       const lists = await addToSheet(target, template, e);
-      setMessage(`${e.name} añadido a la hoja de ${target.name} (${lists.join(', ')}). Sus botones ⚔ / ✨ / ▶ ya usan esta creación.`);
+      setMessage(tr('{name} añadido a la hoja de {name2} ({2}). Sus botones ⚔ / ✨ / ▶ ya usan esta creación.', { name: e.name, name2: target.name, '2': lists.join(', ') }));
     } catch (err) {
       setMessage((err as Error).message);
     }
@@ -78,33 +79,33 @@ export function HomebrewWindow({ campaignId, isGm, meId, members, initialDraft, 
     if (e.kind === 'spell' && e.data.level > 0 && template) {
       const free = slotsOf(template, target.values).filter((s) => s.level >= e.data.level && s.used < s.max);
       if (free.length > 1) {
-        const answer = prompt(`¿Con qué espacio? (${free.map((s) => `${s.level}: quedan ${s.max - s.used}`).join(' · ')})`, String(free[0]!.level));
+        const answer = prompt(tr('¿Con qué espacio? ({0})', { '0': free.map((s) => tr('{level}: quedan {1}', { level: s.level, '1': s.max - s.used })).join(' · ') }), String(free[0]!.level));
         if (answer === null) return;
         slot = Number(answer) || undefined;
       }
     }
     try {
       await runEntry(target.id, e.id, slot);
-      setMessage(`${target.name} usa ${e.name}: mira el chat.`);
+      setMessage(tr('{name} usa {name2}: mira el chat.', { name: target.name, name2: e.name }));
     } catch (err) {
       setMessage((err as Error).message);
     }
   }
 
   async function remove(e: HomebrewEntry) {
-    if (!confirm(`¿Borrar "${e.name}"? Las hojas que la tengan conservan sus filas, pero dejarán de usar esta creación.`)) return;
+    if (!confirm(tr('¿Borrar "{name}"? Las hojas que la tengan conservan sus filas, pero dejarán de usar esta creación.', { name: e.name }))) return;
     await api.delete(`/homebrew/${e.id}`).catch((err: Error) => setMessage(err.message));
   }
 
   const startNew = (k: HomebrewKind) => setEditing({ kind: k, name: '', shared: isGm, data: blankHomebrew(k, template) });
-  const duplicate = (e: HomebrewEntry) => setEditing({ kind: e.kind, name: `${e.name} (copia)`, shared: false, data: structuredClone(e.data) });
+  const duplicate = (e: HomebrewEntry) => setEditing({ kind: e.kind, name: tr('{name} (copia)', { name: e.name }), shared: false, data: structuredClone(e.data) });
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="card modal compendium" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Creaciones">
+      <div className="card modal compendium" onClick={(e) => e.stopPropagation()} role="dialog" aria-label={tr('Creaciones')}>
         <div className="row spread">
-          <h2>⚗ Creaciones</h2>
-          <button className="ghost small" onClick={onClose} title="Cerrar">
+          <h2>{tr('⚗ Creaciones')}</h2>
+          <button className="ghost small" onClick={onClose} title={tr('Cerrar')}>
             ✕
           </button>
         </div>
@@ -118,12 +119,12 @@ export function HomebrewWindow({ campaignId, isGm, meId, members, initialDraft, 
             onSaved={(e) => {
               setEditing(null);
               setOpen(e.id);
-              setMessage(`Guardado: ${e.name}.`);
+              setMessage(tr('Guardado: {name}.', { name: e.name }));
             }}
           />
         ) : (
           <>
-            <p className="muted hint">Hechizos, ataques y objetos hechos a medida. Añádelos a una hoja y sus botones de acción harán exactamente lo que diga aquí; el DM aplica salvaciones, daño y estados desde el chat.</p>
+            <p className="muted hint">{tr('Hechizos, ataques y objetos hechos a medida. Añádelos a una hoja y sus botones de acción harán exactamente lo que diga aquí; el DM aplica salvaciones, daño y estados desde el chat.')}</p>
             <div className="row">
               {HOMEBREW_KINDS.map((k) => (
                 <button key={k} className="small" onClick={() => startNew(k)}>
@@ -132,9 +133,9 @@ export function HomebrewWindow({ campaignId, isGm, meId, members, initialDraft, 
               ))}
             </div>
             <div className="row">
-              <input placeholder="Buscar" value={query} onChange={(e) => setQuery(e.target.value)} />
+              <input placeholder={tr('Buscar')} value={query} onChange={(e) => setQuery(e.target.value)} />
               <select value={kind} onChange={(e) => setKind(e.target.value as HomebrewKind | '')}>
-                <option value="">Todo</option>
+                <option value="">{tr('Todo')}</option>
                 {HOMEBREW_KINDS.map((k) => (
                   <option key={k} value={k}>
                     {HOMEBREW_KIND_LABELS[k]}s
@@ -143,7 +144,7 @@ export function HomebrewWindow({ campaignId, isGm, meId, members, initialDraft, 
               </select>
               {editable.length > 0 && (
                 <label className="switch">
-                  Personaje
+                  {tr('Personaje')}
                   <select value={target?.id ?? ''} onChange={(e) => setTargetId(e.target.value)}>
                     {editable.map((c) => (
                       <option key={c.id} value={c.id}>
@@ -156,7 +157,7 @@ export function HomebrewWindow({ campaignId, isGm, meId, members, initialDraft, 
             </div>
             {message && <p className="muted">{message}</p>}
             {list.length === 0 && (
-              <p className="muted">{Object.keys(entries).length ? 'Nada coincide con la búsqueda.' : 'Aún no hay creaciones. Crea una o copia un conjuro u objeto desde 📚 Reglas (botón ✎).'}</p>
+              <p className="muted">{Object.keys(entries).length ? tr('Nada coincide con la búsqueda.') : tr('Aún no hay creaciones. Crea una o copia un conjuro u objeto desde 📚 Reglas (botón ✎).')}</p>
             )}
             <ul className="compendium-list">
               {list.map((e) => (
@@ -164,28 +165,28 @@ export function HomebrewWindow({ campaignId, isGm, meId, members, initialDraft, 
                   <div className="row spread compendium-row">
                     <button className="ghost compendium-name" onClick={() => setOpen(open === e.id ? null : e.id)} title={summary(e)}>
                       {HOMEBREW_KIND_ICONS[e.kind]} <strong>{e.name}</strong>{' '}
-                      {e.shared ? <span className="badge">Compartida</span> : e.ownerId !== meId && <span className="badge gm">de {nameOf(e.ownerId)}</span>}
+                      {e.shared ? <span className="badge">{tr('Compartida')}</span> : e.ownerId !== meId && <span className="badge gm">{tr('de {name}', { name: nameOf(e.ownerId) })}</span>}
                     </button>
                     {target && (
                       <>
-                        <button className="ghost small" onClick={() => void add(e)} title={`Añadir a la hoja de ${target.name}`}>
-                          + Hoja
+                        <button className="ghost small" onClick={() => void add(e)} title={tr('Añadir a la hoja de {name}', { name: target.name })}>
+                          {tr('+ Hoja')}
                         </button>
-                        <button className="ghost small" onClick={() => void use(e)} title={`Usar ahora con ${target.name}`}>
+                        <button className="ghost small" onClick={() => void use(e)} title={tr('Usar ahora con {name}', { name: target.name })}>
                           ▶
                         </button>
                       </>
                     )}
                     {canEdit(e) && (
-                      <button className="ghost small" onClick={() => setEditing({ id: e.id, kind: e.kind, name: e.name, shared: e.shared, data: structuredClone(e.data) })} title="Editar">
+                      <button className="ghost small" onClick={() => setEditing({ id: e.id, kind: e.kind, name: e.name, shared: e.shared, data: structuredClone(e.data) })} title={tr('Editar')}>
                         ✎
                       </button>
                     )}
-                    <button className="ghost small" onClick={() => duplicate(e)} title="Duplicar">
+                    <button className="ghost small" onClick={() => duplicate(e)} title={tr('Duplicar')}>
                       ⧉
                     </button>
                     {canEdit(e) && (
-                      <button className="ghost small danger" onClick={() => void remove(e)} title="Borrar">
+                      <button className="ghost small danger" onClick={() => void remove(e)} title={tr('Borrar')}>
                         🗑
                       </button>
                     )}
@@ -203,7 +204,7 @@ export function HomebrewWindow({ campaignId, isGm, meId, members, initialDraft, 
 
 function Details({ entry, summary }: { entry: HomebrewEntry; summary: string }) {
   const d = entry.data;
-  const facts = [d.castTime, d.range, d.components, d.duration, d.cost, d.weight ? `${d.weight} lb` : '', d.attunement ? 'requiere sintonización' : ''].filter(Boolean).join(' · ');
+  const facts = [d.castTime, d.range, d.components, d.duration, d.cost, d.weight ? `${d.weight} lb` : '', d.attunement ? tr('requiere sintonización') : ''].filter(Boolean).join(' · ');
   return (
     <div className="monster-details">
       <p className="hb-summary">{summary || HOMEBREW_KIND_LABELS[entry.kind]}</p>

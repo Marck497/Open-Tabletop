@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { tr } from '../i18n/index.js';
 
 /**
  * IA básica de enemigos: cada token puede tener un comportamiento. En su turno de
@@ -7,18 +8,18 @@ import { z } from 'zod';
 export const AI_BEHAVIORS = ['melee', 'ranged', 'cautious', 'guard'] as const;
 export type AiBehavior = (typeof AI_BEHAVIORS)[number];
 export const AI_BEHAVIOR_LABELS: Record<AiBehavior, string> = {
-  melee: 'Cuerpo a cuerpo: va a por su objetivo y ataca',
-  ranged: 'A distancia: mantiene la distancia y dispara',
-  cautious: 'Prudente: ataca, pero huye cuando está malherido',
-  guard: 'Guardián: no se mueve hasta que alguien se acerca',
+  melee: tr('Cuerpo a cuerpo: va a por su objetivo y ataca'),
+  ranged: tr('A distancia: mantiene la distancia y dispara'),
+  cautious: tr('Prudente: ataca, pero huye cuando está malherido'),
+  guard: tr('Guardián: no se mueve hasta que alguien se acerca'),
 };
 
 export const AI_TARGETS = ['nearest', 'weakest', 'random'] as const;
 export type AiTarget = (typeof AI_TARGETS)[number];
 export const AI_TARGET_LABELS: Record<AiTarget, string> = {
-  nearest: 'El más cercano',
-  weakest: 'El más herido',
-  random: 'Al azar',
+  nearest: tr('El más cercano'),
+  weakest: tr('El más herido'),
+  random: tr('Al azar'),
 };
 
 export const tokenAiSchema = z.object({

@@ -1,16 +1,17 @@
 import { z } from 'zod';
+import { tr } from '../i18n/index.js';
 
 export const usernameSchema = z
   .string()
   .trim()
-  .min(3, 'Mínimo 3 caracteres')
-  .max(32, 'Máximo 32 caracteres')
-  .regex(/^[a-zA-Z0-9_.-]+$/, 'Solo letras, números, "_", "." y "-"');
+  .min(3, tr('Mínimo 3 caracteres'))
+  .max(32, tr('Máximo 32 caracteres'))
+  .regex(/^[a-zA-Z0-9_.-]+$/, tr('Solo letras, números, "_", "." y "-"'));
 
 export const registerSchema = z.object({
   username: usernameSchema,
   displayName: z.string().trim().min(1).max(48),
-  password: z.string().min(8, 'Mínimo 8 caracteres').max(200),
+  password: z.string().min(8, tr('Mínimo 8 caracteres')).max(200),
   registrationCode: z.string().optional(),
 });
 export type RegisterInput = z.infer<typeof registerSchema>;

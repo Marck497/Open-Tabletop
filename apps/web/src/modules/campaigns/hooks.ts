@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { CampaignDetail, PresenceUser } from '@vtt/shared';
 import { api, ApiError } from '../../core/api';
 import { getSocket } from '../../core/socket';
+import { tr } from '../../core/i18n';
 
 /** Carga una partida y se mantiene sincronizada con los cambios que llegan en tiempo real. */
 export function useCampaign(campaignId: string) {
@@ -15,7 +16,7 @@ export function useCampaign(campaignId: string) {
       const { campaign } = await api.get<{ campaign: CampaignDetail }>(`/campaigns/${campaignId}`);
       setCampaign(campaign);
     } catch (err) {
-      setError(err instanceof ApiError && err.status === 404 ? 'Partida no encontrada o ya no eres miembro' : (err as Error).message);
+      setError(err instanceof ApiError && err.status === 404 ? tr('Partida no encontrada o ya no eres miembro') : (err as Error).message);
       setCampaign(null);
     }
   }, [campaignId]);

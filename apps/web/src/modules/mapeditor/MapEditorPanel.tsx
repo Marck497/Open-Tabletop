@@ -18,17 +18,18 @@ import {
 import { useBoard } from '../board/store';
 import { clearTerrain, generate, isFreshlyGenerated, redo, undo, useMapEditor, type MapTool } from './store';
 import { texturePreview } from './textures';
+import { tr } from '../../core/i18n';
 
 const TOOLS: { id: MapTool; icon: string; label: string; key: string; hint: string }[] = [
-  { id: 'brush', icon: '🖌️', label: 'Pincel', key: 'B', hint: 'Arrastra para pintar el suelo.' },
-  { id: 'rect', icon: '▭', label: 'Rectángulo', key: 'R', hint: 'Arrastra para rellenar un rectángulo.' },
-  { id: 'fill', icon: '🪣', label: 'Rellenar', key: 'G', hint: 'Clic para rellenar la zona del mismo suelo.' },
-  { id: 'erase', icon: '🧽', label: 'Borrar', key: 'E', hint: 'Arrastra para quitar el suelo.' },
-  { id: 'room', icon: '🏠', label: 'Habitación', key: 'H', hint: 'Arrastra para crear una sala con sus paredes. Si toca otra sala, se unen.' },
-  { id: 'door', icon: '🚪', label: 'Puerta', key: 'P', hint: 'Clic en el borde de una casilla para poner o quitar una puerta.' },
-  { id: 'picker', icon: '💧', label: 'Cuentagotas', key: 'I', hint: 'Clic en el mapa para coger ese suelo.' },
-  { id: 'stamp', icon: '🌲', label: 'Objetos', key: 'O', hint: 'Clic para colocar el objeto elegido (luego se mueve o gira con ✋ en la capa Mapa).' },
-  { id: 'prefab', icon: '🏛️', label: 'Salas prediseñadas', key: 'S', hint: 'Elige una sala y haz clic en el mapa para colocarla con su suelo, puertas, muebles y luces. T la gira.' },
+  { id: 'brush', icon: '🖌️', label: tr('Pincel'), key: 'B', hint: tr('Arrastra para pintar el suelo.') },
+  { id: 'rect', icon: '▭', label: tr('Rectángulo'), key: 'R', hint: tr('Arrastra para rellenar un rectángulo.') },
+  { id: 'fill', icon: '🪣', label: tr('Rellenar'), key: 'G', hint: tr('Clic para rellenar la zona del mismo suelo.') },
+  { id: 'erase', icon: '🧽', label: tr('Borrar'), key: 'E', hint: tr('Arrastra para quitar el suelo.') },
+  { id: 'room', icon: '🏠', label: tr('Habitación'), key: 'H', hint: tr('Arrastra para crear una sala con sus paredes. Si toca otra sala, se unen.') },
+  { id: 'door', icon: '🚪', label: tr('Puerta'), key: 'P', hint: tr('Clic en el borde de una casilla para poner o quitar una puerta.') },
+  { id: 'picker', icon: '💧', label: tr('Cuentagotas'), key: 'I', hint: tr('Clic en el mapa para coger ese suelo.') },
+  { id: 'stamp', icon: '🌲', label: tr('Objetos'), key: 'O', hint: tr('Clic para colocar el objeto elegido (luego se mueve o gira con ✋ en la capa Mapa).') },
+  { id: 'prefab', icon: '🏛️', label: tr('Salas prediseñadas'), key: 'S', hint: tr('Elige una sala y haz clic en el mapa para colocarla con su suelo, puertas, muebles y luces. T la gira.') },
 ];
 
 const STAMPS: Record<string, string[]> = {
@@ -43,15 +44,15 @@ const BRUSHES = [1, 2, 3, 5, 8];
 
 /** Mezclas listas para el pincel de objetos. */
 const MIXES: { name: string; emojis: string[] }[] = [
-  { name: 'Árboles', emojis: ['🌲', '🌳'] },
-  { name: 'Selva', emojis: ['🌴', '🌳', '🌿'] },
-  { name: 'Rocas', emojis: ['🪨'] },
-  { name: 'Flores', emojis: ['🌻', '🌾', '🌿'] },
-  { name: 'Huesos', emojis: ['💀', '🦴'] },
-  { name: 'Escombros', emojis: ['🪨', '🪵', '📦'] },
+  { name: tr('Árboles'), emojis: ['🌲', '🌳'] },
+  { name: tr('Selva'), emojis: ['🌴', '🌳', '🌿'] },
+  { name: tr('Rocas'), emojis: ['🪨'] },
+  { name: tr('Flores'), emojis: ['🌻', '🌾', '🌿'] },
+  { name: tr('Huesos'), emojis: ['💀', '🦴'] },
+  { name: tr('Escombros'), emojis: ['🪨', '🪵', '📦'] },
 ];
 
-const SCATTER_HINT = 'Arrastra para esparcir los objetos elegidos (puedes marcar varios). Con Mayúsculas, arrastrar los quita.';
+const SCATTER_HINT = tr('Arrastra para esparcir los objetos elegidos (puedes marcar varios). Con Mayúsculas, arrastrar los quita.');
 
 /** Paleta flotante del editor de mapas (solo el DM). */
 export function MapEditorPanel({ scene }: { scene: Scene }) {
@@ -90,15 +91,15 @@ export function MapEditorPanel({ scene }: { scene: Scene }) {
   }, []);
 
   return (
-    <aside className="map-editor" aria-label="Editor de mapas">
+    <aside className="map-editor" aria-label={tr('Editor de mapas')}>
       <div className="row spread">
-        <strong>🗺️ Editor de mapas</strong>
-        <button className="ghost small" title="Cerrar el editor" onClick={() => useBoard.getState().setTool('select')}>
+        <strong>{tr('🗺️ Editor de mapas')}</strong>
+        <button className="ghost small" title={tr('Cerrar el editor')} onClick={() => useBoard.getState().setTool('select')}>
           ✕
         </button>
       </div>
 
-      <div className="map-tools" role="group" aria-label="Herramientas del mapa">
+      <div className="map-tools" role="group" aria-label={tr('Herramientas del mapa')}>
         {TOOLS.map((t) => (
           <button key={t.id} className={`small ${ed.mode === t.id ? 'active' : ''}`} title={`${t.label} (${t.key}): ${t.hint}`} aria-label={t.label} onClick={() => ed.setMode(t.id)}>
             {t.icon}
@@ -106,14 +107,14 @@ export function MapEditorPanel({ scene }: { scene: Scene }) {
         ))}
       </div>
       <p className="map-hint">
-        <b>{ed.mode === 'stamp' && ed.stampScatter ? 'Pincel de objetos' : tool.label}.</b> {ed.mode === 'stamp' && ed.stampScatter ? SCATTER_HINT : tool.hint}
+        <b>{ed.mode === 'stamp' && ed.stampScatter ? tr('Pincel de objetos') : tool.label}.</b> {ed.mode === 'stamp' && ed.stampScatter ? SCATTER_HINT : tool.hint}
       </p>
 
       {(ed.mode === 'brush' || ed.mode === 'erase' || (ed.mode === 'stamp' && ed.stampScatter)) && (
         <div className="row map-row">
-          <span className="tool-label">{ed.mode === 'stamp' ? 'Pincel' : 'Tamaño'}</span>
+          <span className="tool-label">{ed.mode === 'stamp' ? tr('Pincel') : tr('Tamaño')}</span>
           {BRUSHES.map((b) => (
-            <button key={b} className={`small ${ed.brush === b ? 'active' : ''}`} title={`${b}×${b} casillas ([ y ] para cambiarlo)`} onClick={() => ed.setBrush(b)}>
+            <button key={b} className={`small ${ed.brush === b ? 'active' : ''}`} title={tr('{b}×{b} casillas ([ y ] para cambiarlo)', { b })} onClick={() => ed.setBrush(b)}>
               {b}
             </button>
           ))}
@@ -124,25 +125,25 @@ export function MapEditorPanel({ scene }: { scene: Scene }) {
         <PrefabPicker />
       ) : ed.mode === 'stamp' ? (
         <>
-          <div className="row map-row" role="group" aria-label="Cómo se colocan">
-            <button className={`small ${!ed.stampScatter ? 'active' : ''}`} title="Un objeto con cada clic" onClick={() => ed.setStampScatter(false)}>
-              Uno a uno
+          <div className="row map-row" role="group" aria-label={tr('Cómo se colocan')}>
+            <button className={`small ${!ed.stampScatter ? 'active' : ''}`} title={tr('Un objeto con cada clic')} onClick={() => ed.setStampScatter(false)}>
+              {tr('Uno a uno')}
             </button>
-            <button className={`small ${ed.stampScatter ? 'active' : ''}`} title="Arrastra para esparcir muchos objetos a la vez (árboles, rocas…)" onClick={() => ed.setStampScatter(true)}>
-              🌲 Esparcir
+            <button className={`small ${ed.stampScatter ? 'active' : ''}`} title={tr('Arrastra para esparcir muchos objetos a la vez (árboles, rocas…)')} onClick={() => ed.setStampScatter(true)}>
+              {tr('🌲 Esparcir')}
             </button>
           </div>
           {ed.stampScatter && (
             <>
               <div className="row map-row">
-                <span className="tool-label">Cantidad</span>
+                <span className="tool-label">{tr('Cantidad')}</span>
                 {SCATTER_DENSITIES.map((d) => (
                   <button key={d} className={`small ${ed.scatterDensity === d ? 'active' : ''}`} onClick={() => ed.setScatterDensity(d)}>
                     {SCATTER_DENSITY_LABELS[d]}
                   </button>
                 ))}
               </div>
-              <div className="map-group">Mezclas</div>
+              <div className="map-group">{tr('Mezclas')}</div>
               <div className="map-prefabs">
                 {MIXES.map((m) => (
                   <button key={m.name} className={`small ${m.emojis.join() === ed.stampMix.join() ? 'active' : ''}`} onClick={() => ed.setStampMix(m.emojis)}>
@@ -153,7 +154,7 @@ export function MapEditorPanel({ scene }: { scene: Scene }) {
             </>
           )}
           <div className="row map-row">
-            <span className="tool-label">{ed.stampScatter ? 'Cada objeto' : 'Tamaño'}</span>
+            <span className="tool-label">{ed.stampScatter ? tr('Cada objeto') : tr('Tamaño')}</span>
             {[1, 2, 3, 4].map((n) => (
               <button key={n} className={`small ${ed.stampSize === n ? 'active' : ''}`} title={`${n}×${n} casillas`} onClick={() => ed.setStampSize(n)}>
                 {n}
@@ -183,7 +184,7 @@ export function MapEditorPanel({ scene }: { scene: Scene }) {
                   key={t.id}
                   className={`swatch ${ed.code === t.id && ed.mode !== 'erase' ? 'active' : ''}`}
                   style={{ backgroundImage: `url(${texturePreview(t.id)})` }}
-                  title={t.solid ? `${t.name} (hace de pared)` : t.name}
+                  title={t.solid ? tr('{name} (hace de pared)', { name: t.name }) : t.name}
                   aria-label={t.name}
                   onClick={() => ed.setCode(t.id)}
                 />
@@ -192,24 +193,24 @@ export function MapEditorPanel({ scene }: { scene: Scene }) {
           </div>
         ))
       )}
-      {ed.mode !== 'stamp' && ed.mode !== 'prefab' && <div className="map-current">Suelo: {terrainById(ed.code)?.name}</div>}
+      {ed.mode !== 'stamp' && ed.mode !== 'prefab' && <div className="map-current">{tr('Suelo:')}{' '}{terrainById(ed.code)?.name}</div>}
 
-      <label className="switch" title="Las paredes se ponen solas donde el suelo toca el vacío o un muro (las que pongas a mano se respetan)">
+      <label className="switch" title={tr('Las paredes se ponen solas donde el suelo toca el vacío o un muro (las que pongas a mano se respetan)')}>
         <input type="checkbox" checked={ed.autoWalls} onChange={(e) => ed.setAutoWalls(e.target.checked)} />
-        Paredes automáticas
+        {tr('Paredes automáticas')}
       </label>
 
       <div className="row map-row">
-        <button className="small" disabled={!canUndo} title="Deshacer (Ctrl+Z)" onClick={undo}>
-          ↶ Deshacer
+        <button className="small" disabled={!canUndo} title={tr('Deshacer (Ctrl+Z)')} onClick={undo}>
+          {tr('↶ Deshacer')}
         </button>
-        <button className="small" disabled={!canRedo} title="Rehacer (Ctrl+Y)" onClick={redo}>
-          ↷ Rehacer
+        <button className="small" disabled={!canRedo} title={tr('Rehacer (Ctrl+Y)')} onClick={redo}>
+          {tr('↷ Rehacer')}
         </button>
       </div>
 
       <Generator scene={scene} painted={painted} />
-      <p className="map-hint">Rueda para el zoom; botón central o derecho para moverte por el mapa.</p>
+      <p className="map-hint">{tr('Rueda para el zoom; botón central o derecho para moverte por el mapa.')}</p>
     </aside>
   );
 }
@@ -240,10 +241,10 @@ function PrefabPicker() {
               {current.icon} {current.name}
             </b>{' '}
             ({size.w} × {size.h}). {current.description}
-            {current.outdoor && ' Es de exterior: queda mejor sobre hierba o tierra ya pintada (si alrededor está vacío, las paredes automáticas la rodean).'}
+            {current.outdoor && tr(' Es de exterior: queda mejor sobre hierba o tierra ya pintada (si alrededor está vacío, las paredes automáticas la rodean).')}
           </p>
-          <button className="small" onClick={ed.rotatePrefab} title="Girar un cuarto de vuelta (T)">
-            ↻ Girar
+          <button className="small" onClick={ed.rotatePrefab} title={tr('Girar un cuarto de vuelta (T)')}>
+            {tr('↻ Girar')}
           </button>
         </div>
       )}
@@ -256,14 +257,14 @@ function Generator({ scene, painted }: { scene: Scene; painted: boolean }) {
   const ed = useMapEditor();
   const def = MAP_STYLE_DEFS[ed.genStyle];
   const run = () => {
-    if (painted && !isFreshlyGenerated(scene) && !confirm('Se sustituirá el mapa actual (se puede deshacer con Ctrl+Z). ¿Seguir?')) return;
+    if (painted && !isFreshlyGenerated(scene) && !confirm(tr('Se sustituirá el mapa actual (se puede deshacer con Ctrl+Z). ¿Seguir?'))) return;
     void generate(scene);
   };
   return (
     <>
-      <div className="map-group">Generar al azar</div>
+      <div className="map-group">{tr('Generar al azar')}</div>
       {[false, true].map((outdoor) => (
-        <div key={String(outdoor)} className="map-prefabs" role="group" aria-label={outdoor ? 'Exteriores' : 'Interiores'}>
+        <div key={String(outdoor)} className="map-prefabs" role="group" aria-label={outdoor ? tr('Exteriores') : tr('Interiores')}>
           {MAP_STYLES.filter((st) => !!MAP_STYLE_DEFS[st].outdoor === outdoor).map((st) => (
             <button key={st} className={`small ${ed.genStyle === st ? 'active' : ''}`} title={MAP_STYLE_DEFS[st].description} onClick={() => ed.setGen({ genStyle: st })}>
               {MAP_STYLE_DEFS[st].icon} {MAP_STYLE_DEFS[st].name}
@@ -273,25 +274,25 @@ function Generator({ scene, painted }: { scene: Scene; painted: boolean }) {
       ))}
       <p className="map-hint">{def.description}</p>
       <div className="row map-row">
-        <select value={ed.genSize} onChange={(e) => ed.setGen({ genSize: e.target.value as typeof ed.genSize })} aria-label="Tamaño">
+        <select value={ed.genSize} onChange={(e) => ed.setGen({ genSize: e.target.value as typeof ed.genSize })} aria-label={tr('Tamaño')}>
           {MAP_SIZES.map((sz) => (
             <option key={sz} value={sz}>
               {mapSizeLabel(ed.genStyle, sz)}
             </option>
           ))}
         </select>
-        <label className="switch" title={def.outdoor ? 'Pone árboles, rocas y lo de cada sitio (campamento, carro, muebles de las casas…) y luces' : 'Pone objetos según el uso de cada sala (almacén, tumbas, armería…) y luces'}>
+        <label className="switch" title={def.outdoor ? tr('Pone árboles, rocas y lo de cada sitio (campamento, carro, muebles de las casas…) y luces') : tr('Pone objetos según el uso de cada sala (almacén, tumbas, armería…) y luces')}>
           <input type="checkbox" checked={ed.genFurnish} onChange={(e) => ed.setGen({ genFurnish: e.target.checked })} />
-          Amueblar
+          {tr('Amueblar')}
         </label>
       </div>
       <div className="row map-row">
-        <button className="small primary" disabled={ed.genBusy} onClick={run} title="Genera un mapa nuevo del tamaño de la escena. Púlsalo otra vez para probar otro.">
-          {ed.genBusy ? 'Generando…' : '🎲 Generar'}
+        <button className="small primary" disabled={ed.genBusy} onClick={run} title={tr('Genera un mapa nuevo del tamaño de la escena. Púlsalo otra vez para probar otro.')}>
+          {ed.genBusy ? tr('Generando…') : tr('🎲 Generar')}
         </button>
         {painted && (
-          <button className="ghost small" onClick={() => confirm('¿Borrar todo el suelo pintado, sus paredes automáticas y los muebles generados?') && void clearTerrain(scene)}>
-            Limpiar
+          <button className="ghost small" onClick={() => confirm(tr('¿Borrar todo el suelo pintado, sus paredes automáticas y los muebles generados?')) && void clearTerrain(scene)}>
+            {tr('Limpiar')}
           </button>
         )}
       </div>

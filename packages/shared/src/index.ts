@@ -40,3 +40,4 @@ export * from './systems/defenses.js';
 export * from './systems/loot.js';
 export * from './schemas/damage.js';
 export * from './performance.js';
+export * from './i18n/index.js';

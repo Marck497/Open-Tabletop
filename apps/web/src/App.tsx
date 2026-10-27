@@ -5,6 +5,7 @@ import { RequireAuth } from './modules/auth/RequireAuth';
 import { useAuth } from './modules/auth/store';
 import { CampaignsPage } from './modules/campaigns/CampaignsPage';
 import { JoinPage } from './modules/campaigns/JoinPage';
+import { tr } from './core/i18n';
 
 // La mesa (tablero con Konva) se carga aparte: la lista de partidas abre más rápido.
 const CampaignPage = lazy(() => import('./modules/campaigns/CampaignPage').then((m) => ({ default: m.CampaignPage })));
@@ -15,7 +16,7 @@ export function App() {
     void init();
   }, [init]);
 
-  if (loading) return <main className="container muted">Cargando…</main>;
+  if (loading) return <main className="container muted">{tr('Cargando…')}</main>;
 
   return (
     <Routes>
@@ -27,7 +28,7 @@ export function App() {
         path="/c/:id"
         element={
           <RequireAuth>
-            <Suspense fallback={<main className="container muted">Cargando mesa…</main>}>
+            <Suspense fallback={<main className="container muted">{tr('Cargando mesa…')}</main>}>
               <CampaignPage />
             </Suspense>
           </RequireAuth>

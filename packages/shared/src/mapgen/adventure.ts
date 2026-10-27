@@ -4,6 +4,7 @@ import { isSolidCell, seededRng, type CellRect } from '../schemas/terrain.js';
 import type { TriggerInput } from '../schemas/triggers.js';
 import { DIFFICULTY_LABELS, rateEncounter, suggestEncounter, type Difficulty } from '../systems/encounters.js';
 import { generateStyled, MAP_SIZES, MAP_STYLES, type MapStyle, type StyledMap } from './generator.js';
+import { localName, tr } from '../i18n/index.js';
 
 /**
  * Asistente de aventura rápida: a partir del estilo, el tamaño y el grupo, prepara una escena entera
@@ -15,9 +16,9 @@ import { generateStyled, MAP_SIZES, MAP_STYLES, type MapStyle, type StyledMap } 
 export const ADVENTURE_SIZES = ['small', 'medium', 'large'] as const;
 export type AdventureSize = (typeof ADVENTURE_SIZES)[number];
 export const ADVENTURE_SIZE_DEFS: Record<AdventureSize, { label: string; w: number; h: number }> = {
-  small: { label: 'Pequeña (30 × 22)', w: 30, h: 22 },
-  medium: { label: 'Mediana (40 × 30)', w: 40, h: 30 },
-  large: { label: 'Grande (56 × 40)', w: 56, h: 40 },
+  small: { label: tr('Pequeña (30 × 22)'), w: 30, h: 22 },
+  medium: { label: tr('Mediana (40 × 30)'), w: 40, h: 30 },
+  large: { label: tr('Grande (56 × 40)'), w: 56, h: 40 },
 };
 
 export const ADVENTURE_DIFFICULTIES = ['easy', 'medium', 'hard', 'deadly'] as const;
@@ -121,10 +122,10 @@ const NOUNS: Record<string, [string, string]> = {
 function describe(objects: { emoji: string }[]): string {
   const counts = new Map<string, number>();
   for (const o of objects) if (NOUNS[o.emoji]) counts.set(o.emoji, (counts.get(o.emoji) ?? 0) + 1);
-  const words = [...new Set([...counts].map(([e, n]) => NOUNS[e]![n > 1 ? 1 : 0]))];
-  if (!words.length) return 'Está vacía.';
-  const list = words.length > 1 ? `${words.slice(0, -1).join(', ')} y ${words[words.length - 1]}` : words[0];
-  return `Hay ${list}.`;
+  const words = [...new Set([...counts].map(([e, n]) => tr(NOUNS[e]![n > 1 ? 1 : 0])))];
+  if (!words.length) return tr('Está vacía.');
+  const list = words.length > 1 ? tr('{0} y {1}', { '0': words.slice(0, -1).join(', '), '1': words[words.length - 1] }) : words[0];
+  return tr('Hay {list}.', { list });
 }
 
 /** Nombres de los sitios de los mapas sin salas. */
@@ -147,7 +148,7 @@ export function planAdventure(input: AdventureOptions): AdventurePlan {
   const objectAt = new Set(map.objects.map((o) => `${o.x},${o.y}`));
 
   // Sitios: las salas (o casas); si no hay (cueva, bosque, camino), rincones de suelo bien separados.
-  let rects: { rect: CellRect; title: string }[] = (map.rooms ?? []).map((rect, i) => ({ rect, title: map.roomKinds[i] ?? 'Sala' }));
+  let rects: { rect: CellRect; title: string }[] = (map.rooms ?? []).map((rect, i) => ({ rect, title: tr(map.roomKinds[i] ?? 'Sala') }));
   if (rects.length < 2) {
     const cells: number[] = [];
     for (let i = 0; i < w * h; i++) if (free(i % w, Math.floor(i / w))) cells.push(i);
@@ -165,7 +166,7 @@ export function planAdventure(input: AdventureOptions): AdventurePlan {
       if (bestD < 4) break;
       picked.push(best);
     }
-    const names = [...(PLACE_NAMES[input.style] ?? ['Lugar'])];
+    const names = (PLACE_NAMES[input.style] ?? ['Lugar']).map((n) => tr(n));
     rects = picked.map((c, i) => {
       const x = Math.max(0, Math.min(w - 5, (c % w) - 2));
       const y = Math.max(0, Math.min(h - 5, Math.floor(c / w) - 2));
@@ -206,26 +207,30 @@ export function planAdventure(input: AdventureOptions): AdventurePlan {
       if (monsters.length) {
         const rating = rateEncounter(monsters, input.levels);
         encounter = { monsters, difficulty: rating.difficulty, xp: rating.xp };
-        const who = monsters.map((m) => `${m.count} × ${monsterById(m.monsterId)?.name ?? m.monsterId}`).join(', ');
-        lines.push(`${i === last ? 'Jefe final' : 'Encuentro'} (${DIFFICULTY_LABELS[rating.difficulty]}, ${rating.xp} PX): ${who}. ${input.ambush ? 'Escondidos: aparecen al entrar un jugador.' : 'Escondidos en la capa del DM.'}`);
+        const who = monsters.map((m) => {
+          const def = monsterById(m.monsterId);
+          return `${m.count} × ${def ? localName(def) : m.monsterId}`;
+        }).join(', ');
+        lines.push(tr('{0} ({1}, {xp} PX): {who}. {4}', { '0': i === last ? tr('Jefe final') : tr('Encuentro'), '1': tr(DIFFICULTY_LABELS[rating.difficulty]), xp: rating.xp, who, '4': input.ambush ? tr('Escondidos: aparecen al entrar un jugador.') : tr('Escondidos en la capa del DM.') }));
       }
     }
     let trap: AdventurePlace['trap'] = null;
     if (withTrap.has(i)) {
       if (!trapBag.length) trapBag = [...TRAPS].sort(() => rnd() - 0.5);
-      const kind = trapBag.pop()!;
+      const raw = trapBag.pop()!;
+      const kind = { ...raw, name: tr(raw.name), message: tr(raw.message), hint: tr(raw.hint) };
       // Una casilla libre (sin muebles) por dentro de la sala, mejor lejos de las paredes.
       const spots: { x: number; y: number }[] = [];
       for (let y = rect.y + 1; y < rect.y + rect.h - 1; y++) for (let x = rect.x + 1; x < rect.x + rect.w - 1; x++) if (free(x, y) && !objectAt.has(`${x},${y}`)) spots.push({ x, y });
       const at = spots.length ? spots[Math.floor(rnd() * spots.length)]! : { x: rect.x + Math.floor(rect.w / 2), y: rect.y + Math.floor(rect.h / 2) };
-      const saveLabel = kind.save === 'con' ? 'Constitución' : 'Destreza';
+      const saveLabel = kind.save === 'con' ? tr('Constitución') : tr('Destreza');
       trap = {
         rect: { x: at.x, y: at.y, w: 1, h: 1 },
         name: kind.name,
         trigger: { kind: 'trap', message: kind.message, save: kind.save, dc: power.dc, half: true, damage: power.damage, damageType: kind.damageType, reveal: true },
-        notes: `${kind.hint} Percepción CD ${power.dc} para darse cuenta; se desactiva con herramientas de ladrón (CD ${power.dc}).`,
+        notes: tr('{hint} Percepción CD {dc} para darse cuenta; se desactiva con herramientas de ladrón (CD {dc}).', { hint: kind.hint, dc: power.dc }),
       };
-      lines.push(`Trampa: ${kind.name} (${saveLabel} CD ${power.dc}, ${power.damage} de ${kind.damageType}). ${kind.hint}`);
+      lines.push(tr('Trampa: {name} ({saveLabel} CD {dc}, {damage} de {damageType}). {hint}', { name: kind.name, saveLabel, dc: power.dc, damage: power.damage, damageType: tr(kind.damageType), hint: kind.hint }));
     }
     let treasure: AdventurePlace['treasure'] = null;
     if (i === last && last > 0) {
@@ -235,13 +240,13 @@ export function planAdventure(input: AdventureOptions): AdventurePlan {
         return { x: rect.x, y: rect.y };
       })();
       treasure = { ...spot, gold };
-      lines.push(`Tesoro: un cofre con ${gold} po (y lo que quieras añadir).`);
+      lines.push(tr('Tesoro: un cofre con {gold} po (y lo que quieras añadir).', { gold }));
     }
-    if (i === 0) lines.push('Aquí empieza la aventura: pon aquí los tokens del grupo.');
+    if (i === 0) lines.push(tr('Aquí empieza la aventura: pon aquí los tokens del grupo.'));
     // La descripción se puede leer a los jugadores (📣); lo de después de la raya es solo para el DM.
     const [seen, ...secret] = lines;
     const text = secret.length ? `${seen}\n---\n${secret.join('\n')}` : seen!;
-    return { n: i + 1, rect, title: i === 0 ? `Entrada (${title.toLowerCase()})` : title, text, encounter, trap, treasure };
+    return { n: i + 1, rect, title: i === 0 ? tr('Entrada ({0})', { '0': title.toLowerCase() }) : title, text, encounter, trap, treasure };
   });
   return { width: w, height: h, map, places };
 }

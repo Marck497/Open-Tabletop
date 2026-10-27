@@ -1,5 +1,5 @@
 import { and, eq, inArray } from 'drizzle-orm';
-import { statusesOf, type BoardItem, type InitiativeState } from '@vtt/shared';
+import { tr, statusesOf, type BoardItem, type InitiativeState } from '@vtt/shared';
 import type { AppContext, ServerModule } from '../../core/module.js';
 import { boardItems, campaignMembers, users } from '../../db/schema.js';
 import { createBoardBroadcaster } from '../board/broadcast.js';
@@ -48,7 +48,7 @@ export function createDurationsService(ctx: AppContext) {
       if (gone.length) {
         const character = t.characterId ? sheets.row(t.characterId) : null;
         ended.push({
-          name: t.name || character?.name || 'Token',
+          name: t.name || character?.name || tr('Token'),
           labels: gone.map((id) => defs.find((d) => d.id === id)?.label.toLowerCase() ?? id),
           hidden: t.layer === 'gm' || state.entries[state.turn]?.hidden === true,
         });
@@ -70,7 +70,7 @@ export function createDurationsService(ctx: AppContext) {
         characterId: null,
         characterName: null,
         kind: 'system',
-        text: `⏳ ${e.name}: se acaba ${e.labels.join(', ')}`,
+        text: tr('⏳ {name}: se acaba {1}', { name: e.name, '1': e.labels.map((l) => tr(l)).join(', ') }),
         roll: null,
         whisperTo: null,
         secret: e.hidden,

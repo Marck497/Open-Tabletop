@@ -5,6 +5,7 @@ import { updateItem } from '../board/history';
 import { useBoard } from '../board/store';
 import { useLayout } from '../layout/store';
 import { sidebarTabs } from '../layout/tabs';
+import { tr } from '../../core/i18n';
 
 /**
  * Atajos de teclado de la mesa. Los de la escena (Supr, Esc, Ctrl+Z…) viven en el tablero;
@@ -17,25 +18,25 @@ interface Shortcut {
 }
 
 export const SHORTCUTS: Shortcut[] = [
-  { keys: 'V', label: 'Seleccionar y mover' },
-  { keys: 'R', label: 'Regla' },
-  { keys: 'P', label: 'Ping' },
-  { keys: 'D', label: 'Dibujar' },
-  { keys: 'W', label: 'Paredes y puertas', gmOnly: true },
-  { keys: 'M', label: 'Editor de mapas', gmOnly: true },
-  { keys: '1 · 2 · 3', label: 'Capa de mapa, tokens o DM', gmOnly: true },
-  { keys: 'Flechas', label: 'Mover el token seleccionado una casilla' },
-  { keys: 'C', label: 'Centrar la vista en el token seleccionado (o en el tuyo)' },
-  { keys: 'N', label: 'Pasar turno (el DM, o tú en tu turno)' },
-  { keys: 'Mayús+1 · 2 · 3…', label: 'Abrir una pestaña de la barra lateral (Chat, Personajes, Diario…)' },
-  { keys: 'B', label: 'Esconder o mostrar la barra lateral' },
-  { keys: 'Supr', label: 'Borrar lo seleccionado' },
-  { keys: 'Ctrl+Z · Ctrl+Y', label: 'Deshacer · rehacer' },
-  { keys: 'Esc', label: 'Soltar la selección, los objetivos y la medición' },
-  { keys: 'Clic derecho · Espacio', label: 'Arrastrando un token o midiendo: punto de giro para cambiar de dirección' },
-  { keys: 'Alt+clic', label: 'Apuntar a un token (objetivo de ataques y hechizos)' },
-  { keys: 'Doble clic', label: 'Ping (con Mayús, el DM centra la vista de todos)' },
-  { keys: '?', label: 'Esta ayuda' },
+  { keys: 'V', label: tr('Seleccionar y mover') },
+  { keys: 'R', label: tr('Regla') },
+  { keys: 'P', label: tr('Ping') },
+  { keys: 'D', label: tr('Dibujar') },
+  { keys: 'W', label: tr('Paredes y puertas'), gmOnly: true },
+  { keys: 'M', label: tr('Editor de mapas'), gmOnly: true },
+  { keys: '1 · 2 · 3', label: tr('Capa de mapa, tokens o DM'), gmOnly: true },
+  { keys: tr('Flechas'), label: tr('Mover el token seleccionado una casilla') },
+  { keys: 'C', label: tr('Centrar la vista en el token seleccionado (o en el tuyo)') },
+  { keys: 'N', label: tr('Pasar turno (el DM, o tú en tu turno)') },
+  { keys: tr('Mayús+1 · 2 · 3…'), label: tr('Abrir una pestaña de la barra lateral (Chat, Personajes, Diario…)') },
+  { keys: 'B', label: tr('Esconder o mostrar la barra lateral') },
+  { keys: 'Supr', label: tr('Borrar lo seleccionado') },
+  { keys: 'Ctrl+Z · Ctrl+Y', label: tr('Deshacer · rehacer') },
+  { keys: 'Esc', label: tr('Soltar la selección, los objetivos y la medición') },
+  { keys: tr('Clic derecho · Espacio'), label: tr('Arrastrando un token o midiendo: punto de giro para cambiar de dirección') },
+  { keys: 'Alt+clic', label: tr('Apuntar a un token (objetivo de ataques y hechizos)') },
+  { keys: tr('Doble clic'), label: tr('Ping (con Mayús, el DM centra la vista de todos)') },
+  { keys: '?', label: tr('Esta ayuda') },
 ];
 
 /** Si la ayuda está abierta (también la abre el botón ⌨ de la barra). */
@@ -130,8 +131,8 @@ export function Shortcuts({ campaignId, isGm, meId }: { campaignId: string; isGm
   if (!help) return null;
   return (
     <div className="modal-backdrop" onClick={() => setHelp(false)}>
-      <div className="modal card shortcuts-help" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Atajos de teclado">
-        <h2>⌨ Atajos de teclado</h2>
+      <div className="modal card shortcuts-help" onClick={(e) => e.stopPropagation()} role="dialog" aria-label={tr('Atajos de teclado')}>
+        <h2>{tr('⌨ Atajos de teclado')}</h2>
         <table>
           <tbody>
             {SHORTCUTS.filter((s) => isGm || !s.gmOnly).map((s) => (
@@ -145,7 +146,7 @@ export function Shortcuts({ campaignId, isGm, meId }: { campaignId: string; isGm
           </tbody>
         </table>
         <div className="row">
-          <button onClick={() => setHelp(false)}>Cerrar</button>
+          <button onClick={() => setHelp(false)}>{tr('Cerrar')}</button>
         </div>
       </div>
     </div>

@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { asc, eq } from 'drizzle-orm';
 import {
+  localName,
   BUILTIN_TEMPLATES,
   DEFAULT_TEMPLATE_ID,
   createCharacterSchema,
@@ -175,7 +176,7 @@ export function createSheetService(ctx: AppContext) {
     campaignsSvc.requireGm(campaignId, userId);
     const monster = monsterById(monsterId);
     if (!monster) throw notFound('Monstruo no encontrado');
-    const character = create(campaignId, userId, { name: name?.trim() || monster.name });
+    const character = create(campaignId, userId, { name: name?.trim() || localName(monster) });
     return update(character.id, userId, { values: monsterValues(getTemplate(campaignId), monster) }).after;
   }
 

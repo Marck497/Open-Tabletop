@@ -4,6 +4,7 @@ import { api } from '../../core/api';
 import { AssetPicker } from '../board/AssetPicker';
 import { RichText } from './RichText';
 import { useJournal } from './store';
+import { tr } from '../../core/i18n';
 
 interface Props {
   campaignId: string;
@@ -27,10 +28,10 @@ export function HandoutWindow({ campaignId, isGm, members }: Props) {
           <span className="row">
             {isGm && (
               <button className="ghost small" onClick={() => setEditing((v) => !v)}>
-                {editing ? 'Ver' : '✎ Editar'}
+                {editing ? tr('Ver') : tr('✎ Editar')}
               </button>
             )}
-            <button className="ghost small" onClick={close} title="Cerrar">
+            <button className="ghost small" onClick={close} title={tr('Cerrar')}>
               ✕
             </button>
           </span>
@@ -40,10 +41,10 @@ export function HandoutWindow({ campaignId, isGm, members }: Props) {
         ) : (
           <>
             {handout.imageAssetId && <img className="handout-image" src={assetUrl(handout.imageAssetId)} alt="" />}
-            {handout.body ? <RichText text={handout.body} /> : !handout.imageAssetId && <p className="muted">(Vacío)</p>}
+            {handout.body ? <RichText text={handout.body} /> : !handout.imageAssetId && <p className="muted">{tr('(Vacío)')}</p>}
             {isGm && handout.gmNotes && (
               <div className="gm-notes">
-                <strong>Notas del DM</strong>
+                <strong>{tr('Notas del DM')}</strong>
                 <RichText text={handout.gmNotes} />
               </div>
             )}
@@ -75,32 +76,32 @@ function HandoutEditor({ campaignId, handout, members }: { campaignId: string; h
   return (
     <div className="handout-editor">
       <label>
-        Título
+        {tr('Título')}
         <input value={form.title} maxLength={120} onChange={(e) => setForm({ ...form, title: e.target.value })} onBlur={() => saveText('title')} />
       </label>
       <div className="row">
         <button className="small" onClick={() => setPicker(true)}>
-          {handout.imageAssetId ? 'Cambiar imagen' : 'Poner imagen'}
+          {handout.imageAssetId ? tr('Cambiar imagen') : tr('Poner imagen')}
         </button>
         {handout.imageAssetId && (
           <button className="ghost small" onClick={() => void save({ imageAssetId: null })}>
-            Quitar imagen
+            {tr('Quitar imagen')}
           </button>
         )}
       </div>
       <label>
-        Texto <small className="muted"># título, **negrita**, *cursiva*, - lista</small>
+        {tr('Texto')}{' '}<small className="muted">{tr('# título, **negrita**, *cursiva*, - lista')}</small>
         <textarea rows={8} value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} onBlur={() => saveText('body')} />
       </label>
       <label>
-        Notas del DM <small className="muted">(los jugadores nunca las reciben)</small>
+        {tr('Notas del DM')}{' '}<small className="muted">{tr('(los jugadores nunca las reciben)')}</small>
         <textarea rows={3} value={form.gmNotes} onChange={(e) => setForm({ ...form, gmNotes: e.target.value })} onBlur={() => saveText('gmNotes')} />
       </label>
       <fieldset className="owners">
-        <legend>Quién puede verlo</legend>
+        <legend>{tr('Quién puede verlo')}</legend>
         <label className="switch">
           <input type="checkbox" checked={handout.visibleToAll} onChange={(e) => void save({ visibleToAll: e.target.checked })} />
-          Todos los jugadores
+          {tr('Todos los jugadores')}
         </label>
         {!handout.visibleToAll &&
           players.map((p) => (
@@ -114,17 +115,17 @@ function HandoutEditor({ campaignId, handout, members }: { campaignId: string; h
       <div className="row spread">
         <button
           className="ghost small danger"
-          onClick={() => confirm(`¿Borrar "${handout.title}"?`) && void api.delete(`/handouts/${handout.id}`).then(() => useJournal.getState().remove(handout.id))}
+          onClick={() => confirm(tr('¿Borrar "{title}"?', { title: handout.title })) && void api.delete(`/handouts/${handout.id}`).then(() => useJournal.getState().remove(handout.id))}
         >
-          Borrar
+          {tr('Borrar')}
         </button>
         <button
           className="small primary"
           disabled={!shared}
-          title={shared ? 'Se abre en la pantalla de quienes pueden verlo' : 'Compártelo antes con algún jugador'}
+          title={shared ? tr('Se abre en la pantalla de quienes pueden verlo') : tr('Compártelo antes con algún jugador')}
           onClick={() => void api.post(`/handouts/${handout.id}/show`, {}).catch((e: Error) => setError(e.message))}
         >
-          👁 Enseñar a la mesa
+          {tr('👁 Enseñar a la mesa')}
         </button>
       </div>
       {picker && (

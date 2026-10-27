@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { asc, eq } from 'drizzle-orm';
 import {
+  localName,
   canMoveStraight,
   deployEncounterSchema,
   encounterInputSchema,
@@ -142,7 +143,7 @@ export function createEncounterService(ctx: AppContext) {
         const size = SIZE_CELLS[monster.size];
         const at = spot(size);
         if (!at) throw badRequest('No queda sitio libre en la escena para todos los monstruos');
-        return { monster, size, at, name: (totals.get(monster.id) ?? 0) > 1 ? `${monster.name} ${n}` : monster.name };
+        return { monster, size, at, name: (totals.get(monster.id) ?? 0) > 1 ? `${localName(monster)} ${n}` : localName(monster) };
       });
     });
 

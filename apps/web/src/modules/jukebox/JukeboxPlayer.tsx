@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { assetUrl, trackPosition, type JukeboxState, type JukeboxTrack } from '@vtt/shared';
 import { emitAck, getSocket } from '../../core/socket';
 import { useJukebox } from './store';
+import { tr } from '../../core/i18n';
 
 /**
  * Reproduce en este dispositivo lo que suena en la mesa, sincronizado con el
@@ -80,7 +81,7 @@ export function JukeboxPlayer({ campaignId }: { campaignId: string }) {
         for (const { el } of audios.current.values()) el.play().catch(() => useJukebox.getState().setBlocked(true));
       }}
     >
-      🔈 Activar sonido
+      {tr('🔈 Activar sonido')}
     </button>
   );
 }

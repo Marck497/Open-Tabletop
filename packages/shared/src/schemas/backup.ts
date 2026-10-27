@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { LANGS } from '../i18n/index.js';
 import { createItemSchema, fogSchema, sceneInputSchema } from './board.js';
 import { terrainSchema } from './terrain.js';
 import { updateCharacterSchema } from './character.js';
@@ -30,6 +31,7 @@ export const backupSchema = z.object({
     name: z.string().trim().min(1).max(80),
     description: z.string().max(2000).default(''),
     systemId: z.string().min(1).max(64).default('dnd5e'),
+    lang: z.enum(LANGS).default('es'),
     activeSceneId: id.nullable().default(null),
   }),
   template: sheetTemplateSchema.nullable().default(null),

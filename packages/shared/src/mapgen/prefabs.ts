@@ -1,5 +1,6 @@
 import type { Light } from '../schemas/lights.js';
 import { normalizeTerrain, TERRAIN_EMPTY } from '../schemas/terrain.js';
+import { tr } from '../i18n/index.js';
 
 /**
  * Salas prediseñadas para el editor de mapas: un plano pequeño con su suelo, puertas y objetos
@@ -25,7 +26,7 @@ export type PrefabObject = [emoji: string, x: number, y: number, size?: number, 
 /** Puerta en un lado de una casilla; con `locked`, empieza cerrada con llave. */
 export type PrefabDoor = [x: number, y: number, side: CellSide, locked?: boolean];
 
-export const PREFAB_GROUPS = ['Pueblo', 'Castillo y templo', 'Mazmorra', 'Exterior'] as const;
+export const PREFAB_GROUPS = [tr('Pueblo'), tr('Castillo y templo'), tr('Mazmorra'), tr('Exterior')] as const;
 export type PrefabGroup = (typeof PREFAB_GROUPS)[number];
 
 export interface Prefab {
@@ -46,10 +47,10 @@ const fill = (code: string, w: number, h: number) => Array.from({ length: h }, (
 export const PREFABS: Prefab[] = [
   {
     id: 'taberna',
-    name: 'Taberna',
+    name: tr('Taberna'),
     icon: '🍺',
-    group: 'Pueblo',
-    description: 'Barra, mesas, barriles, chimenea y escalera al piso de arriba.',
+    group: tr('Pueblo'),
+    description: tr('Barra, mesas, barriles, chimenea y escalera al piso de arriba.'),
     rows: fill('w', 12, 8),
     doors: [
       [5, 7, 's'],
@@ -78,10 +79,10 @@ export const PREFABS: Prefab[] = [
   },
   {
     id: 'tienda',
-    name: 'Tienda',
+    name: tr('Tienda'),
     icon: '📦',
-    group: 'Pueblo',
-    description: 'Estanterías, mostrador con la caja, cajas y una lámpara.',
+    group: tr('Pueblo'),
+    description: tr('Estanterías, mostrador con la caja, cajas y una lámpara.'),
     rows: fill('w', 7, 6),
     doors: [[3, 5, 's']],
     objects: [
@@ -101,10 +102,10 @@ export const PREFABS: Prefab[] = [
   },
   {
     id: 'posada',
-    name: 'Habitación de posada',
+    name: tr('Habitación de posada'),
     icon: '🛏️',
-    group: 'Pueblo',
-    description: 'Dos camas, un baúl, una silla y una vela.',
+    group: tr('Pueblo'),
+    description: tr('Dos camas, un baúl, una silla y una vela.'),
     rows: fill('w', 5, 5),
     doors: [[2, 4, 's']],
     objects: [
@@ -117,10 +118,10 @@ export const PREFABS: Prefab[] = [
   },
   {
     id: 'herreria',
-    name: 'Herrería',
+    name: tr('Herrería'),
     icon: '⚒️',
-    group: 'Pueblo',
-    description: 'Fragua encendida, yunque, armas y barriles de agua.',
+    group: tr('Pueblo'),
+    description: tr('Fragua encendida, yunque, armas y barriles de agua.'),
     rows: fill('p', 7, 6),
     doors: [[3, 5, 's']],
     objects: [
@@ -136,10 +137,10 @@ export const PREFABS: Prefab[] = [
   },
   {
     id: 'plaza',
-    name: 'Plaza con fuente',
+    name: tr('Plaza con fuente'),
     icon: '⛲',
-    group: 'Pueblo',
-    description: 'Adoquines, fuente en el centro, árboles, bancos y farolas.',
+    group: tr('Pueblo'),
+    description: tr('Adoquines, fuente en el centro, árboles, bancos y farolas.'),
     rows: ['gcccccccg', ...fill('c', 9, 7), 'gcccccccg'],
     doors: [],
     objects: [
@@ -158,10 +159,10 @@ export const PREFABS: Prefab[] = [
   },
   {
     id: 'templo',
-    name: 'Templo',
+    name: tr('Templo'),
     icon: '⛪',
-    group: 'Castillo y templo',
-    description: 'Nave de mármol con alfombra, bancos, altar con velas y estatua.',
+    group: tr('Castillo y templo'),
+    description: tr('Nave de mármol con alfombra, bancos, altar con velas y estatua.'),
     rows: [...fill('m', 9, 2), ...fill('mmmmkmmmm', 1, 10)],
     doors: [[4, 11, 's']],
     objects: [
@@ -183,10 +184,10 @@ export const PREFABS: Prefab[] = [
   },
   {
     id: 'trono',
-    name: 'Sala del trono',
+    name: tr('Sala del trono'),
     icon: '👑',
-    group: 'Castillo y templo',
-    description: 'Mármol, alfombra hasta el trono, columnas, estandartes y armaduras.',
+    group: tr('Castillo y templo'),
+    description: tr('Mármol, alfombra hasta el trono, columnas, estandartes y armaduras.'),
     rows: [
       'mmmmmmmmmmm',
       'mmmmmkmmmmm',
@@ -219,10 +220,10 @@ export const PREFABS: Prefab[] = [
   },
   {
     id: 'biblioteca',
-    name: 'Biblioteca',
+    name: tr('Biblioteca'),
     icon: '📚',
-    group: 'Castillo y templo',
-    description: 'Estanterías en las paredes, mesa de lectura con vela y pergaminos.',
+    group: tr('Castillo y templo'),
+    description: tr('Estanterías en las paredes, mesa de lectura con vela y pergaminos.'),
     rows: fill('w', 9, 7),
     doors: [[4, 6, 's']],
     objects: [
@@ -241,10 +242,10 @@ export const PREFABS: Prefab[] = [
   },
   {
     id: 'cripta',
-    name: 'Sala funeraria',
+    name: tr('Sala funeraria'),
     icon: '⚰️',
-    group: 'Mazmorra',
-    description: 'Ataúdes entre cuatro columnas, huesos, telarañas y velas.',
+    group: tr('Mazmorra'),
+    description: tr('Ataúdes entre cuatro columnas, huesos, telarañas y velas.'),
     rows: ['ppppppppp', 'ppppppppp', 'ppBpppBpp', 'ppppppppp', 'ppppppppp', 'ppppppppp', 'ppBpppBpp', 'ppppppppp', 'ppppppppp'],
     doors: [[4, 0, 'n']],
     objects: [
@@ -263,10 +264,10 @@ export const PREFABS: Prefab[] = [
   },
   {
     id: 'celdas',
-    name: 'Celdas',
+    name: tr('Celdas'),
     icon: '⛓️',
-    group: 'Mazmorra',
-    description: 'Tres celdas cerradas con llave junto a un pasillo con antorcha.',
+    group: tr('Mazmorra'),
+    description: tr('Tres celdas cerradas con llave junto a un pasillo con antorcha.'),
     rows: ['pppBpppBppp', 'pppBpppBppp', 'pppBpppBppp', 'BpBBBpBBBpB', 'ppppppppppp', 'ppppppppppp'],
     doors: [
       [1, 3, 'n', true],
@@ -287,10 +288,10 @@ export const PREFABS: Prefab[] = [
   },
   {
     id: 'altar',
-    name: 'Altar ritual',
+    name: tr('Altar ritual'),
     icon: '🕯️',
-    group: 'Mazmorra',
-    description: 'Cueva redonda con un altar, un círculo de velas mágicas y calaveras.',
+    group: tr('Mazmorra'),
+    description: tr('Cueva redonda con un altar, un círculo de velas mágicas y calaveras.'),
     rows: ['..ooooo..', '.ooooooo.', 'ooooooooo', 'ooooooooo', 'ooooooooo', 'ooooooooo', 'ooooooooo', '.ooooooo.', '..ooooo..'],
     doors: [[4, 8, 's']],
     objects: [
@@ -306,10 +307,10 @@ export const PREFABS: Prefab[] = [
   },
   {
     id: 'campamento',
-    name: 'Campamento',
+    name: tr('Campamento'),
     icon: '⛺',
-    group: 'Exterior',
-    description: 'Claro de tierra con tiendas, hoguera, troncos para sentarse y un caballo.',
+    group: tr('Exterior'),
+    description: tr('Claro de tierra con tiendas, hoguera, troncos para sentarse y un caballo.'),
     rows: ['ggggggggg', 'gggdddggg', 'ggdddddgg', 'gdddddddg', 'gdddddddg', 'gdddddddg', 'ggdddddgg', 'gggdddggg', 'ggggggggg'],
     doors: [],
     objects: [

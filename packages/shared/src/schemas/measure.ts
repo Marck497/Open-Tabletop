@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { Scene } from './board.js';
+import { tr } from '../i18n/index.js';
 
 /**
  * Mediciones y plantillas de área sobre el tablero. Son efímeras: no se guardan,
@@ -9,20 +10,20 @@ export const MEASURE_SHAPES = ['ruler', 'circle', 'cone', 'line', 'square'] as c
 export type MeasureShape = (typeof MEASURE_SHAPES)[number];
 
 export const MEASURE_LABELS: Record<MeasureShape, string> = {
-  ruler: 'Regla',
-  circle: 'Círculo',
-  cone: 'Cono',
-  line: 'Línea',
-  square: 'Cubo',
+  ruler: tr('Regla'),
+  circle: tr('Círculo'),
+  cone: tr('Cono'),
+  line: tr('Línea'),
+  square: tr('Cubo'),
 };
 
 /** Reglas para contar las diagonales de la cuadrícula. */
 export const DIAGONAL_RULES = ['5e', 'alt', 'euclid'] as const;
 export type DiagonalRule = (typeof DIAGONAL_RULES)[number];
 export const DIAGONAL_LABELS: Record<DiagonalRule, string> = {
-  '5e': 'Cada diagonal cuenta 1 casilla (5e)',
-  alt: 'Diagonales alternas 1-2-1 (variante DMG)',
-  euclid: 'Distancia real (sin cuadrícula)',
+  '5e': tr('Cada diagonal cuenta 1 casilla (5e)'),
+  alt: tr('Diagonales alternas 1-2-1 (variante DMG)'),
+  euclid: tr('Distancia real (sin cuadrícula)'),
 };
 
 const pointSchema = z.object({ x: z.number().finite(), y: z.number().finite() });

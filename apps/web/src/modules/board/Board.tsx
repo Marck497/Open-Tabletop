@@ -22,6 +22,7 @@ import { useMapEditor } from '../mapeditor/store';
 import { useMapPointer } from '../mapeditor/useMapPointer';
 import { GridCalOverlay, GridCalPanel } from '../gridcal/GridCalPanel';
 import { stopCalibration, useGridCal } from '../gridcal/store';
+import { tr } from '../../core/i18n';
 
 interface Props {
   isGm: boolean;
@@ -234,7 +235,7 @@ export function Board({ isGm, meId }: Props) {
       const p = pointerInScene(stage);
       const { draw } = useBoard.getState();
       if (draw.type === 'text') {
-        const text = prompt('Texto');
+        const text = prompt(tr('Texto'));
         if (text?.trim()) void createDrawing([p.x, p.y], text.trim());
         return;
       }
@@ -502,7 +503,7 @@ export function Board({ isGm, meId }: Props) {
         </Layer>
         <FxLayer scene={scene} scale={view.scale} />
       </Stage>
-      {eyes && !eyes.length && !isGm && <div className="board-notice">Visión activada: no tienes ningún token en esta escena, así que no ves nada.</div>}
+      {eyes && !eyes.length && !isGm && <div className="board-notice">{tr('Visión activada: no tienes ningún token en esta escena, así que no ves nada.')}</div>}
       {notice && <div className="board-notice">{notice}</div>}
       {mapTool && <MapEditorPanel scene={scene} />}
       {calTool && <GridCalPanel scene={scene} />}
@@ -695,8 +696,8 @@ function ItemNode({ item, isGm, scene, selected, interactive, ghost, transformab
 
   function toggleTarget() {
     useBoard.getState().toggleTarget(item.id);
-    const label = name || 'el token';
-    useBoard.getState().showNotice(useBoard.getState().targets.includes(item.id) ? `🎯 Objetivo: ${label} (Esc para quitar todos)` : `Ya no apuntas a ${label}`);
+    const label = name || tr('el token');
+    useBoard.getState().showNotice(useBoard.getState().targets.includes(item.id) ? tr('🎯 Objetivo: {label} (Esc para quitar todos)', { label }) : tr('Ya no apuntas a {label}', { label }));
   }
 
   const initials = name
