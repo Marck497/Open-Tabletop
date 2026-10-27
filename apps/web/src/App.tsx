@@ -6,6 +6,7 @@ import { useAuth } from './modules/auth/store';
 import { CampaignsPage } from './modules/campaigns/CampaignsPage';
 import { JoinPage } from './modules/campaigns/JoinPage';
 import { tr } from './core/i18n';
+import { Guard } from './components/Guard';
 
 // La mesa (tablero con Konva) se carga aparte: la lista de partidas abre más rápido.
 const CampaignPage = lazy(() => import('./modules/campaigns/CampaignPage').then((m) => ({ default: m.CampaignPage })));
@@ -19,7 +20,8 @@ export function App() {
   if (loading) return <main className="container muted">{tr('Cargando…')}</main>;
 
   return (
-    <Routes>
+    <Guard>
+      <Routes>
       <Route path="/login" element={<AuthPage mode="login" />} />
       <Route path="/register" element={<AuthPage mode="register" />} />
       <Route path="/" element={<RequireAuth><CampaignsPage /></RequireAuth>} />
@@ -35,6 +37,7 @@ export function App() {
         }
       />
       <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+      </Routes>
+    </Guard>
   );
 }

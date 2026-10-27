@@ -1,4 +1,4 @@
-import type { BoardItem } from '@vtt/shared';
+import { translate, type BoardItem } from '@vtt/shared';
 import { emitAck } from '../../core/socket';
 import { addItem } from '../board/actions';
 import { updateItem } from '../board/history';
@@ -40,7 +40,10 @@ export async function renumberNotes() {
     const note = list[k]!;
     const text = String(k + 1);
     if (note.drawing!.text === text) continue;
-    const rename = note.name === `Nota ${note.drawing!.text}` ? { name: tr('Nota {text}', { text }) } : {};
+    // Solo se renombran las que conservan el nombre automático (en cualquiera de los dos idiomas).
+    const old = note.drawing!.text;
+    const auto = [`Nota ${old}`, translate('en', 'Nota {text}', { text: old })].includes(note.name);
+    const rename = auto ? { name: tr('Nota {text}', { text }) } : {};
     await updateItem(scene.id, note.id, { drawing: { ...note.drawing!, text }, ...rename });
   }
 }

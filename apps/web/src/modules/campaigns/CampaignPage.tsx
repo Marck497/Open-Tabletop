@@ -42,6 +42,7 @@ import { TutorialOverlay } from '../tutorial/TutorialOverlay';
 import { useCampaign } from './hooks';
 import { InvitePanel } from './InvitePanel';
 import { CampaignLangPanel } from './CampaignLangPanel';
+import { Guard } from '../../components/Guard';
 import { MembersPanel } from './MembersPanel';
 import { tr } from '../../core/i18n';
 
@@ -129,39 +130,53 @@ export function CampaignPage() {
         <span className={`conn ${connected ? 'on' : 'off'}`}>{connected ? tr('Conectado') : tr('Reconectando…')}</span>
         <SideToggle unread={unreadTotal} />
       </header>
-      {scene && <Toolbar campaignId={campaign.id} isGm={isGm} />}
+      {scene && (
+        <Guard area={tr('la barra de herramientas')}>
+          <Toolbar campaignId={campaign.id} isGm={isGm} />
+        </Guard>
+      )}
       <section className="table-main" data-tour="board">
         {viewingSceneId ? (
-          <>
+          <Guard area={tr('el tablero')}>
             <Board isGm={isGm} meId={me.id} />
             <StatusBar isGm={isGm} meId={me.id} />
             <MacroBar campaignId={campaign.id} isGm={isGm} meId={me.id} />
             {sceneError && <p className="board-error error">{sceneError}</p>}
-          </>
+          </Guard>
         ) : (
           <div className="board-placeholder">
             <img src="/d20.svg" alt="" width={64} />
             <p>{isGm ? tr('Crea una escena en la pestaña Escenas.') : tr('El DM todavía no ha abierto ninguna escena.')}</p>
           </div>
         )}
-        <InitiativeTracker campaignId={campaign.id} isGm={isGm} meId={me.id} />
-        <TurnBanner meId={me.id} />
-        <InitiativeAnnounce meId={me.id} />
+        <Guard area={tr('la iniciativa')}>
+          <InitiativeTracker campaignId={campaign.id} isGm={isGm} meId={me.id} />
+          <TurnBanner meId={me.id} />
+          <InitiativeAnnounce meId={me.id} />
+        </Guard>
         {template &&
           openSheets.map((cid, i) =>
             characters[cid] ? (
-              <CharacterSheet key={cid} index={i} character={characters[cid]} template={template} isGm={isGm} meId={me.id} members={campaign.members} />
+              <Guard key={cid} area={tr('la hoja de {name}', { name: characters[cid].name })}>
+                <CharacterSheet index={i} character={characters[cid]} template={template} isGm={isGm} meId={me.id} members={campaign.members} />
+              </Guard>
             ) : null,
           )}
-        {(sideHidden || activeTab !== 'chat') && <RollToasts campaignId={campaign.id} />}
-        <DiceTray campaignId={campaign.id} />
-        <Shortcuts campaignId={campaign.id} isGm={isGm} meId={me.id} />
-        <CritFx campaignId={campaign.id} />
-        <SfxListener campaignId={campaign.id} />
+        <Guard area={tr('los efectos')}>
+          {(sideHidden || activeTab !== 'chat') && <RollToasts campaignId={campaign.id} />}
+          <DiceTray campaignId={campaign.id} />
+          <Shortcuts campaignId={campaign.id} isGm={isGm} meId={me.id} />
+          <CritFx campaignId={campaign.id} />
+          <SfxListener campaignId={campaign.id} />
+        </Guard>
       </section>
       <aside className="table-side" hidden={sideHidden}>
         <SideResizer />
-        {isGm && hasSelection && <ItemPanel campaignId={campaign.id} members={campaign.members} />}
+        {isGm && hasSelection && (
+          <Guard area={tr('el panel del elemento')}>
+            <ItemPanel campaignId={campaign.id} members={campaign.members} />
+          </Guard>
+        )}
         <nav className="tabs" role="tablist">
           {tabs.map((t, i) => {
             const label = t.id === 'table' ? `${t.label} (${online.length})` : t.label;
@@ -186,6 +201,7 @@ export function CampaignPage() {
           })}
         </nav>
         <div className="tab-body" data-tour={activeTab}>
+          <Guard key={activeTab} area={tr('esta pestaña')}>
           {activeTab === 'chat' && <ChatPanel campaignId={campaign.id} isGm={isGm} meId={me.id} members={campaign.members} />}
           {activeTab === 'characters' && (
             <CharactersPanel campaignId={campaign.id} isGm={isGm} meId={me.id} members={campaign.members} onEditTemplate={() => setEditingTemplate(true)} />
@@ -209,6 +225,7 @@ export function CampaignPage() {
               <PerformancePanel campaignId={campaign.id} />
             </>
           )}
+          </Guard>
         </div>
       </aside>
       <JukeboxPlayer campaignId={campaign.id} />

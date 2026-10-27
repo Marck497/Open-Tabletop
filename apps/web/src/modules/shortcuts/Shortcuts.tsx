@@ -30,11 +30,11 @@ export const SHORTCUTS: Shortcut[] = [
   { keys: 'N', label: tr('Pasar turno (el DM, o tú en tu turno)') },
   { keys: tr('Mayús+1 · 2 · 3…'), label: tr('Abrir una pestaña de la barra lateral (Chat, Personajes, Diario…)') },
   { keys: 'B', label: tr('Esconder o mostrar la barra lateral') },
-  { keys: 'Supr', label: tr('Borrar lo seleccionado') },
+  { keys: tr('Supr'), label: tr('Borrar lo seleccionado') },
   { keys: 'Ctrl+Z · Ctrl+Y', label: tr('Deshacer · rehacer') },
   { keys: 'Esc', label: tr('Soltar la selección, los objetivos y la medición') },
   { keys: tr('Clic derecho · Espacio'), label: tr('Arrastrando un token o midiendo: punto de giro para cambiar de dirección') },
-  { keys: 'Alt+clic', label: tr('Apuntar a un token (objetivo de ataques y hechizos)') },
+  { keys: tr('Alt+clic'), label: tr('Apuntar a un token (objetivo de ataques y hechizos)') },
   { keys: tr('Doble clic'), label: tr('Ping (con Mayús, el DM centra la vista de todos)') },
   { keys: '?', label: tr('Esta ayuda') },
 ];

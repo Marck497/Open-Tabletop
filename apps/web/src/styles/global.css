@@ -615,3 +615,5 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--border); 
 .modal.adventure .row.wrap { flex-wrap: wrap; gap: 6px; }
 .lang-select { width: auto; padding: 2px 6px; font-size: 0.85em; }
 .auth-lang { margin-left: auto; font-size: 1rem; font-weight: normal; }
+.guard-error { margin: 12px; padding: 12px 14px; border: 1px solid var(--danger, #c0504d); border-radius: 8px; background: var(--bg-elev); display: grid; gap: 8px; max-width: 520px; pointer-events: auto; }
+.guard-error small { word-break: break-word; }

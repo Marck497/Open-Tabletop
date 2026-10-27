@@ -93,7 +93,7 @@ export function CharactersPanel({
             >
               <span className="avatar small">{c.avatarAssetId ? <img src={assetUrl(c.avatarAssetId)} alt="" /> : c.name.slice(0, 1)}</span>
               <span className="member-name">{c.name}</span>
-              {isGm && c.controlledBy.length === 0 && <span className="badge">PNJ</span>}
+              {isGm && c.controlledBy.length === 0 && <span className="badge">{tr('PNJ')}</span>}
               {!isGm && c.controlledBy.includes(meId) && <span className="badge gm">{tr('Tuyo')}</span>}
             </button>
           </li>

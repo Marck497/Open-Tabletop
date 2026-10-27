@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { checkSyntax, evaluate } from '../src/expr.js';
+import { checkSyntax, evaluate, ExprError } from '../src/expr.js';
 import { naturalOutcome } from '../src/index.js';
 
 /** Generador que devuelve siempre los mismos valores (para tests). */
@@ -82,5 +82,19 @@ describe('críticos y pifias', () => {
     const r = evaluate('1d20+3', { rng: () => 0.999 });
     expect(naturalOutcome(r)).toBe('crit');
     expect(naturalOutcome(evaluate('1d20+3', { rng: () => 0 }))).toBe('fumble');
+  });
+});
+
+describe('entradas extremas', () => {
+  it('lo muy anidado da un error claro en vez de desbordar la pila', () => {
+    expect(() => evaluate('('.repeat(20000) + '1' + ')'.repeat(20000))).toThrow(ExprError);
+    expect(() => evaluate('-'.repeat(50000) + '1')).toThrow(ExprError);
+    expect(evaluate('((((1 + 2))))').value).toBe(3);
+  });
+
+  it('min() y max() sin argumentos valen 0, y nada da infinito', () => {
+    expect(evaluate('max()').value).toBe(0);
+    expect(evaluate('min() + 1').value).toBe(1);
+    expect(evaluate('1/0').value).toBe(0);
   });
 });
