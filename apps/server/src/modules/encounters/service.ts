@@ -84,7 +84,7 @@ export function createEncounterService(ctx: AppContext) {
 
   function checkMonsters(list: { monsterId: string }[] | undefined) {
     const unknown = list?.find((m) => !monsterById(m.monsterId));
-    if (unknown) throw badRequest(`Monstruo desconocido: ${unknown.monsterId}`);
+    if (unknown) throw badRequest('Monstruo desconocido: {id}', { id: unknown.monsterId });
   }
 
   function list(campaignId: string, userId: string): Encounter[] {

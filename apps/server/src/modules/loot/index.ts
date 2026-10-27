@@ -67,7 +67,7 @@ export function createLootService(ctx: AppContext) {
         total = Math.max(0, Math.floor(r.value));
         if (r.rolls.length) parts.push({ label: `${c.label} (${text})`, expression: text, total, rolls: r.rolls });
       } catch (e) {
-        if (e instanceof ExprError) throw badRequest(`${c.label}: tirada no válida (${e.message})`);
+        if (e instanceof ExprError) throw badRequest('{label}: tirada no válida ({error})', { label: c.label, error: e.message });
         throw e;
       }
       if (!total) continue;

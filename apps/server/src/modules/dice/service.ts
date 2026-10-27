@@ -54,7 +54,7 @@ export function createDiceService(ctx: AppContext) {
         characterName,
       };
     } catch (e) {
-      if (e instanceof ExprError) throw badRequest(`Tirada no válida: ${e.message}`);
+      if (e instanceof ExprError) throw badRequest('Tirada no válida: {error}', { error: e.message });
       throw e;
     }
   }

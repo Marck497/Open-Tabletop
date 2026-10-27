@@ -22,4 +22,11 @@ describe('carpetas de escenas', () => {
     expect(tree.folders[1]!.folders[0]!.scenes.map((s) => s.id)).toEqual(['s2', 's1']);
     expect(tree.scenes.map((s) => s.id)).toEqual(['s3', 's4']);
   });
+
+  it('no se cuelga con carpetas en bucle (copias trucadas o dañadas)', () => {
+    const tree = buildSceneTree([folder('a', 'b'), folder('b', 'a'), folder('c', 'c'), folder('d', 'a')], [scene('s1', 'a')]);
+    expect(tree.folders.map((n) => n.folder.id).sort()).toEqual(['a', 'b', 'c', 'd']);
+    expect(tree.folders.every((n) => n.folders.length === 0)).toBe(true);
+    expect(tree.folders.find((n) => n.folder.id === 'a')!.scenes.map((s) => s.id)).toEqual(['s1']);
+  });
 });

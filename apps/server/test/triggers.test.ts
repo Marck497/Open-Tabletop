@@ -97,6 +97,19 @@ describe('trampas y zonas de aviso', () => {
     expect(ok(await call<SceneState>(gmC, 'scene:view', { sceneId })).items.find((i) => i.id === trap.id)?.trigger?.active).toBe(false);
   });
 
+  it('una trampa de una vez salta una sola vez aunque la pisen dos tokens a la vez', async () => {
+    const { pl, heard, item, move, plC } = await setup();
+    await item(trapAt(280, 0, { message: 'Primera' }));
+    await item({ ...trapAt(560, 0, { message: 'Segunda' }), name: 'Pozo', height: 420 });
+    const a = await item({ name: 'A', ownerIds: [pl.user.id] });
+    const b = await item({ name: 'B', x: 420, y: 280, ownerIds: [pl.user.id] });
+    // A cruza las dos; B solo la segunda, mientras A todavía está con la primera.
+    await Promise.all([move(plC, a.id, 840, 0), move(plC, b.id, 840, 280)]);
+    await tick(400);
+    expect(heard.gm.filter((m) => m.text.includes('«Pozo»'))).toHaveLength(1);
+    expect(heard.gm.filter((m) => m.text === 'Segunda')).toHaveLength(1);
+  });
+
   it('las paredes de los puntos de giro cuentan: rodear la zona no la dispara; moverse dentro tampoco', async () => {
     const { pl, item, heard, move, plC } = await setup();
     await item({ ...trapAt(280, 0, {}), trigger: { kind: 'zone', once: false } });

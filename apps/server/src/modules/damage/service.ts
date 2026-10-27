@@ -97,7 +97,7 @@ export function createDamageService(ctx: AppContext) {
     try {
       roll = evaluate(amount, { rng: secureRng });
     } catch (e) {
-      if (e instanceof ExprError) throw badRequest(`Cantidad no válida (${e.message}). Escribe un número o una tirada como 2d6 + 3`);
+      if (e instanceof ExprError) throw badRequest('Cantidad no válida ({error}). Escribe un número o una tirada como 2d6 + 3', { error: e.message });
       throw e;
     }
     const total = Math.round(roll.value);

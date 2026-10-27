@@ -143,4 +143,20 @@ export const PART7: Record<string, string> = {
   'intermedia': 'medium',
   'pesada': 'heavy',
   'escudo': 'shield',
+  // Errores del servidor con datos (la web traduce la plantilla y luego la rellena).
+  'Tirada no válida: {error}': 'Invalid roll: {error}',
+  'Escena no válida ({field}: {error})': 'Invalid scene ({field}: {error})',
+  'Escena no válida': 'Invalid scene',
+  'La biblioteca está llena (máx. {max} escenas): borra alguna': 'The library is full (max. {max} scenes): delete some',
+  '{label}: tirada no válida ({error})': '{label}: invalid roll ({error})',
+  'Cantidad no válida ({error}). Escribe un número o una tirada como 2d6 + 3': 'Invalid amount ({error}). Type a number or a roll like 2d6 + 3',
+  'Tirada no válida ({expr}): {error}': 'Invalid roll ({expr}): {error}',
+  'Copia no válida ({field}: {error})': 'Invalid backup ({field}: {error})',
+  'Copia no válida': 'Invalid backup',
+  'Comando desconocido: /{name}': 'Unknown command: /{name}',
+  'Monstruo desconocido: {id}': 'Unknown monster: {id}',
+  '{name}: tirada no válida ({error}). Revísala en ⚗ Creaciones.': '{name}: invalid roll ({error}). Check it in ⚗ Creations.',
+  '{name} no tiene tirada de ataque ni de daño': '{name} has no attack or damage roll',
+  'La imagen del mapa pesa {size} MB y el máximo es {max} MB. Expórtalo con menos píxeles por casilla (por ejemplo 100) o en WEBP.':
+    'The map image is {size} MB and the maximum is {max} MB. Export it with fewer pixels per cell (for example 100) or as WEBP.',
 };

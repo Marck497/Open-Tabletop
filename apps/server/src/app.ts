@@ -37,7 +37,7 @@ export async function buildApp(config: AppConfig, opts: { logger?: boolean } = {
   });
 
   app.setErrorHandler((err, req, reply) => {
-    if (err instanceof AppError) return reply.code(err.statusCode).send({ error: err.message });
+    if (err instanceof AppError) return reply.code(err.statusCode).send(err.toJSON());
     if (err instanceof ZodError) {
       return reply.code(400).send({ error: err.issues[0]?.message ?? 'Datos no válidos', issues: err.issues });
     }

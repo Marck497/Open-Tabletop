@@ -127,7 +127,7 @@ export function createChatService(ctx: AppContext) {
         if (!rest.trim()) throw badRequest('Escribe la acción');
         return insert({ ...base, kind: 'emote', text: rest.trim() });
       default:
-        throw badRequest(`Comando desconocido: /${name}`);
+        throw badRequest('Comando desconocido: /{name}', { name });
     }
   }
 

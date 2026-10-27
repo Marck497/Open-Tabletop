@@ -6,7 +6,7 @@ import zlib from 'node:zlib';
 const MAX_UNZIPPED_BYTES = 500 * 1024 * 1024;
 import { randomUUID } from 'node:crypto';
 import { asc, eq } from 'drizzle-orm';
-import { BACKUP_FORMAT, BACKUP_VERSION, backupSchema, type BackupInput, type ImportSummary, type SheetValues } from '@vtt/shared';
+import { BACKUP_FORMAT, BACKUP_VERSION, backupSchema, folderCycle, type BackupInput, type ImportSummary, type SheetValues } from '@vtt/shared';
 import type { AppContext } from '../../core/module.js';
 import { badRequest } from '../../core/errors.js';
 import { assets, boardItems, campaignMembers, campaigns, characters, encounters, handouts, homebrew, jukebox, macros, sceneFolders, scenes, sheetTemplates } from '../../db/schema.js';
@@ -118,7 +118,7 @@ export function createBackupService(ctx: AppContext) {
     const parsed = backupSchema.safeParse(json);
     if (!parsed.success) {
       const issue = parsed.error.issues[0];
-      throw badRequest(`Copia no válida${issue ? ` (${issue.path.join('.')}: ${issue.message})` : ''}`);
+      throw issue ? badRequest('Copia no válida ({field}: {error})', { field: issue.path.join('.'), error: issue.message }) : badRequest('Copia no válida');
     }
     return parsed.data;
   }
@@ -181,9 +181,14 @@ export function createBackupService(ctx: AppContext) {
       }
       // Carpetas: primero todas (para tener sus ids nuevos) y luego quién va dentro de quién.
       for (const { id, parentId: _p, ...f } of backup.sceneFolders) tx.insert(sceneFolders).values({ ...f, id: fresh(id), campaignId, parentId: null }).run();
+      // Una copia trucada o dañada puede traer carpetas en bucle: esas se quedan en la raíz.
+      const placed: { id: string; parentId: string | null }[] = backup.sceneFolders.map((f) => ({ id: ref(f.id)!, parentId: null }));
       for (const f of backup.sceneFolders) {
+        const id = ref(f.id)!;
         const parentId = ref(f.parentId);
-        if (parentId) tx.update(sceneFolders).set({ parentId }).where(eq(sceneFolders.id, ref(f.id)!)).run();
+        if (!parentId || folderCycle(placed, id, parentId)) continue;
+        placed.find((p) => p.id === id)!.parentId = parentId;
+        tx.update(sceneFolders).set({ parentId }).where(eq(sceneFolders.id, id)).run();
       }
       for (const { id, folderId, ...s } of backup.scenes) {
         const fits = s.terrain.length === (s.widthCells ?? 30) * (s.heightCells ?? 20);
