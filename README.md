@@ -1,330 +1,332 @@
 # Mesa de Rol 🎲
 
-Mesa virtual (VTT) para jugar a rol online con amigos, inspirada en Roll20. Pensada para alojarse en casa en una **Raspberry Pi 5** y crecer módulo a módulo.
+A self-hosted virtual tabletop (VTT) for playing tabletop RPGs online with friends, inspired by Roll20. It is designed to run at home on a **Raspberry Pi 5** and to grow one module at a time.
 
-## Estado
+> **Language note:** the app's interface is currently in **Spanish**. Button and menu names in this README are written exactly as they appear in the app, with an English translation in brackets where it helps.
 
-| Paso | Contenido | Estado |
+## Status
+
+| Step | Contents | Status |
 | --- | --- | --- |
-| 1 | Base: cuentas, partidas, invitaciones, roles DM/jugador, presencia en tiempo real, Docker | ✅ |
-| 2 | Tablero en tiempo real: mapas, cuadrícula, tokens, capas y niebla de guerra | ✅ |
-| 3 | Hojas de personaje editables (plantilla D&D 5e, sistema intercambiable) | ✅ |
-| 4 | Chat, dados, iniciativa y guía para conectarse desde fuera | ✅ |
+| 1 | Foundation: accounts, campaigns, invitations, DM/player roles, real-time presence, Docker | ✅ |
+| 2 | Real-time board: maps, grid, tokens, layers and fog of war | ✅ |
+| 3 | Editable character sheets (D&D 5e template, swappable game system) | ✅ |
+| 4 | Chat, dice, initiative and a guide for connecting from outside your home network | ✅ |
 
-## Instalar en la Raspberry Pi 5
+## Installing on a Raspberry Pi 5
 
-Necesitas Raspberry Pi OS de 64 bits (o cualquier Linux arm64) con Docker.
+You need 64-bit Raspberry Pi OS (or any arm64 Linux) with Docker.
 
 ```bash
-# 1. Instala Docker (solo la primera vez)
+# 1. Install Docker (first time only)
 curl -fsSL https://get.docker.com | sh
-sudo usermod -aG docker $USER   # cierra sesión y vuelve a entrar después
+sudo usermod -aG docker $USER   # log out and back in afterwards
 
-# 2. Descarga el proyecto
+# 2. Download the project
 git clone https://github.com/Marck497/Programa-DND.git
 cd Programa-DND
 
-# 3. Configuración (opcional, pero recomendado si la abres a internet)
+# 3. Configuration (optional, but recommended if you expose it to the internet)
 cp .env.example .env
-nano .env   # pon un REGISTRATION_CODE para que solo tus amigos puedan registrarse
+nano .env   # set a REGISTRATION_CODE so only your friends can sign up
 
-# 4. Arranca
+# 4. Start it
 docker compose up -d --build
 ```
 
-Abre `http://IP-DE-LA-PI:3000` desde cualquier equipo de tu red. La primera compilación en la Pi tarda unos minutos.
+Open `http://PI-IP-ADDRESS:3000` from any device on your network. The first build on the Pi takes a few minutes.
 
-- **Actualizar:** `git pull && docker compose up -d --build`
-- **Ver logs:** `docker compose logs -f`
-- **Copia de seguridad:** todo se guarda en la carpeta `data/`. Copiarla es suficiente.
+- **Update:** `git pull && docker compose up -d --build`
+- **View logs:** `docker compose logs -f`
+- **Backup:** everything is stored in the `data/` folder. Copying it is enough.
 
-> **Para que tus amigos entren desde su casa** sigue [`docs/ACCESO_EXTERNO.md`](docs/ACCESO_EXTERNO.md). La opción recomendada (Tailscale Funnel) es gratis y no hace falta tocar el router. Ahí también se explica cómo hacer copias de seguridad.
+> **To let your friends join from their own homes**, follow [`docs/ACCESO_EXTERNO.md`](docs/ACCESO_EXTERNO.md) (in Spanish). The recommended option (Tailscale Funnel) is free and doesn't require touching your router. It also explains how to make backups.
 
-## Cómo se usa el tablero
+## Using the board
 
 **DM**
-- Elige la **capa** en la barra superior: *Mapa* (fondo), *Tokens* (personajes) o *DM* (solo la ves tú). Solo puedes seleccionar elementos de la capa activa.
-- **+ Imagen** sube mapas o retratos; **+ Token** crea una ficha de color. En el panel derecho cambias nombre, tamaño, capa, imagen y qué jugadores pueden moverla.
-- **Niebla** (menú ☁ Niebla): actívala y usa *Revelar* / *Ocultar* arrastrando rectángulos. Tú la ves semitransparente; los jugadores, negra. Los tokens enemigos bajo la niebla ni siquiera se envían a los jugadores.
-- **Paredes y visión** (🧱 Paredes): arrastra para trazar paredes (se ajustan a las esquinas de la cuadrícula y a los extremos de otras paredes; con *Alt*, libres). Elige el tipo: *pared*, *puerta*, *ventana* (deja ver pero no pasar) o *puerta secreta* (para los jugadores es una pared hasta que la abres). Clic en una pared para cambiarle el tipo; con *Borrar*, para quitarla. En el tablero se dibujan como muros de piedra con pilares en las esquinas, las puertas de madera (abiertas, giradas sobre la bisagra) y las ventanas con cristal; las líneas de colores solo salen mientras editas con 🧱 Paredes.
-- En el menú **👁 Visión** activa la *visión dinámica* para que cada jugador vea solo lo que ven sus tokens: el resto queda a oscuras y lo ya explorado, en penumbra. Los tokens que no ven ni siquiera se les envían. *Alcance* limita hasta dónde ven (en casillas, 0 = sin límite) y *Ver como jugadores* te muestra la oscuridad. Ojo: con la visión activada, un jugador sin tokens en la escena no ve nada.
-- **Puertas**: clic en el icono 🚪 para abrirla o cerrarla. Tú, con *Mayús*+clic, le echas la llave 🔒. Los jugadores abren las puertas que ven y no tienen llave, y no pueden mover sus tokens a través de paredes ni puertas cerradas.
-- **Escenas**: el botón **🗺** de la barra de arriba (y la pestaña *Escenas*) abre la lista de mapas que tienes preparados.
-  - Pulsa una escena para abrirla **solo tú**: los jugadores no la ven hasta que los lleves.
-  - **Llevar ▾** te deja elegir:
-    - **Toda la party**: todos van a esa escena.
-    - Solo a los jugadores que marques: el resto se queda donde estaba, y así puedes dividir el grupo.
-  - Cada jugador ve únicamente la escena en la que está. En la lista, la escena de la party lleva la etiqueta *Party*, y cada jugador aparece con su inicial en el mapa donde se encuentra. Arriba ves quién está en la escena que tienes abierta.
-  - **Carpetas**: créalas con *+ Carpeta* (📁+ crea una subcarpeta), renómbralas con ✎ y pliégalas con un clic. Si borras una carpeta, sus escenas no se pierden: suben a la carpeta de arriba.
-  - **Arrastra** una escena o una carpeta para ordenarla. Soltarla encima de otra carpeta la mete dentro; soltarla en el borde superior la coloca delante. Con *Suelta aquí para sacar de las carpetas* vuelve a la raíz.
-  - **⧉ Duplicar** (pestaña *Escenas*, con la escena abierta): hace una copia justo debajo, con su mapa, paredes, niebla, luces, objetos y enemigos. Los tokens y dibujos de los jugadores no se copian.
-  - **📚 Guardar en biblioteca**: guarda una copia en tu biblioteca personal (imágenes incluidas). Desde **📚 Biblioteca**, en cualquiera de tus partidas, *+ Usar aquí* crea una escena nueva a partir de ella. Lo que guardas sigue ahí aunque borres la escena o la partida original.
-  - **⬆ Importar** (arriba en la pestaña *Escenas*) crea una escena a partir de un **mapa de Dungeondraft** (`.dd2vtt`) o de otros programas que exportan en formato *Universal VTT* (Dungeon Alchemist `.uvtt`, DungeonFog `.df2vtt`…):
-    - la imagen del mapa ocupa toda la escena, en la capa *Mapa*;
-    - las paredes y puertas quedan puestas y alineadas con las del dibujo. No se pintan encima, porque la imagen ya las trae, pero tapan la vista y no dejan pasar;
-    - cada luz del mapa es una luz invisible en la capa del DM;
-    - se activa la visión dinámica, pero no la oscuridad, porque la imagen ya trae su iluminación.
+- Pick the **layer** in the top bar: *Mapa* (map/background), *Tokens* (characters) or *DM* (only you can see it). You can only select items on the active layer.
+- **+ Imagen** uploads maps or portraits; **+ Token** creates a coloured token. In the right-hand panel you can change its name, size, layer, image and which players can move it.
+- **Fog** (☁ Niebla menu): turn it on and use *Revelar* (reveal) / *Ocultar* (hide) by dragging rectangles. You see it semi-transparent; players see it black. Enemy tokens under the fog are never even sent to players.
+- **Walls and vision** (🧱 Paredes): drag to draw walls (they snap to grid corners and to the ends of other walls; hold *Alt* for free placement). Choose the type: *wall*, *door*, *window* (blocks movement but not sight) or *secret door* (a wall for players until you open it). Click a wall to change its type; with *Borrar* (delete), click to remove it. On the board they are drawn as stone walls with pillars at the corners, wooden doors (open doors swing on their hinge) and glass windows; the coloured lines only appear while editing with 🧱 Paredes.
+- In the **👁 Visión** menu, turn on *dynamic vision* so each player only sees what their tokens can see: the rest stays dark, and areas already explored stay dimmed. Tokens they can't see are never sent to them. *Alcance* (range) limits how far they see (in squares, 0 = unlimited) and *Ver como jugadores* (view as players) shows you the darkness. Note: with vision on, a player with no tokens in the scene sees nothing.
+- **Doors**: click the 🚪 icon to open or close a door. As DM, *Shift*+click locks it 🔒. Players can open doors they can see that aren't locked, and can't move their tokens through walls or closed doors.
+- **Scenes**: the **🗺** button in the top bar (and the *Escenas* tab) opens the list of maps you have prepared.
+  - Click a scene to open it **just for you**: players don't see it until you move them there.
+  - **Llevar ▾** (bring) lets you choose:
+    - **Toda la party** (whole party): everyone goes to that scene.
+    - Only the players you tick: the rest stay where they were, so you can split the party.
+  - Each player only sees the scene they are in. In the list, the party's scene is labelled *Party*, and each player shows up as their initial on the map where they are. At the top you can see who is in the scene you have open.
+  - **Folders**: create them with *+ Carpeta* (📁+ creates a subfolder), rename them with ✎ and collapse them with a click. If you delete a folder, its scenes aren't lost: they move up to the parent folder.
+  - **Drag** a scene or folder to reorder it. Dropping it onto another folder puts it inside; dropping it on the top edge places it before. *Suelta aquí para sacar de las carpetas* (drop here to remove from folders) moves it back to the root.
+  - **⧉ Duplicar** (duplicate; *Escenas* tab, with the scene open): makes a copy right below it, with its map, walls, fog, lights, objects and enemies. Players' tokens and drawings are not copied.
+  - **📚 Guardar en biblioteca** (save to library): saves a copy to your personal library (images included). From **📚 Biblioteca**, in any of your campaigns, *+ Usar aquí* (use here) creates a new scene from it. What you save stays there even if you delete the original scene or campaign.
+  - **⬆ Importar** (import; top of the *Escenas* tab) creates a scene from a **Dungeondraft map** (`.dd2vtt`) or from other programs that export the *Universal VTT* format (Dungeon Alchemist `.uvtt`, DungeonFog `.df2vtt`…):
+    - the map image fills the whole scene, on the *Mapa* layer;
+    - walls and doors are placed and aligned with the drawing. They aren't painted on top, because the image already shows them, but they block sight and movement;
+    - each light in the map becomes an invisible light on the DM layer;
+    - dynamic vision is turned on, but not darkness, because the image already has its own lighting.
 
-    La imagen tiene que pesar menos de 25 MB: si pesa más, expórtalo con menos píxeles por casilla (por ejemplo 100) o en WEBP.
-  - **⬇ Exportar** descarga la escena como archivo `.vtt-escena.json.gz` para pasársela a otro DM o llevarla a otro servidor; se carga con *⬆ Importar archivo de escena* en la ventana de la biblioteca. Los tokens van sin hoja vinculada ni dueños.
+    The image must be under 25 MB: if it's bigger, export it with fewer pixels per square (e.g. 100) or as WEBP.
+  - **⬇ Exportar** (export) downloads the scene as a `.vtt-escena.json.gz` file so you can give it to another DM or move it to another server; load it with *⬆ Importar archivo de escena* in the library window. Tokens are exported without linked sheets or owners.
 
-**Todos**
-- Arrastra el fondo para moverte y usa la rueda para hacer zoom.
-- **Medir** (📏 en la barra): arrastra para medir. Sin soltar, un **clic derecho** (o *Espacio*) añade un punto de giro para cambiar de dirección, *Alt* mide sin ajustar a la cuadrícula y *Esc* la quita. Todos ven tu regla con tu nombre.
-- **Plantillas de área** (◯ círculo, ◺ cono, ━ línea, ▢ cubo): marcan las casillas afectadas por un hechizo y miden casillas enteras.
-- **Ping** (📍 o doble clic en el fondo): señala un punto a la mesa. El DM, con *Mayús*, además centra la vista de todos ahí. Lo que mide el DM en la capa DM solo lo ven los DM.
-- Al arrastrar un token ves cuánto se ha movido. Sin soltarlo, un **clic derecho** (o *Espacio*) deja un punto de giro: así doblas una esquina o rodeas una pared que no puedes atravesar en línea recta, y la distancia cuenta el camino entero.
-- **Dibujar** (✏️): a mano alzada, líneas, rectángulos, elipses y textos, con color y grosor. El DM dibuja en la capa activa (también en la suya, oculta). Los jugadores dibujan en la de tokens y pueden mover, redimensionar o borrar (Supr) sus dibujos.
-- **Estados**: al seleccionar un token aparece abajo una barra con las condiciones (envenenado, derribado, concentración…). Se ven como iconos sobre el token. Cada jugador puede marcar los de sus tokens. La lista se edita en la plantilla de hoja (*Estados de los tokens*), y los que tienen *Pierde el turno* hacen que la IA de ese enemigo no actúe.
-- La distancia por casilla (5 pies por defecto), la unidad y cómo se cuentan las diagonales se cambian en *Ajustes de la escena*.
-- Los tokens se ajustan a la cuadrícula al soltarlos (mantén **Alt** para moverlos libremente).
-- **Supr** borra el elemento seleccionado (DM) y **Esc** quita la selección.
+**Everyone**
+- Drag the background to pan and use the mouse wheel to zoom.
+- **Measure** (📏 in the bar): drag to measure. While holding, a **right-click** (or *Space*) adds a waypoint to change direction, *Alt* measures without snapping to the grid and *Esc* removes it. Everyone sees your ruler with your name.
+- **Area templates** (◯ circle, ◺ cone, ━ line, ▢ cube): highlight the squares affected by a spell and measure in whole squares.
+- **Ping** (📍 or double-click the background): points out a spot to the table. The DM can hold *Shift* to also centre everyone's view there. Whatever the DM measures on the DM layer is only visible to DMs.
+- When dragging a token you see how far it has moved. While holding, a **right-click** (or *Space*) drops a waypoint: that way you can turn a corner or go around a wall you can't cross in a straight line, and the distance counts the whole path.
+- **Draw** (✏️): freehand, lines, rectangles, ellipses and text, with colour and thickness. The DM draws on the active layer (including their own hidden one). Players draw on the token layer and can move, resize or delete (Del) their drawings.
+- **Conditions**: selecting a token shows a bar at the bottom with conditions (poisoned, prone, concentrating…). They appear as icons on the token. Each player can toggle them on their own tokens. The list is edited in the sheet template (*Estados de los tokens*), and conditions marked *Pierde el turno* (loses turn) make that enemy's AI skip its turn.
+- The distance per square (5 feet by default), the unit and how diagonals are counted are set in *Ajustes de la escena* (scene settings).
+- Tokens snap to the grid when dropped (hold **Alt** to move them freely).
+- **Del** deletes the selected item (DM) and **Esc** clears the selection.
 
-**Organizar la pantalla**
-- **Hojas de personaje**: arrástralas por la cabecera (⠿) a donde quieras y minimízalas con ▁. Cada navegador recuerda dónde dejaste cada hoja. La que tocas pasa delante.
-- **Barra lateral**: arrastra su borde izquierdo para ensancharla (doble clic la deja como estaba) y escóndela con **Panel ⇥** arriba a la derecha o con la tecla **B**.
-- **Mensajes nuevos**: si estás en otra pestaña (o con la barra escondida), un número rojo te avisa de los mensajes del chat y de los documentos que el DM te comparte en el Diario.
-- **Pestañas**: *Mayús+1, 2, 3…* abre cada una. El DM tiene además **⚙️ Ajustes** con la invitación, las copias de seguridad y el rendimiento.
+**Arranging the screen**
+- **Character sheets**: drag them by their header (⠿) wherever you like and minimise them with ▁. Each browser remembers where you left each sheet. The one you touch comes to the front.
+- **Sidebar**: drag its left edge to widen it (double-click resets it) and hide it with **Panel ⇥** in the top right or with the **B** key.
+- **New messages**: if you're on another tab (or the sidebar is hidden), a red counter tells you about new chat messages and documents the DM shares with you in the Journal.
+- **Tabs**: *Shift+1, 2, 3…* opens each one. The DM also has **⚙️ Ajustes** (settings) with the invitation, backups and performance options.
 
-### ✨ Aventura rápida
+### ✨ Quick adventure
 
-En *Escenas*, **✨ Aventura rápida** crea en un momento una escena nueva lista para jugar. Eliges el lugar (mazmorra, cripta, castillo, alcantarillas, mina, cueva, bosque, camino o pueblo), el tamaño, cuántas salas, el grupo (sale solo de los PJ de la partida) y la dificultad, y prepara:
+In *Escenas*, **✨ Aventura rápida** instantly creates a new scene ready to play. You choose the location (dungeon, crypt, castle, sewers, mine, cave, forest, road or village), the size, how many rooms, the party (taken automatically from the campaign's PCs) and the difficulty, and it prepares:
 
-- el mapa generado y amueblado, con visión dinámica;
-- una **nota numerada en cada sala**, siguiendo el recorrido desde la entrada (1). Cada nota dice lo que se ve (para leerlo con 📣) y, bajo la raya, lo que solo sabes tú;
-- **encuentros** con monstruos del compendio de la dificultad elegida (el último, el jefe, uno más difícil), con su hoja y su IA, escondidos en la capa del DM. Si quieres, **aparecen solos** cuando un jugador entra en su sala;
-- **trampas** con salvación y daño según el nivel, y un **cofre con el tesoro** al final.
+- the generated, furnished map, with dynamic vision;
+- a **numbered note in each room**, following the route from the entrance (1). Each note says what the characters see (to read out with 📣) and, below the line, what only you know;
+- **encounters** with monsters from the compendium at the chosen difficulty (the last one, the boss, is harder), with their sheets and AI, hidden on the DM layer. Optionally, they **appear on their own** when a player enters their room;
+- **traps** with saving throws and damage scaled to level, and a **treasure chest** at the end.
 
-Los jugadores no ven la escena hasta que los llevas con *Llevar*. Todo se puede retocar después.
+Players don't see the scene until you bring them with *Llevar*. Everything can be tweaked afterwards.
 
-### Notas numeradas del mapa
+### Numbered map notes
 
-En la pestaña *Escenas*, con la escena abierta, **📍 Notas del mapa → + Nota** pone un círculo numerado (1, 2, 3…) en la capa del DM, como los números de los mapas de un módulo de aventura. Arrástralo a su sitio y escribe su título y su texto en el panel; los jugadores no lo ven nunca.
+In the *Escenas* tab, with the scene open, **📍 Notas del mapa → + Nota** places a numbered circle (1, 2, 3…) on the DM layer, like the room numbers on an adventure module map. Drag it into place and write its title and text in the panel; players never see it.
 
-- La lista muestra todas las notas de la escena: clic en una para ir a ella.
-- **📣 Leer en el chat** manda a todos el título y el texto que va antes de una línea con `---` (la descripción que lees al entrar en una sala). Lo de después de la raya es solo para ti y nunca sale; antes de enviarlo te enseña lo que va a mandar.
-- Si borras alguna, **Renumerar** las deja otra vez 1, 2, 3… Se copian con la escena al duplicarla, exportarla o guardarla en la biblioteca.
+- The list shows all the scene's notes: click one to jump to it.
+- **📣 Leer en el chat** (read in chat) sends everyone the title and the text before a line containing `---` (the description you read when they enter a room). Everything after the line is for you only and is never sent; before sending, it shows you what will go out.
+- If you delete some, **Renumerar** (renumber) makes them 1, 2, 3… again. They are copied along with the scene when you duplicate it, export it or save it to the library.
 
-### Trampas y zonas de aviso
+### Traps and alert zones
 
-En *Escenas*, **🪤 Trampas y zonas → + Trampa** o **+ Zona** pone un rectángulo en la capa del DM: muévelo y cambia su tamaño desde las esquinas. Salta solo cuando un token entra en él (aunque solo lo cruce de paso; moverse dentro no cuenta). Los jugadores no lo ven ni reciben su configuración.
+In *Escenas*, **🪤 Trampas y zonas → + Trampa** (trap) or **+ Zona** (zone) places a rectangle on the DM layer: move it and resize it from the corners. It triggers automatically when a token enters it (even if it only passes through; moving around inside doesn't count). Players don't see it or receive its settings.
 
-- **Trampa**: con **salvación** (característica y CD) y **daño** (fórmula y tipo), al saltar se tira el daño y la salvación del token con su hoja, y se le aplica (mitad o nada al salvar, con resistencias). Ejemplo: foso, Destreza CD 13, 2d10 contundente.
-- **Zona de aviso**: solo te avisa (p. ej. «han entrado en la sala del trono»).
-- En las dos:
-  - **Mensaje para todos** se escribe en el chat al saltar («¡El suelo cede bajo tus pies!»), y tus **notas del DM** te llegan solo a ti.
-  - **Descubrir** saca a la capa de tokens lo que tengas escondido dentro en la capa del DM: monstruos al acecho para una emboscada o el propio foso.
-  - Por defecto solo las disparan los tokens de jugadores; con *Cualquier token*, también los monstruos (también los que mueve la IA).
-  - Las de *una sola vez* se desarman al saltar; en la lista se pueden **rearmar**.
+- **Trap**: with a **saving throw** (ability and DC) and **damage** (formula and type). When triggered, the damage and the token's saving throw are rolled using its sheet, and the result is applied (half or none on a success, with resistances). Example: pit, Dexterity DC 13, 2d10 bludgeoning.
+- **Alert zone**: just notifies you (e.g. "they've entered the throne room").
+- For both:
+  - **Message for everyone** is posted to the chat when triggered ("The floor gives way beneath your feet!"), and your **DM notes** are sent to you only.
+  - **Reveal** moves whatever you have hidden inside it on the DM layer to the token layer: lurking monsters for an ambush, or the pit itself.
+  - By default only player tokens trigger them; with *Cualquier token* (any token), monsters do too (including AI-controlled ones).
+  - *One-time* ones disarm when triggered; they can be **re-armed** from the list.
 
-### Ajustar la cuadrícula de una imagen
+### Aligning an image's grid
 
-Si subes un mapa que ya trae su cuadrícula dibujada y no coincide con la de la escena, selecciónalo (capa *Mapa*) y pulsa **📐 Ajustar cuadrícula**:
+If you upload a map that already has a grid drawn on it and it doesn't match the scene's grid, select it (*Mapa* layer) and click **📐 Ajustar cuadrícula** (align grid):
 
-- Arrastra sobre la imagen un rectángulo que cubra justo unas casillas de su cuadrícula y di cuántas son (por ejemplo 3 × 2). Unas líneas naranjas parten el rectángulo para comprobar que caen sobre las de la imagen. Cuantas más casillas marques, más preciso.
-- O, si sabes cuánto mide el mapa entero, escribe su ancho en casillas (el alto sale en proporción).
-- **Aplicar** escala y mueve la imagen para que sus casillas coincidan con las de la escena. Con *Ajustar la escena a la imagen* (activado), además la lleva a la esquina y cambia el tamaño de la escena para que quepa entera. Ctrl+Z deshace; Esc cancela.
+- Drag a rectangle over the image that covers exactly a few of its grid squares and say how many (e.g. 3 × 2). Orange lines split the rectangle so you can check they line up with the image's lines. The more squares you mark, the more accurate it is.
+- Or, if you know how big the whole map is, enter its width in squares (the height is worked out proportionally).
+- **Aplicar** (apply) scales and moves the image so its squares match the scene's. With *Ajustar la escena a la imagen* (fit scene to image, on by default), it also moves it to the corner and resizes the scene so it fits entirely. Ctrl+Z undoes; Esc cancels.
 
-## Editor de mapas
+## Map editor
 
-Botón **🗺️ Editor de mapas** (solo el DM). Abre una paleta a la derecha del tablero para construir el mapa sin necesitar imágenes:
+The **🗺️ Editor de mapas** button (DM only) opens a palette to the right of the board for building maps without any images:
 
-- **Suelos** con textura: losas, adoquines, madera, baldosas, mármol, alfombra, cueva, hierba, tierra, arena, nieve, bosque, agua, pantano, hielo, lava, abismo, roca y ladrillo (estos dos hacen de pared).
-- **Herramientas**: 🖌️ pincel (B, tamaño con `[` y `]`), ▭ rectángulo (R), 🪣 rellenar (G), 🧽 borrar (E), 💧 cuentagotas (I).
-- **🏠 Habitación** (H): arrastra un rectángulo y aparece la sala con sus paredes. Si dos salas se tocan, se unen.
-- **🚪 Puerta** (P): clic en el borde de una casilla para poner o quitar una puerta.
-- **Paredes automáticas**: se ponen solas donde el suelo toca el vacío o un muro y se rehacen al pintar; las que pongas a mano se respetan.
-- **🌲 Objetos** (O): árboles, rocas, muebles, cofres, calaveras, señales… de 1 a 4 casillas. Se colocan en la capa *Mapa* y se mueven o giran con ✋. Un objeto también puede **dar luz** (una hoguera, una vela): selecciónalo y elige la luz en su panel.
-  - **🌲 Esparcir**: en vez de uno a uno, arrastra para esparcir muchos a la vez (un bosque, un campo de rocas, un osario). Elige uno o varios objetos, o una mezcla lista (*Árboles*, *Selva*, *Rocas*, *Flores*, *Huesos*, *Escombros*), el tamaño del pincel y la cantidad. No se amontonan, y con suelo pintado no caen en muros ni en el vacío. **Mayúsculas + arrastrar** quita los objetos por donde pasas.
-- **🏛️ Salas prediseñadas** (S): taberna, tienda, habitación de posada, herrería, plaza con fuente, templo, sala del trono, biblioteca, sala funeraria, celdas, altar ritual y campamento. Clic en el mapa y aparece la sala con su suelo, paredes, puertas (las de las celdas, con llave), muebles y luces; **T** (o *↻ Girar*) la gira antes de colocarla. Luego se retoca como cualquier otra cosa. Las de exterior (plaza y campamento) no llevan paredes: quedan mejor sobre hierba o tierra ya pintada.
-- **Generar al azar**, del tamaño de la escena. Elige el estilo:
-  - **🏰 Mazmorra**: salas de piedra y pasillos de adoquines.
-  - **⚰️ Cripta**: tumbas, osarios y capillas con velas.
-  - **👑 Castillo**: salas grandes de mármol, como el trono, el comedor, la armería o la biblioteca.
-  - **🌊 Alcantarillas**: canales de agua entre salas de adoquín.
-  - **⛏️ Mina**: galerías de tierra entre cámaras con vetas y derrumbes.
-  - **🕳️ Cueva**: natural, rodeada de roca.
-  - Exteriores (todo es suelo, sin paredes alrededor):
-    - **🌲 Bosque**: arboledas con una senda que lo cruza, un claro (a veces con un campamento con hoguera o unas ruinas) y quizá una charca con pasarela.
-    - **🛤️ Camino**: un camino entre arboledas, a veces cortado por un río con su puente, y un carro volcado en medio: listo para una emboscada.
-    - **🏘️ Pueblo**: calles de tierra, una plaza con pozo, farolas y puestos, y casas de madera con sus paredes y una puerta hacia la calle. La más cercana a la plaza es la taberna; luego tienda, herrería, templo, establo y viviendas, cada una con sus muebles.
+- **Textured floors**: flagstones, cobblestones, wood, tiles, marble, carpet, cave, grass, dirt, sand, snow, forest, water, swamp, ice, lava, chasm, rock and brick (the last two act as walls).
+- **Tools**: 🖌️ brush (B, size with `[` and `]`), ▭ rectangle (R), 🪣 fill (G), 🧽 erase (E), 💧 eyedropper (I).
+- **🏠 Room** (H): drag a rectangle and a room appears with its walls. Rooms that touch are joined.
+- **🚪 Door** (P): click on the edge of a square to add or remove a door.
+- **Automatic walls**: placed automatically wherever floor meets empty space or a wall, and rebuilt as you paint; walls you place by hand are kept.
+- **🌲 Objects** (O): trees, rocks, furniture, chests, skulls, signs… from 1 to 4 squares. They are placed on the *Mapa* layer and moved or rotated with ✋. An object can also **emit light** (a campfire, a candle): select it and choose the light in its panel.
+  - **🌲 Esparcir** (scatter): instead of one by one, drag to scatter many at once (a forest, a field of rocks, an ossuary). Pick one or more objects, or a ready-made mix (*Árboles* trees, *Selva* jungle, *Rocas* rocks, *Flores* flowers, *Huesos* bones, *Escombros* rubble), the brush size and the amount. They don't pile up, and on painted floor they don't land in walls or empty space. **Shift + drag** removes objects along your path.
+- **🏛️ Prefab rooms** (S): tavern, shop, inn room, smithy, square with fountain, temple, throne room, library, burial chamber, cells, ritual altar and camp. Click on the map and the room appears with its floor, walls, doors (the cells' doors are locked), furniture and lights; **T** (or *↻ Girar*, rotate) rotates it before placing. Afterwards you can tweak it like anything else. The outdoor ones (square and camp) have no walls: they look best on grass or dirt you've already painted.
+- **Random generation**, at the scene's size. Choose the style:
+  - **🏰 Dungeon**: stone rooms and cobblestone corridors.
+  - **⚰️ Crypt**: tombs, ossuaries and candlelit chapels.
+  - **👑 Castle**: large marble halls, such as the throne room, dining hall, armoury or library.
+  - **🌊 Sewers**: water channels between cobblestone rooms.
+  - **⛏️ Mine**: dirt tunnels between chambers with ore veins and cave-ins.
+  - **🕳️ Cave**: natural, surrounded by rock.
+  - Outdoors (all floor, no surrounding walls):
+    - **🌲 Forest**: groves with a path running through, a clearing (sometimes with a camp and campfire, or ruins) and maybe a pond with a footbridge.
+    - **🛤️ Road**: a road between groves, sometimes crossed by a river with a bridge, and an overturned cart in the middle: ready for an ambush.
+    - **🏘️ Village**: dirt streets, a square with a well, street lamps and stalls, and wooden houses with walls and a door facing the street. The one closest to the square is the tavern; then shop, smithy, temple, stable and homes, each with its furniture.
 
-  Elige también el tamaño: cuántas salas (pocas, normal o muchas), lo espeso del bosque o cuántas casas tiene el pueblo. Con **Amueblar** (activado por defecto), a cada sala le toca un uso (almacén, cuartel, tumbas, armería…) y se llena con sus objetos y alguna antorcha o vela que da luz, sin tapar entradas ni puertas. **🎲 Generar** se puede pulsar varias veces hasta que guste: cada vez se quitan los muebles del mapa anterior (los objetos que pusiste a mano se quedan) y Ctrl+Z vuelve al anterior. *Limpiar* borra el suelo y los muebles generados.
-- **Deshacer y rehacer** con Ctrl+Z / Ctrl+Y, también los objetos y las salas que pongas.
+  You can also choose the size: how many rooms (few, normal or many), how dense the forest is or how many houses the village has. With **Amueblar** (furnish, on by default), each room gets a purpose (storeroom, barracks, tombs, armoury…) and is filled with matching objects and a torch or candle that gives light, without blocking entrances or doors. **🎲 Generar** (generate) can be pressed as many times as you like: each time the previous map's furniture is removed (objects you placed by hand stay) and Ctrl+Z goes back to the previous one. *Limpiar* (clear) removes the floor and the generated furniture.
+- **Undo and redo** with Ctrl+Z / Ctrl+Y, including objects and rooms you place.
 
-Con el editor abierto, el zoom va con la rueda y el mapa se desplaza con el botón central o el derecho. Mientras está abierto, las letras son atajos de sus herramientas (no de las del tablero); **M** lo cierra.
+With the editor open, zoom with the mouse wheel and pan with the middle or right mouse button. While it's open, letter keys are shortcuts for its tools (not the board's); **M** closes it.
 
-## Hojas de personaje
+## Character sheets
 
-- **Personajes** (panel derecho): el DM crea PJ y PNJ y elige qué jugadores los controlan. Un jugador también puede crear el suyo.
-- Los PNJ son invisibles para los jugadores salvo que marques *Todos los jugadores pueden ver la hoja*.
-- Pulsa 🎲 junto a cualquier valor para tirar. Las tiradas se hacen en el servidor y las ve toda la mesa.
-- **Token del personaje**: arrastra el personaje desde la lista al tablero, o usa *Poner token en el tablero* en su hoja. El token muestra su barra de PG, y doble clic abre la hoja.
-- **Plantilla editable** (*⚙ Editar plantilla de hoja*): cambia secciones, campos, fórmulas y tiradas; carga otro sistema de serie, o importa y exporta la plantilla en JSON. La 5e viene de serie, pero nada está fijo en el código.
+- **Personajes** (characters, right panel): the DM creates PCs and NPCs and chooses which players control them. A player can also create their own.
+- NPCs are invisible to players unless you tick *Todos los jugadores pueden ver la hoja* (all players can see the sheet).
+- Click 🎲 next to any value to roll it. Rolls are made on the server and the whole table sees them.
+- **Character token**: drag the character from the list onto the board, or use *Poner token en el tablero* (place token on board) on their sheet. The token shows its HP bar, and double-clicking it opens the sheet.
+- **Editable template** (*⚙ Editar plantilla de hoja*): change sections, fields, formulas and rolls; load another built-in system, or import and export the template as JSON. 5e comes built in, but nothing is hard-coded.
 
-Ejemplos de fórmulas: `floor((fue - 10) / 2)`, `if(sigilo_comp, competencia, 0)`. Ejemplos de tiradas: `1d20 + @{fue_mod}`, `2d20kh1 + 5` (ventaja), `@{dano}` (tira lo que haya escrito en el campo "dano").
+Formula examples: `floor((fue - 10) / 2)`, `if(sigilo_comp, competencia, 0)`. Roll examples: `1d20 + @{fue_mod}`, `2d20kh1 + 5` (advantage), `@{dano}` (rolls whatever is written in the "dano" field).
 
-### Botones de acción y descansos
+### Action buttons and rests
 
-Cada fila de la hoja de 5e tiene su botón:
+Each row of the 5e sheet has its own button:
 
-- **⚔ Atacar** (ataques y armas): tira 1d20 + el bono y el daño. Con *Daño extra* (por ejemplo `1d6 fuego` o `2d6 radiante`) sale una segunda tirada de daño en el mismo mensaje.
-  - Si el d20 llega a *Crítico con* (20 por defecto, 19 para un campeón), se tiran el doble de dados en todo el daño.
-  - Si el bono no es un número (por ejemplo "CD 13 DES"), se tira solo el daño.
-- **✨ Lanzar** (conjuros): gasta un espacio del nivel que elijas en el desplegable (por defecto, el más bajo libre) y tira la *Tirada* del conjuro, sea daño o curación. Los trucos no gastan nada. Si no quedan espacios, el botón se apaga.
-- **▶ Usar** (*Recursos y usos*): resta un uso a rasgos y objetos como furia, ki, canalizar divinidad o cargas de varita. Cada recurso dice si vuelve con **descanso corto** o **largo**.
-- **☾ Descanso corto** y **☀ Descanso largo** (cabecera de la hoja):
-  - El corto repone los recursos de descanso corto, y también los espacios si está marcado *Espacios de pacto* (brujo).
-  - El largo repone además los PG, todos los espacios y los recursos de descanso largo, y quita los PG temporales.
-  - El chat avisa de lo que se ha recuperado.
+- **⚔ Atacar** (attack; attacks and weapons): rolls 1d20 + the bonus and the damage. With *Daño extra* (extra damage, e.g. `1d6 fire` or `2d6 radiant`) a second damage roll appears in the same message.
+  - If the d20 reaches *Crítico con* (crit on; 20 by default, 19 for a champion), all damage dice are doubled.
+  - If the bonus isn't a number (e.g. "DC 13 DEX"), only the damage is rolled.
+- **✨ Lanzar** (cast; spells): spends a slot of the level you choose in the dropdown (by default, the lowest available) and rolls the spell's *Tirada* (roll), whether damage or healing. Cantrips cost nothing. If there are no slots left, the button is disabled.
+- **▶ Usar** (use; *Recursos y usos*): spends one use of features and items like rage, ki, channel divinity or wand charges. Each resource says whether it comes back on a **short** or **long rest**.
+- **☾ Descanso corto** (short rest) and **☀ Descanso largo** (long rest) (sheet header):
+  - A short rest restores short-rest resources, and also spell slots if *Espacios de pacto* (pact slots, warlock) is ticked.
+  - A long rest also restores HP, all spell slots and long-rest resources, and removes temporary HP.
+  - The chat reports what was recovered.
 
-Las hojas de campañas antiguas reciben estos campos solas la primera vez que se abren. En la plantilla, la sección *Combate, barras de vida e IA de enemigos* dice qué columnas son el daño extra, el crítico, los conjuros, los espacios y los recursos. La IA de enemigos también usa el daño extra y el rango de crítico.
+Sheets from older campaigns get these fields automatically the first time they're opened. In the template, the *Combate, barras de vida e IA de enemigos* section defines which columns are extra damage, crit range, spells, slots and resources. Enemy AI also uses extra damage and crit range.
 
-### Vida, CA y estados en los tokens
+### HP, AC and conditions on tokens
 
-Los tokens vinculados a una hoja muestran encima su **barra de vida**: verde, amarilla o roja según lo que les queda, y con los **PG temporales** en azul al final. Abajo a la izquierda llevan un **escudo con su CA**.
+Tokens linked to a sheet show their **health bar** on top: green, yellow or red depending on what's left, with **temporary HP** in blue at the end. In the bottom-left corner they have a **shield showing their AC**.
 
-- **Qué ven los jugadores** lo elige el DM en cada token (panel del elemento → *Lo que ven los jugadores*):
-  - **Vida**: solo el DM, barra sin números (proporción aproximada) o barra y números.
-  - **CA**: solo el DM o todos.
-  - Por defecto, la vida y la CA de los personajes de los jugadores las ve todo el mundo, y las de los enemigos solo el DM.
-  - Con *Aplicar a los N enemigos de la escena* se copia la elección a todos los enemigos de golpe.
-  - Lo oculto el DM lo ve más apagado y con 🙈.
-- **Seguridad**: el servidor solo envía a cada jugador lo que puede ver, y se actualiza solo al cambiar la hoja (daño, curación…).
-- **Estados**: los bufos (Bendecido, Acelerado, Inspiración bárdica, Escudo de fe, Furia, Heroísmo, Resistencia) llevan un aro verde y los perjuicios un aro rojo.
-- **Plantilla**: en *Combate, barras de vida e IA de enemigos* se elige qué campo son los PG temporales.
+- **What players see** is chosen by the DM per token (item panel → *Lo que ven los jugadores*, what players see):
+  - **Health**: DM only, bar without numbers (approximate proportion) or bar and numbers.
+  - **AC**: DM only or everyone.
+  - By default, players' characters' HP and AC are visible to everyone, and enemies' only to the DM.
+  - *Aplicar a los N enemigos de la escena* (apply to the scene's N enemies) copies the choice to every enemy at once.
+  - Hidden information is shown dimmed to the DM, with 🙈.
+- **Security**: the server only sends each player what they're allowed to see, and only updates it when the sheet changes (damage, healing…).
+- **Conditions**: buffs (Blessed, Hasted, Bardic Inspiration, Shield of Faith, Rage, Heroism, Resistance) get a green ring and debuffs a red ring.
+- **Template**: in *Combate, barras de vida e IA de enemigos* you choose which field holds temporary HP.
 
-### Daño y curación a mano
+### Manual damage and healing
 
-El DM puede quitar o dar vida sin usar una creación: selecciona un token (o coloca una plantilla de área encima de varios) y, en el panel del elemento, apartado **❤ Daño y curación**:
+The DM can deal damage or heal without using a creation: select a token (or place an area template over several) and, in the item panel, under **❤ Daño y curación** (damage and healing):
 
-- Escribe la **cantidad**: un número (`8`) o una tirada (`2d6 + 3`), que se tira en el servidor. Intro aplica el daño.
-- Si es daño, elige el **tipo** (fuego, cortante…) para que cuenten las **resistencias, inmunidades y vulnerabilidades**; déjalo vacío para daño sin tipo.
-- **🩸 Daño** resta primero los **PG temporales** y luego los PG, sin bajar de 0. **💚 Curar** suma PG sin pasar del máximo.
-- Si el objetivo se está **concentrando**, se tira su salvación igual que con cualquier otro daño.
-- El resumen sale en el chat; si algún token está en la capa del DM, solo lo ve el DM.
+- Enter the **amount**: a number (`8`) or a roll (`2d6 + 3`), which is rolled on the server. Enter applies damage.
+- For damage, choose the **type** (fire, slashing…) so **resistances, immunities and vulnerabilities** apply; leave it empty for untyped damage.
+- **🩸 Daño** (damage) subtracts **temporary HP** first and then HP, never going below 0. **💚 Curar** (heal) adds HP without exceeding the maximum.
+- If the target is **concentrating**, it rolls its saving throw just like with any other damage.
+- A summary appears in the chat; if any token is on the DM layer, only the DM sees it.
 
-## Chat, tiradas e iniciativa
+## Chat, rolls and initiative
 
-- **Chat** (pestaña por defecto): escribe normal o usa comandos: `/r 1d20+5 Ataque`, `/gr 1d20` (secreta para el DM), `/w Ana texto` (susurro), `/em se esconde`. Con ↑ recuperas lo último que enviaste, y el selector permite hablar como tu personaje.
-- Todas las tiradas (de la hoja o del chat) quedan guardadas en el chat.
-- **Iniciativa automática**: el DM pulsa **🎲 Tirar a todos** y se tira 1d20 + el bono de iniciativa de la hoja de cada token de la escena (sin hoja, 1d20). La lista se ordena sola; a igualdad, gana el bono más alto. También puede tirar solo *los que faltan* o solo los *enemigos*. Los de la capa DM entran ocultos y su tirada solo la ve el DM.
-- Al tirar, **todos ven el orden en grande** en el centro de la pantalla, con el dado y el bono de cada uno (y el resumen queda en el chat). Los jugadores que aún no estén en la lista tienen **🎲 Tirar mi iniciativa** (o la tiran desde su hoja).
-- Con el combate empezado, arriba aparece **de quién es el turno y quién va después** (y *¡Es tu turno!* cuando te toca). El token al que le toca se resalta en el tablero y cada jugador puede terminar su propio turno. El DM puede seguir añadiendo tokens a mano y corregir valores.
+- **Chat** (default tab): type normally or use commands: `/r 1d20+5 Attack`, `/gr 1d20` (secret roll to the DM), `/w Ana text` (whisper), `/em hides`. ↑ recalls your last message, and the selector lets you speak as your character.
+- All rolls (from sheets or the chat) are kept in the chat.
+- **Automatic initiative**: the DM clicks **🎲 Tirar a todos** (roll for everyone) and 1d20 + the initiative bonus from each scene token's sheet is rolled (no sheet: 1d20). The list sorts itself; ties go to the higher bonus. The DM can also roll only for *los que faltan* (those missing) or only for *enemigos* (enemies). Tokens on the DM layer are added hidden and only the DM sees their roll.
+- When initiative is rolled, **everyone sees the order in large type** in the centre of the screen, with each one's die and bonus (and the summary stays in the chat). Players not yet on the list get **🎲 Tirar mi iniciativa** (roll my initiative), or can roll from their sheet.
+- Once combat has started, the top shows **whose turn it is and who's next** (and *¡Es tu turno!* — "It's your turn!" — when it's yours). The active token is highlighted on the board and each player can end their own turn. The DM can still add tokens by hand and correct values.
 
-### Críticos y pifias
+### Crits and fumbles
 
-Cuando alguien saca un **20 natural** en un d20, toda la mesa ve un destello dorado con "¡CRÍTICO!" y chispas. Con un **1 natural** aparece "¡PIFIA!" en rojo y la pantalla tiembla. Con ventaja o desventaja solo cuenta el dado que se queda. Cada uno puede quitar la animación o el sonido en *Mesa → Efectos*. Las tiradas secretas y los susurros solo los ve quien las recibe.
+When someone rolls a **natural 20** on a d20, the whole table sees a golden flash with "¡CRÍTICO!" and sparks. A **natural 1** shows "¡PIFIA!" in red and shakes the screen. With advantage or disadvantage only the kept die counts. Each person can turn off the animation or the sound in *Mesa → Efectos*. Secret rolls and whispers are only seen by their recipients.
 
-## Música y ambiente
+## Music and ambience
 
-- En la pestaña **Mesa**, el DM sube audio (MP3, OGG, WAV, M4A, FLAC; máx. 25 MB) y pulsa ▶. Suena a la vez para toda la mesa, sincronizado: quien entra tarde lo oye por donde va.
-- Pueden sonar varias pistas a la vez (música + lluvia), cada una con su volumen y en bucle o una sola vez.
-- Cada jugador ajusta su propio volumen o silencia. Si el navegador bloquea el sonido, aparece un botón **🔈 Activar sonido**.
+- In the **Mesa** (table) tab, the DM uploads audio (MP3, OGG, WAV, M4A, FLAC; max 25 MB) and presses ▶. It plays for the whole table at once, in sync: anyone joining late hears it from where it currently is.
+- Several tracks can play at once (music + rain), each with its own volume and either looping or playing once.
+- Each player sets their own volume or mutes. If the browser blocks audio, a **🔈 Activar sonido** (enable sound) button appears.
 
 ## Macros
 
-- **⚙ Macros** (arriba a la derecha del tablero): botones con una o varias líneas de chat, como `/em desenvaina` o `/r 1d20 + @{fue_mod} + @{competencia} Ataque`.
-- Si la macro no tiene personaje fijo, tira con el del **token seleccionado** (si lo controlas). Así, una misma macro de "Ataque" vale para todos los PNJ del DM.
-- El DM puede compartir macros con toda la mesa (salen con ★).
+- **⚙ Macros** (top right of the board): buttons with one or more chat lines, like `/em draws his sword` or `/r 1d20 + @{fue_mod} + @{competencia} Attack`.
+- If the macro has no fixed character, it rolls with the **selected token's** character (if you control it). That way a single "Attack" macro works for all of the DM's NPCs.
+- The DM can share macros with the whole table (they appear with ★).
 
-## Diario
+## Journal
 
-- Pestaña **Diario**: el DM prepara documentos (cartas, pistas, mapas o descripciones) con texto con formato sencillo (`# título`, `**negrita**`, `*cursiva*`, `- lista`) y una imagen.
-- Cada documento tiene **notas del DM**, que los jugadores nunca reciben, y se comparte con todos o con jugadores concretos.
-- **👁 Enseñar a la mesa** lo abre en la pantalla de quienes pueden verlo. Después lo pueden releer cuando quieran desde su pestaña Diario.
+- **Diario** (journal) tab: the DM prepares documents (letters, clues, maps or descriptions) with simple formatted text (`# title`, `**bold**`, `*italic*`, `- list`) and an image.
+- Each document has **DM notes**, which players never receive, and can be shared with everyone or with specific players.
+- **👁 Enseñar a la mesa** (show to the table) opens it on the screens of those who can see it. Afterwards they can reread it whenever they like from their Journal tab.
 
-## Crear personajes y reglas del SRD
+## Character creation and SRD rules
 
-- **✨ Crear personaje 5e** (pestaña *Personajes*, para el DM y los jugadores) te guía por la creación en siete pasos y crea la hoja ya rellena:
-  1. **Especie** y subespecie, con sus bonos.
-  2. **Clase**, nivel (1-20) y subclase, con las habilidades de clase y las opciones de rasgos (estilo de combate, linaje dracónico…).
-  3. **Características**: serie estándar, compra por puntos (27), 4d6 quitando el más bajo o a mano.
-  4. **Trasfondo**, alineamiento e idiomas.
-  5. **Equipo inicial**: las elecciones de la clase y del trasfondo. Los paquetes de equipo se abren en el inventario.
-  6. **Conjuros**: los trucos y conjuros de la lista de la clase, limitados a los que tocan por nivel.
-  7. **Resumen**: el nombre, y la hoja se crea con PG, CA, salvaciones, habilidades, ataques con sus bonos, conjuros, espacios de conjuro, inventario, competencias y rasgos.
+- **✨ Crear personaje 5e** (create 5e character; *Personajes* tab, for both DM and players) walks you through character creation in seven steps and creates a filled-in sheet:
+  1. **Species** and subspecies, with their bonuses.
+  2. **Class**, level (1–20) and subclass, with class skills and feature options (fighting style, draconic ancestry…).
+  3. **Ability scores**: standard array, point buy (27), 4d6 drop lowest, or manual.
+  4. **Background**, alignment and languages.
+  5. **Starting equipment**: the class and background choices. Equipment packs are unpacked into the inventory.
+  6. **Spells**: cantrips and spells from the class list, limited to what the level allows.
+  7. **Summary**: the name, and the sheet is created with HP, AC, saving throws, skills, attacks with their bonuses, spells, spell slots, inventory, proficiencies and features.
 
-  Los avisos (falta elegir algo, te pasas de puntos…) no bloquean, y todo se puede retocar después en la hoja.
-- **📚 Reglas** es un compendio para consultar con buscador:
-  - **Conjuros**: los 319, con filtro por clase y nivel.
-  - **Objetos**: armas, armaduras, equipo, herramientas y objetos mágicos.
-  - **Clases**: rasgos por nivel, también los de subclase.
-  - **Especies**: con sus rasgos.
+  Warnings (something not chosen, too many points spent…) don't block you, and everything can be adjusted later on the sheet.
+- **📚 Reglas** (rules) is a searchable compendium:
+  - **Spells**: all 319, filterable by class and level.
+  - **Items**: weapons, armour, gear, tools and magic items.
+  - **Classes**: features by level, including subclass features.
+  - **Species**: with their traits.
 
-  **+ Hoja** añade un conjuro o un objeto a la hoja que elijas; si es un arma, también a sus ataques.
-- **Idioma**: los nombres están en español, pero las descripciones largas siguen en el inglés original del SRD.
-- **Licencia**: contenido del *System Reference Document 5.1* de D&D, © Wizards of the Coast, bajo licencia [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/). Los datos salen de [5e-bits/5e-database](https://github.com/5e-bits/5e-database) (MIT). Se regeneran con `node scripts/srd/build.mjs`, y las traducciones están en `scripts/srd/es-*.mjs`.
+  **+ Hoja** (add to sheet) adds a spell or item to the sheet you choose; if it's a weapon, also to its attacks.
+- **Language**: names are in Spanish, but long descriptions are still in the SRD's original English.
+- **Licence**: content from the D&D *System Reference Document 5.1*, © Wizards of the Coast, under the [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/) licence. The data comes from [5e-bits/5e-database](https://github.com/5e-bits/5e-database) (MIT). It is regenerated with `node scripts/srd/build.mjs`, and the translations live in `scripts/srd/es-*.mjs`.
 
-## Creaciones: hechizos, ataques y objetos propios
+## Creations: custom spells, attacks and items
 
-- En *Personajes*, **⚗ Creaciones** abre la lista de hechizos, ataques y objetos de la mesa, con buscador. El DM los ve todos; cada jugador, los suyos y los que el DM marca como *Compartida*.
-- **+ Hechizo / + Ataque / + Objeto** abre el editor, donde se cambia todo:
-  - **Ficha**: nivel, escuela, tiempo, alcance, componentes, duración, concentración y ritual (hechizos); categoría, rareza, peso, precio, sintonización y *consumible* (objetos).
-  - **Tirada de ataque** (cuerpo a cuerpo o a distancia) con su bono y desde qué número es crítico.
-  - **Salvación**: característica, CD y si se recibe la mitad del daño al salvar.
-  - **Daños** de varios tipos, **curación** y, en los hechizos, los dados que se suman por cada nivel de espacio superior.
-  - **Área** (esfera, cono, línea o cubo y su tamaño), **estados** que pone a los objetivos y estado del lanzador (concentración).
-  - **Usos** y si vuelven con descanso corto o largo.
-  - Las fórmulas aceptan números o campos de la hoja de quien lo use, como `@{conj_cd}` o `@{competencia} + @{fue_mod}`.
-- En **📚 Reglas**, el botón **✎** de un conjuro u objeto lo copia a Creaciones para retocarlo (daño, salvación, área y mejora por nivel ya vienen rellenos).
-- **+ Hoja** la añade a un personaje: a sus conjuros, ataques o inventario, y a *Recursos* si tiene usos. Esas filas quedan **enlazadas**: los botones ⚔, ✨ y ▶ de la hoja hacen lo que diga la creación (también después de editarla), gastan el espacio, el uso o la poción, y la IA de enemigos usa su ataque. **▶** en la lista la usa al momento con el personaje elegido.
-- En el chat, el mensaje trae la salvación, el área y los estados:
-  - **📐 Plantilla** pone en el tablero la plantilla de área con su tamaño: clic donde empieza y arrastra para orientarla.
-  - **🎯 Aplicar** (DM) se lo aplica a los tokens de esa plantilla o, si no hay, al seleccionado. Los ataques se comparan con la CA; las salvaciones se tiran con la hoja de cada uno (mitad o nada al salvar). Luego se resta el daño (primero los PG temporales), se suma la curación y se ponen los estados. Si algún objetivo está en la capa del DM, el resumen solo lo ve el DM.
-- Las creaciones entran en la copia de seguridad (las compartidas y las del DM).
+- In *Personajes*, **⚗ Creaciones** (creations) opens the table's list of spells, attacks and items, with search. The DM sees all of them; each player sees their own and those the DM marks as *Compartida* (shared).
+- **+ Hechizo / + Ataque / + Objeto** (spell / attack / item) opens the editor, where everything can be changed:
+  - **Details**: level, school, casting time, range, components, duration, concentration and ritual (spells); category, rarity, weight, price, attunement and *consumable* (items).
+  - **Attack roll** (melee or ranged) with its bonus and the number it crits on.
+  - **Saving throw**: ability, DC and whether half damage is taken on a success.
+  - **Damage** of several types, **healing** and, for spells, the dice added per higher slot level.
+  - **Area** (sphere, cone, line or cube and its size), **conditions** applied to targets and caster status (concentration).
+  - **Uses** and whether they come back on a short or long rest.
+  - Formulas accept numbers or fields from the user's sheet, like `@{conj_cd}` or `@{competencia} + @{fue_mod}`.
+- In **📚 Reglas**, a spell or item's **✎** button copies it into Creations for tweaking (damage, saving throw, area and upcasting come pre-filled).
+- **+ Hoja** adds it to a character: to their spells, attacks or inventory, and to *Recursos* (resources) if it has uses. Those rows stay **linked**: the sheet's ⚔, ✨ and ▶ buttons do whatever the creation says (even after editing it), spend the slot, use or potion, and enemy AI uses its attack. **▶** in the list uses it right away with the chosen character.
+- In the chat, the message includes the saving throw, area and conditions:
+  - **📐 Plantilla** (template) places the area template on the board at its size: click where it starts and drag to aim it.
+  - **🎯 Aplicar** (apply; DM) applies it to the tokens inside that template or, if there isn't one, to the selected token. Attacks are compared against AC; saving throws are rolled with each target's sheet (half or none on a success). Then damage is subtracted (temporary HP first), healing is added and conditions are applied. If any target is on the DM layer, only the DM sees the summary.
+- Creations are included in backups (shared ones and the DM's).
 
-## Compendio de monstruos
+## Monster compendium
 
-- En *Personajes*, el DM tiene **📖 Compendio**: 45 monstruos del SRD 5.1 (goblins, orcos, esqueletos, ogros, trols, un dragón rojo joven…). Busca por nombre en español o en inglés, o filtra por VD.
-- **+ Hoja** crea el PNJ con su hoja de 5e rellena (CA, PG, características, ataques, rasgos). **+ Al tablero** además pone su token del tamaño correcto con la IA ya activada y su comportamiento (los arqueros disparan, los goblins son prudentes…). Con *Cuántos* creas varios a la vez, cada uno con su hoja (Orco 1, Orco 2…).
-- Si has cambiado la plantilla de hoja, se rellenan solo los campos que existan.
+- In *Personajes*, the DM has **📖 Compendio**: 45 monsters from the SRD 5.1 (goblins, orcs, skeletons, ogres, trolls, a young red dragon…). Search by Spanish or English name, or filter by CR.
+- **+ Hoja** creates the NPC with a filled-in 5e sheet (AC, HP, ability scores, attacks, traits). **+ Al tablero** (to board) also places its token at the correct size with AI already enabled and its behaviour set (archers shoot, goblins are cautious…). With *Cuántos* (how many) you create several at once, each with its own sheet (Orc 1, Orc 2…).
+- If you've changed the sheet template, only the fields that exist are filled in.
 
-## Encuentros preparados
+## Prepared encounters
 
-En *Personajes*, el DM tiene **⚔ Encuentros**: grupos de monstruos del compendio preparados de antemano («Emboscada goblin: 4 goblins y un lobo»).
+In *Personajes*, the DM has **⚔ Encuentros** (encounters): groups of compendium monsters prepared in advance ("Goblin ambush: 4 goblins and a wolf").
 
-- **+ Nuevo encuentro**: busca monstruos y añádelos con **+**, ajusta cuántos de cada uno y apunta notas (dónde están, cómo atacan…). **🎲 Sugerir** propone uno al azar de la dificultad que elijas, y puedes pulsarlo varias veces.
-- **Dificultad**: cada encuentro dice si es *fácil*, *medio*, *difícil* o *mortal* para tu grupo, con las reglas del SRD 5.1 (PX de los monstruos, multiplicador según cuántos son y umbrales por nivel). El grupo sale de los personajes que tienen jugador y de su nivel; puedes cambiarlo a mano arriba.
-- **▶ Al tablero**: crea la hoja de cada monstruo (Goblin 1, Goblin 2…) y pone sus tokens, con su tamaño y la IA activada, en casillas libres alrededor del centro de tu vista, sin atravesar paredes ni pisar a nadie. Con *Soltarlos escondidos* van a la capa del DM.
-- Los encuentros son de la partida y entran en la copia de seguridad.
+- **+ Nuevo encuentro** (new encounter): search for monsters and add them with **+**, set how many of each and jot down notes (where they are, how they attack…). **🎲 Sugerir** (suggest) proposes a random one at the difficulty you choose, and you can press it several times.
+- **Difficulty**: each encounter says whether it's *easy*, *medium*, *hard* or *deadly* for your party, using the SRD 5.1 rules (monster XP, a multiplier based on how many there are, and per-level thresholds). The party is taken from the characters that have a player and from their level; you can change it by hand at the top.
+- **▶ Al tablero** (to board): creates each monster's sheet (Goblin 1, Goblin 2…) and places their tokens, at the right size and with AI enabled, on free squares around the centre of your view, without crossing walls or overlapping anyone. With *Soltarlos escondidos* (drop them hidden) they go on the DM layer.
+- Encounters belong to the campaign and are included in backups.
 
-## IA de enemigos
+## Enemy AI
 
-- Selecciona un token (DM) y en **🤖 IA de enemigo** marca *Actúa solo en su turno*. Elige su comportamiento: *cuerpo a cuerpo*, *a distancia* (mantiene la distancia y dispara), *prudente* (huye cuando le queda poca vida) o *guardián* (espera hasta que alguien se acerca), y a quién ataca: el más cercano, el más herido o al azar.
-- Si el token está vinculado a un PNJ, usa su hoja: velocidad, vida y la tabla de ataques. Si no, escribe su ataque y su daño en el mismo panel (p. ej. `1d20 + 5` y `1d12 + 3`).
-- En su turno de iniciativa pulsa **🤖 Actuar**: el enemigo busca camino por la cuadrícula esquivando a los demás y rodeando las paredes (y necesita ver a su objetivo para atacarle), se acerca, tira el ataque contra la CA del objetivo y, si impacta, el daño. Todo queda en el chat (en secreto si el enemigo está en la capa DM).
-- **🤖 IA automática** (en el panel de iniciativa): los enemigos con IA juegan su turno solos y pasan al siguiente, hasta que le toca a un jugador. **Aplicar daño** resta el daño a los PG del personaje.
-- Qué campos usa (CA, PG, velocidad, tabla de ataques) se cambia en *Editar plantilla de hoja → Combate e IA de enemigos*, así que también funciona con otros sistemas.
+- Select a token (DM) and in **🤖 IA de enemigo** tick *Actúa solo en su turno* (acts on its own turn). Choose its behaviour: *melee*, *ranged* (keeps its distance and shoots), *cautious* (flees when low on health) or *guardian* (waits until someone approaches), and who it targets: the nearest, the most wounded or random.
+- If the token is linked to an NPC, it uses its sheet: speed, health and attack table. If not, enter its attack and damage in the same panel (e.g. `1d20 + 5` and `1d12 + 3`).
+- On its initiative turn, press **🤖 Actuar** (act): the enemy pathfinds across the grid avoiding others and going around walls (and needs line of sight to attack its target), moves closer, rolls its attack against the target's AC and, if it hits, the damage. Everything is logged in the chat (secretly if the enemy is on the DM layer).
+- **🤖 IA automática** (automatic AI, in the initiative panel): enemies with AI play their turn on their own and pass to the next, until it's a player's turn. **Aplicar daño** (apply damage) subtracts the damage from the character's HP.
+- Which fields it uses (AC, HP, speed, attack table) is configured in *Editar plantilla de hoja → Combate e IA de enemigos*, so it works with other systems too.
 
-## Copias de seguridad
+## Backups
 
-- En la pestaña **⚙️ Ajustes**, el DM tiene **⬇ Descargar copia**: un archivo `.vtt.json.gz` con escenas y sus carpetas, tokens, paredes, niebla, hojas, plantilla, diario, macros compartidas, encuentros preparados y música. Con *Incluir imágenes y música* también lleva los archivos (pesa más). El chat no se guarda.
-- Para restaurarla, en la lista de partidas pulsa **⬆ Elegir archivo** en *Restaurar una copia de seguridad* (máx. 500 MB). Se crea una partida **nueva** en la que eres el DM: los jugadores no van en la copia, así que hay que invitarlos otra vez y asignarles sus personajes.
-- Sirve también para pasar una partida de un servidor a otro (p. ej. de tu PC a la Raspberry). La 📚 biblioteca de escenas es tuya y no de la partida, así que no va en la copia: para llevar una escena suelta, usa *⬇ Exportar* en la pestaña *Escenas*. Además de esto, conviene copiar de vez en cuando la carpeta de datos entera (ver *Instalar en la Raspberry Pi 5*).
+- In the **⚙️ Ajustes** (settings) tab, the DM has **⬇ Descargar copia** (download backup): a `.vtt.json.gz` file with scenes and their folders, tokens, walls, fog, sheets, template, journal, shared macros, prepared encounters and music. With *Incluir imágenes y música* (include images and music) it also contains the files (larger download). The chat is not saved.
+- To restore it, on the campaign list click **⬆ Elegir archivo** (choose file) under *Restaurar una copia de seguridad* (restore a backup; max 500 MB). A **new** campaign is created with you as DM: players aren't included in the backup, so you have to invite them again and assign their characters.
+- It's also a way to move a campaign from one server to another (e.g. from your PC to the Raspberry Pi). The 📚 scene library belongs to you, not the campaign, so it isn't included in the backup: to move a single scene, use *⬇ Exportar* in the *Escenas* tab. On top of this, it's a good idea to copy the whole data folder from time to time (see *Installing on a Raspberry Pi 5*).
 
-## Desarrollo
+## Development
 
-Requisitos: Node 22+ y pnpm (`corepack enable`).
+Requirements: Node 22+ and pnpm (`corepack enable`).
 
 ```bash
 pnpm install
-pnpm dev          # servidor en :3000 y web en http://localhost:5173
-pnpm test         # tests del servidor (API y tiempo real)
+pnpm dev          # server on :3000 and web on http://localhost:5173
+pnpm test         # server tests (API and real-time)
 pnpm typecheck
 pnpm build
 ```
 
-### Lanzador rápido
+### Quick launcher
 
-`scripts/mesa.sh` reúne lo anterior en un menú: abrir la mesa en el navegador (`localhost:5173`), pasar las pruebas (tipos + tests) o ambas cosas. Instala las dependencias si hace falta. También acepta `lanzar`, `pruebas` o `todo` como argumento. Para parar la mesa, `Ctrl+C`.
+`scripts/mesa.sh` wraps the above in a menu: open the app in the browser (`localhost:5173`), run the checks (types + tests), or both. It installs dependencies if needed. It also accepts `lanzar` (launch), `pruebas` (tests) or `todo` (all) as an argument. Press `Ctrl+C` to stop the app.
 
-Si cambias el esquema de la base de datos (`apps/server/src/db/schema.ts`), genera la migración con `pnpm db:generate`. Se aplica sola al arrancar.
+If you change the database schema (`apps/server/src/db/schema.ts`), generate the migration with `pnpm db:generate`. It is applied automatically on startup.
 
-## Arquitectura
+## Architecture
 
-Resumen en [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). En corto:
+Overview in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). In short:
 
-- `packages/shared`: tipos, validaciones y contrato de eventos en tiempo real que comparten servidor y web.
-- `apps/server`: Fastify + Socket.IO + SQLite (Drizzle). Cada funcionalidad es un **módulo** en `src/modules/`.
-- `apps/web`: React + Vite. Misma organización por módulos en `src/modules/`.
+- `packages/shared`: types, validation and the real-time event contract shared by the server and the web app.
+- `apps/server`: Fastify + Socket.IO + SQLite (Drizzle). Each feature is a **module** in `src/modules/`.
+- `apps/web`: React + Vite. Same module-based layout in `src/modules/`.
