@@ -21,14 +21,17 @@ export const presenceModule: ServerModule = {
     const campaigns = createCampaignService(ctx);
     const io = ctx.io!;
 
-    socket.on('campaign:join', async ({ campaignId }, ack) => {
-      if (!campaigns.getRole(campaignId, socket.data.user.id)) return ack({ ok: false, error: 'Partida no encontrada' });
+    socket.on('campaign:join', async (payload, ack) => {
+      const campaignId = typeof payload?.campaignId === 'string' ? payload.campaignId : '';
+      if (!campaignId || !campaigns.getRole(campaignId, socket.data.user.id)) return ack({ ok: false, error: 'Partida no encontrada' });
       await socket.join(campaignRoom(campaignId));
       await broadcastPresence(io, campaignId);
       ack({ ok: true, data: { online: await onlineUsers(io, campaignId) } });
     });
 
-    socket.on('campaign:leave', async ({ campaignId }) => {
+    socket.on('campaign:leave', async (payload) => {
+      const campaignId = typeof payload?.campaignId === 'string' ? payload.campaignId : '';
+      if (!campaignId) return;
       await socket.leave(campaignRoom(campaignId));
       await broadcastPresence(io, campaignId);
     });

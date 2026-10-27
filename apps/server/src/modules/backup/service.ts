@@ -1,6 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
+
+/** Lo más que puede ocupar un archivo al descomprimirlo: un archivo trucado no puede llenar la memoria. */
+const MAX_UNZIPPED_BYTES = 500 * 1024 * 1024;
 import { randomUUID } from 'node:crypto';
 import { asc, eq } from 'drizzle-orm';
 import { BACKUP_FORMAT, BACKUP_VERSION, backupSchema, type BackupInput, type ImportSummary, type SheetValues } from '@vtt/shared';
@@ -102,7 +105,7 @@ export function createBackupService(ctx: AppContext) {
   function parse(file: Buffer) {
     let text: string;
     try {
-      text = (file[0] === 0x1f && file[1] === 0x8b ? zlib.gunzipSync(file) : file).toString('utf8');
+      text = (file[0] === 0x1f && file[1] === 0x8b ? zlib.gunzipSync(file, { maxOutputLength: MAX_UNZIPPED_BYTES }) : file).toString('utf8');
     } catch {
       throw badRequest('El archivo está dañado');
     }

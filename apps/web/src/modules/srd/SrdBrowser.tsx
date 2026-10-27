@@ -309,7 +309,7 @@ function ItemList({ data, query, target, onAdded, onCopy }: { data: SrdData; que
 
 function itemStats(it: SrdItem) {
   if (it.weapon) return `${it.weapon.damage} ${it.weapon.type}`;
-  if (it.armor) return it.armor.kind === 'escudo' ? `+${it.armor.base} CA` : tr('CA {base}{1}', { base: it.armor.base, '1': it.armor.dex ? tr('+Des') : '' });
+  if (it.armor) return it.armor.kind === 'escudo' ? tr('+{base} CA', { base: it.armor.base }) : tr('CA {base}{1}', { base: it.armor.base, '1': it.armor.dex ? tr('+Des') : '' });
   if (it.rarity) return it.rarity;
   return it.cost ?? '';
 }

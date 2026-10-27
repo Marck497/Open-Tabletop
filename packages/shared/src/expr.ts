@@ -130,8 +130,15 @@ const PRECEDENCE: Record<string, number> = {
   '%': 6,
 };
 
+/** Paréntesis y signos anidados como mucho: más es un error claro, no desbordar la pila. */
+const MAX_NESTING = 64;
+
 function parse(tokens: Token[]): Node {
   let pos = 0;
+  let nesting = 0;
+  const enter = () => {
+    if (++nesting > MAX_NESTING) throw new ExprError(tr('Expresión demasiado anidada'));
+  };
   const peek = () => tokens[pos];
   const isOp = (v: string) => {
     const t = peek();
@@ -143,6 +150,15 @@ function parse(tokens: Token[]): Node {
   };
 
   function primary(): Node {
+    enter();
+    try {
+      return primaryInner();
+    } finally {
+      nesting--;
+    }
+  }
+
+  function primaryInner(): Node {
     const t = tokens[pos++];
     if (!t) throw new ExprError(tr('Expresión incompleta'));
     switch (t.t) {
@@ -193,8 +209,7 @@ function parse(tokens: Token[]): Node {
 }
 
 const num = (v: ExprValue): number => {
-  if (typeof v === 'number') return v;
-  const n = Number(v);
+  const n = typeof v === 'number' ? v : Number(v);
   return Number.isFinite(n) ? n : 0;
 };
 
@@ -203,8 +218,8 @@ const FUNCS: Record<string, (args: ExprValue[]) => ExprValue> = {
   ceil: ([a = 0]) => Math.ceil(num(a)),
   round: ([a = 0]) => Math.round(num(a)),
   abs: ([a = 0]) => Math.abs(num(a)),
-  min: (a) => Math.min(...a.map(num)),
-  max: (a) => Math.max(...a.map(num)),
+  min: (a) => (a.length ? Math.min(...a.map(num)) : 0),
+  max: (a) => (a.length ? Math.max(...a.map(num)) : 0),
   if: ([c = 0, a = 0, b = 0]) => (truthy(c) ? a : b),
 };
 

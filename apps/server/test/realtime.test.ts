@@ -26,6 +26,26 @@ describe('tiempo real', () => {
     expect(err.message).toBe('unauthorized');
   });
 
+  it('un mensaje mal formado no tumba el servidor: responde error y sigue funcionando', async () => {
+    server = await listenWithRealtime();
+    const { app } = server;
+    const gm = await registerUser(app, 'eldm');
+    const a = client(gm.cookie);
+    await once((r) => a.on('connect', () => r(undefined)));
+    const raw = a as unknown as { emit: (ev: string, ...args: unknown[]) => void };
+    const res = await once<{ ok: boolean; error?: string }>((r) => raw.emit('campaign:join', null, r));
+    expect(res.ok).toBe(false);
+    for (const ev of ['item:create', 'fog:set', 'initiative:action', 'jukebox:action', 'campaign:leave', 'item:moving']) {
+      raw.emit(ev, null);
+      raw.emit(ev, undefined, 'no es una función');
+    }
+    const health = await app.inject({ method: 'GET', url: '/api/health' });
+    expect(health.statusCode).toBe(200);
+    const again = await once<{ ok: boolean }>((r) => raw.emit('campaign:join', { campaignId: 'no-existe' }, r));
+    expect(again.ok).toBe(false);
+    expect(a.connected).toBe(true);
+  });
+
   it('presencia: ambos ven quién está conectado a la partida', async () => {
     server = await listenWithRealtime();
     const { app } = server;
