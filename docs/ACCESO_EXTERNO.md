@@ -59,7 +59,7 @@ Todo vive en la carpeta `data/` (base de datos y archivos subidos). El script ha
 Para hacerla cada noche a las 4:00, añade con `crontab -e`:
 
 ```
-0 4 * * * cd /home/pi/Programa-DND && ./scripts/backup.sh >> backups/backup.log 2>&1
+0 4 * * * cd /home/pi/Open-Tabletop && ./scripts/backup.sh >> backups/backup.log 2>&1
 ```
 
 Para restaurar: para el servidor (`docker compose down`), descomprime la copia sobre `data/` y vuelve a arrancar.

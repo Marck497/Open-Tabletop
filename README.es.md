@@ -31,8 +31,8 @@ curl -fsSL https://get.docker.com | sh
 sudo usermod -aG docker $USER   # cierra sesión y vuelve a entrar después
 
 # 2. Descarga el proyecto
-git clone https://github.com/Marck497/Programa-DND.git
-cd Programa-DND
+git clone https://github.com/Marck497/Open-Tabletop.git
+cd Open-Tabletop
 
 # 3. Configuración (opcional, pero recomendado si la abres a internet)
 cp .env.example .env
