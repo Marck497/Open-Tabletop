@@ -342,3 +342,7 @@ Overview in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) (in Spanish). In shor
 - `packages/shared`: types, validation, translations and the real-time event contract shared by the server and the web app.
 - `apps/server`: Fastify + Socket.IO + SQLite (Drizzle). Each feature is a **module** in `src/modules/`.
 - `apps/web`: React + Vite. Same module-based layout in `src/modules/`.
+
+## License
+
+The code is released under the [MIT License](LICENSE): anyone may use, copy, modify and share it freely, as long as the copyright notice is kept. The D&D rules content (SRD 5.1) keeps its own CC-BY-4.0 licence, described above.
