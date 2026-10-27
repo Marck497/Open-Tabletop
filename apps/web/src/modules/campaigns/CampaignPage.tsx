@@ -41,7 +41,9 @@ import { useTutorial } from '../tutorial/store';
 import { TutorialOverlay } from '../tutorial/TutorialOverlay';
 import { useCampaign } from './hooks';
 import { InvitePanel } from './InvitePanel';
+import { CampaignLangPanel } from './CampaignLangPanel';
 import { MembersPanel } from './MembersPanel';
+import { tr } from '../../core/i18n';
 
 /**
  * Vista principal de una partida ("la mesa"): tablero en el centro y pestañas a la derecha.
@@ -105,26 +107,26 @@ export function CampaignPage() {
     return (
       <main className="container">
         <p className="error">{error}</p>
-        <Link to="/">Volver a tus partidas</Link>
+        <Link to="/">{tr('Volver a tus partidas')}</Link>
       </main>
     );
-  if (!campaign) return <main className="container muted">Cargando partida…</main>;
+  if (!campaign) return <main className="container muted">{tr('Cargando partida…')}</main>;
 
   return (
     <div className={`table-layout ${sideHidden ? 'side-hidden' : ''}`} style={{ '--side-w': `${sideWidth}px` } as CSSProperties}>
       <header className="table-header">
-        <button className="ghost" onClick={() => navigate('/')} title="Volver">
+        <button className="ghost" onClick={() => navigate('/')} title={tr('Volver')}>
           ←
         </button>
         <h1>{campaign.name}</h1>
-        <span className={`badge ${campaign.role}`}>{isGm ? 'DM' : 'Jugador'}</span>
+        <span className={`badge ${campaign.role}`}>{isGm ? 'DM' : tr('Jugador')}</span>
         {isGm ? (
           <SceneSwitcher campaignId={campaign.id} current={scene} members={campaign.members} partySceneId={campaign.activeSceneId} viewingId={viewingSceneId} onView={setGmSceneId} />
         ) : (
           scene && <span className="muted scene-title">· {scene.name}</span>
         )}
         {isGm && scene && <ScenePresence sceneId={scene.id} members={campaign.members} partySceneId={campaign.activeSceneId} />}
-        <span className={`conn ${connected ? 'on' : 'off'}`}>{connected ? 'Conectado' : 'Reconectando…'}</span>
+        <span className={`conn ${connected ? 'on' : 'off'}`}>{connected ? tr('Conectado') : tr('Reconectando…')}</span>
         <SideToggle unread={unreadTotal} />
       </header>
       {scene && <Toolbar campaignId={campaign.id} isGm={isGm} />}
@@ -139,7 +141,7 @@ export function CampaignPage() {
         ) : (
           <div className="board-placeholder">
             <img src="/d20.svg" alt="" width={64} />
-            <p>{isGm ? 'Crea una escena en la pestaña Escenas.' : 'El DM todavía no ha abierto ninguna escena.'}</p>
+            <p>{isGm ? tr('Crea una escena en la pestaña Escenas.') : tr('El DM todavía no ha abierto ninguna escena.')}</p>
           </div>
         )}
         <InitiativeTracker campaignId={campaign.id} isGm={isGm} meId={me.id} />
@@ -169,9 +171,9 @@ export function CampaignPage() {
                 key={t.id}
                 role="tab"
                 aria-selected={activeTab === t.id}
-                aria-label={count ? `${label}: ${count} sin leer` : label}
+                aria-label={count ? tr('{label}: {count} sin leer', { label, count }) : label}
                 className={activeTab === t.id ? 'active' : ''}
-                title={`${label} (Mayús+${i + 1})`}
+                title={tr('{label} (Mayús+{1})', { label, '1': i + 1 })}
                 onClick={() => setTab(t.id)}
               >
                 <span className="tab-icon" aria-hidden>
@@ -202,6 +204,7 @@ export function CampaignPage() {
           {activeTab === 'settings' && isGm && (
             <>
               {campaign.inviteCode && <InvitePanel campaignId={campaign.id} inviteCode={campaign.inviteCode} />}
+              <CampaignLangPanel campaignId={campaign.id} lang={campaign.lang} />
               <BackupPanel campaignId={campaign.id} />
               <PerformancePanel campaignId={campaign.id} />
             </>
@@ -221,7 +224,7 @@ function ScenePresence({ sceneId, members, partySceneId }: { sceneId: string; me
   const players = members.filter((m) => m.role === 'player');
   const here = players.filter((p) => (p.sceneId ?? partySceneId) === sceneId);
   if (!players.length) return null;
-  if (!here.length) return <span className="badge warn">Ningún jugador ve esta escena</span>;
-  if (here.length === players.length) return <span className="badge">Toda la party está aquí</span>;
-  return <span className="badge">Aquí: {here.map((p) => p.displayName).join(', ')}</span>;
+  if (!here.length) return <span className="badge warn">{tr('Ningún jugador ve esta escena')}</span>;
+  if (here.length === players.length) return <span className="badge">{tr('Toda la party está aquí')}</span>;
+  return <span className="badge">{tr('Aquí:')}{' '}{here.map((p) => p.displayName).join(', ')}</span>;
 }

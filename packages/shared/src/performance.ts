@@ -1,4 +1,5 @@
 import type { Asset } from './schemas/board.js';
+import { tr } from './i18n/index.js';
 
 /**
  * Panel de rendimiento: qué se considera «pesado» para una Raspberry Pi y para los navegadores
@@ -76,10 +77,10 @@ export interface CleanupResult {
 /** Por qué un archivo es pesado (o null si no lo es). */
 export function heavyAsset(a: Pick<Asset, 'mime' | 'size' | 'width' | 'height'>): string | null {
   const mb = (n: number) => `${(n / 1024 / 1024).toFixed(1)} MB`;
-  if (a.mime.startsWith('audio/')) return a.size > PERF_LIMITS.audioBytes ? `audio de ${mb(a.size)}` : null;
+  if (a.mime.startsWith('audio/')) return a.size > PERF_LIMITS.audioBytes ? tr('audio de {0}', { '0': mb(a.size) }) : null;
   const side = Math.max(a.width ?? 0, a.height ?? 0);
-  if (side > PERF_LIMITS.imageSide) return `${a.width}×${a.height} px: redúcela a ${PERF_LIMITS.imageSide} px o menos`;
-  if (a.size > PERF_LIMITS.imageBytes) return `imagen de ${mb(a.size)}: mejor en JPG o WEBP`;
+  if (side > PERF_LIMITS.imageSide) return tr('{width}×{height} px: redúcela a {imageSide} px o menos', { width: a.width, height: a.height, imageSide: PERF_LIMITS.imageSide });
+  if (a.size > PERF_LIMITS.imageBytes) return tr('imagen de {0}: mejor en JPG o WEBP', { '0': mb(a.size) });
   return null;
 }
 

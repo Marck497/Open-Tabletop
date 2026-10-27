@@ -1,5 +1,7 @@
 import { z } from 'zod';
 import {
+  localName,
+  tr,
   adventureInputSchema,
   campaignRoom,
   monsterAi,
@@ -93,7 +95,7 @@ export function createAdventureService(ctx: AppContext) {
             const size = SIZE_CELLS[monster.size];
             const at = spot(size);
             if (!at) break;
-            const name = (totals.get(monster.id) ?? 0) > 1 ? `${monster.name} ${k}` : monster.name;
+            const name = (totals.get(monster.id) ?? 0) > 1 ? `${localName(monster)} ${k}` : localName(monster);
             const character = sheets.createFromMonster(campaignId, userId, monster.id, name);
             add({ layer: 'gm', x: at.x * g, y: at.y * g, width: size * g, height: size * g, name, showName: true, characterId: character.id, ai: monsterAi(monster) });
             summary.monsters++;
@@ -108,7 +110,7 @@ export function createAdventureService(ctx: AppContext) {
             y: y0 * g,
             width: (x1 - x0) * g,
             height: (y1 - y0) * g,
-            name: `Encuentro: ${p.title}`,
+            name: tr('Encuentro: {title}', { title: p.title }),
             gmNotes: line,
             drawing: { type: 'zone', text: TRIGGER_ICONS.zone, stroke: TRIGGER_COLORS.zone },
             trigger: { kind: 'zone', reveal: true, once: true, who: 'players' },

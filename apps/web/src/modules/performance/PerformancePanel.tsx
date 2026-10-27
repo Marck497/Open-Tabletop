@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { formatBytes, type CleanupResult, type PerformanceReport } from '@vtt/shared';
 import { api } from '../../core/api';
+import { tr } from '../../core/i18n';
 
 /**
  * Panel de rendimiento para la Pi (DM, pestaña Ajustes): cómo va el servidor, cuánto ocupa la partida,
@@ -31,12 +32,12 @@ export function PerformancePanel({ campaignId }: { campaignId: string }) {
     if (!report) return;
     const orphans = report.orphanFiles > 0;
     if (!chosen.length && !orphans) return;
-    if (!confirm(`¿Borrar ${chosen.length} ${chosen.length === 1 ? 'archivo' : 'archivos'}${orphans ? ' y los restos de subidas' : ''}? No se puede deshacer.`)) return;
+    if (!confirm(tr('¿Borrar {length} {1}{2}? No se puede deshacer.', { length: chosen.length, '1': chosen.length === 1 ? tr('archivo') : tr('archivos'), '2': orphans ? tr(' y los restos de subidas') : '' }))) return;
     setBusy(true);
     setError(null);
     try {
       const { result } = await api.post<{ result: CleanupResult }>(`/campaigns/${campaignId}/performance/cleanup`, { assetIds: chosen, orphans });
-      setDone(`🧹 ${result.removed} borrados, ${formatBytes(result.freed)} liberados.`);
+      setDone(tr('🧹 {removed} borrados, {1} liberados.', { removed: result.removed, '1': formatBytes(result.freed) }));
       await load();
     } catch (e) {
       setError((e as Error).message);
@@ -48,29 +49,29 @@ export function PerformancePanel({ campaignId }: { campaignId: string }) {
   return (
     <div className="panel perf">
       <div className="row spread">
-        <h3>Rendimiento</h3>
+        <h3>{tr('Rendimiento')}</h3>
         <button className="ghost small" onClick={() => void load()} disabled={busy}>
-          {report ? '↻ Actualizar' : '📊 Analizar'}
+          {report ? tr('↻ Actualizar') : tr('📊 Analizar')}
         </button>
       </div>
-      {!report && <p className="muted hint">Mira cómo va la Raspberry, qué ocupa la partida y qué archivos sobran.</p>}
+      {!report && <p className="muted hint">{tr('Mira cómo va la Raspberry, qué ocupa la partida y qué archivos sobran.')}</p>}
       {error && <p className="error">{error}</p>}
       {done && <p className="hint">{done}</p>}
       {report && s && (
         <>
           <ul className="perf-stats">
             <li>
-              Memoria del servidor: <strong>{formatBytes(s.rss)}</strong> · libre {formatBytes(s.freeMem)} de {formatBytes(s.totalMem)}
+              {tr('Memoria del servidor:')}{' '}<strong>{formatBytes(s.rss)}</strong>{' '}{tr('· libre')}{' '}{formatBytes(s.freeMem)} {tr('de')} {formatBytes(s.totalMem)}
             </li>
             <li>
-              CPU: carga {s.load} en {s.cpus} núcleos{s.cpuTemp !== null && <> · {s.cpuTemp} °C</>}
+              {tr('CPU: carga')}{' '}{s.load} {tr('en')} {s.cpus}{' '}{tr('núcleos')}{s.cpuTemp !== null && <> · {s.cpuTemp} °C</>}
             </li>
             <li>
-              Archivos de la partida: <strong>{formatBytes(report.disk.campaignFiles)}</strong> ({report.disk.campaignFileCount}) · base de datos {formatBytes(report.disk.database)}
-              {report.disk.free !== null && <> · libre en disco {formatBytes(report.disk.free)}</>}
+              {tr('Archivos de la partida:')}{' '}<strong>{formatBytes(report.disk.campaignFiles)}</strong> ({report.disk.campaignFileCount}{tr(') · base de datos')}{' '}{formatBytes(report.disk.database)}
+              {report.disk.free !== null && <>{' '}{tr('· libre en disco')}{' '}{formatBytes(report.disk.free)}</>}
             </li>
             <li>
-              Chat: {report.chatMessages} mensajes · escenas: {report.scenes.map((sc) => `${sc.name} (${sc.items})`).join(', ') || '—'}
+              {tr('Chat:')}{' '}{report.chatMessages}{' '}{tr('mensajes · escenas:')}{' '}{report.scenes.map((sc) => `${sc.name} (${sc.items})`).join(', ') || '—'}
             </li>
           </ul>
 
@@ -83,12 +84,12 @@ export function PerformancePanel({ campaignId }: { campaignId: string }) {
               ))}
             </ul>
           ) : (
-            <p className="hint">✅ Todo en orden: nada pesa demasiado.</p>
+            <p className="hint">{tr('✅ Todo en orden: nada pesa demasiado.')}</p>
           )}
 
           {report.heavyAssets.length > 0 && (
             <details>
-              <summary>Archivos pesados ({report.heavyAssets.length})</summary>
+              <summary>{tr('Archivos pesados (')}{report.heavyAssets.length})</summary>
               <ul className="perf-list">
                 {report.heavyAssets.map((a) => (
                   <li key={a.id}>
@@ -102,8 +103,8 @@ export function PerformancePanel({ campaignId }: { campaignId: string }) {
           {(report.unused.length > 0 || report.orphanFiles > 0) && (
             <details open>
               <summary>
-                Sin usar ({report.unused.length}
-                {report.orphanFiles ? ` + ${report.orphanFiles} restos` : ''})
+                {tr('Sin usar (')}{report.unused.length}
+                {report.orphanFiles ? tr(' + {orphanFiles} restos', { orphanFiles: report.orphanFiles }) : ''})
               </summary>
               <ul className="perf-list">
                 {report.unused.map((a) => (
@@ -121,13 +122,13 @@ export function PerformancePanel({ campaignId }: { campaignId: string }) {
                 ))}
                 {report.orphanFiles > 0 && (
                   <li className="muted">
-                    {report.orphanFiles} restos de subidas fallidas ({formatBytes(report.orphanBytes)}): se borran siempre.
+                    {report.orphanFiles}{' '}{tr('restos de subidas fallidas (')}{formatBytes(report.orphanBytes)}{tr('): se borran siempre.')}
                   </li>
                 )}
               </ul>
-              <p className="muted hint">Ningún token, hoja, documento, música ni mensaje los usa. Mira antes si quieres guardar alguno para más adelante.</p>
+              <p className="muted hint">{tr('Ningún token, hoja, documento, música ni mensaje los usa. Mira antes si quieres guardar alguno para más adelante.')}</p>
               <button className="small" onClick={() => void cleanup()} disabled={busy || (!chosen.length && !report.orphanFiles)}>
-                🧹 Borrar lo marcado
+                {tr('🧹 Borrar lo marcado')}
               </button>
             </details>
           )}

@@ -3,6 +3,7 @@ import { emitAck } from '../../core/socket';
 import { addItem } from '../board/actions';
 import { updateItem } from '../board/history';
 import { useBoard } from '../board/store';
+import { tr } from '../../core/i18n';
 
 /**
  * Notas numeradas del DM sobre el mapa (1, 2, 3… como en los módulos de aventura): un círculo con su
@@ -27,7 +28,7 @@ export function addNote() {
   const size = Math.round(scene.gridSize * 0.8);
   // En la capa del DM, para poder arrastrarla nada más ponerla.
   useBoard.getState().setActiveLayer('gm');
-  return addItem({ layer: 'gm', width: size, height: size, name: `Nota ${n}`, drawing: { type: 'note', text: String(n) } });
+  return addItem({ layer: 'gm', width: size, height: size, name: tr('Nota {n}', { n }), drawing: { type: 'note', text: String(n) } });
 }
 
 /** Vuelve a numerar las notas 1, 2, 3… sin huecos (en el orden actual). */
@@ -39,7 +40,7 @@ export async function renumberNotes() {
     const note = list[k]!;
     const text = String(k + 1);
     if (note.drawing!.text === text) continue;
-    const rename = note.name === `Nota ${note.drawing!.text}` ? { name: `Nota ${text}` } : {};
+    const rename = note.name === `Nota ${note.drawing!.text}` ? { name: tr('Nota {text}', { text }) } : {};
     await updateItem(scene.id, note.id, { drawing: { ...note.drawing!, text }, ...rename });
   }
 }
@@ -57,6 +58,6 @@ export const readablePart = (note: BoardItem) => note.gmNotes.split(/^\s*-{3,}\s
 export function readNote(campaignId: string, note: BoardItem) {
   const title = note.name.trim();
   const text = [title && `📜 ${title}`, readablePart(note)].filter(Boolean).join('\n');
-  if (!text || !confirm(`¿Leer esto a todos en el chat?\n\n${text}`)) return;
+  if (!text || !confirm(tr('¿Leer esto a todos en el chat?\n\n{text}', { text }))) return;
   return emitAck('chat:send', { campaignId, text }).catch((e: Error) => useBoard.getState().showNotice(e.message));
 }

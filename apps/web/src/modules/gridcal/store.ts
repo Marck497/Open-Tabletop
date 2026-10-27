@@ -3,6 +3,7 @@ import { calibrateByMarked, calibrateByWidth, fitSceneToImage, type Box } from '
 import { api } from '../../core/api';
 import { updateItem } from '../board/history';
 import { useBoard } from '../board/store';
+import { tr } from '../../core/i18n';
 
 /** Calibrar la cuadrícula de una imagen de mapa: qué imagen, el rectángulo marcado y cuántas casillas cubre. */
 interface GridCalState {
@@ -27,7 +28,7 @@ export const useGridCal = create<GridCalState>((set) => ({
 /** Empieza a calibrar esa imagen (herramienta 📐 del tablero). */
 export function startCalibration(itemId: string) {
   const item = useBoard.getState().items[itemId];
-  if (item?.rotation) return useBoard.getState().showNotice('Quita el giro de la imagen antes de ajustar su cuadrícula.');
+  if (item?.rotation) return useBoard.getState().showNotice(tr('Quita el giro de la imagen antes de ajustar su cuadrícula.'));
   useGridCal.getState().set({ itemId, marked: null });
   useBoard.getState().setTool('calibrate');
 }
@@ -57,7 +58,7 @@ export async function applyCalibration(widthCells?: number) {
     }
     await updateItem(scene.id, item.id, box);
     stopCalibration();
-    useBoard.getState().showNotice('Cuadrícula ajustada. Si no cuadra del todo, vuelve a marcar más casillas (Ctrl+Z deshace).');
+    useBoard.getState().showNotice(tr('Cuadrícula ajustada. Si no cuadra del todo, vuelve a marcar más casillas (Ctrl+Z deshace).'));
   } catch (e) {
     useBoard.getState().showNotice((e as Error).message);
   }

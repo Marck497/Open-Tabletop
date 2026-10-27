@@ -3,6 +3,8 @@ import { create } from 'zustand';
 import { naturalOutcome, type ChatMessage } from '@vtt/shared';
 import { getSocket } from '../../core/socket';
 import { playSfx } from '../sfx/synth';
+import { tr } from '../../core/i18n';
+import { LangSelect } from '../../components/LangSelect';
 
 const FX_KEY = 'vtt:fx';
 const SHOW_MS = 2600;
@@ -118,7 +120,7 @@ export function CritFx({ campaignId }: { campaignId: string }) {
       )}
       <div className="crit-card">
         <div className="crit-die">{crit ? '20' : '1'}</div>
-        <div className="crit-title">{crit ? '¡CRÍTICO!' : '¡PIFIA!'}</div>
+        <div className="crit-title">{crit ? tr('¡CRÍTICO!') : tr('¡PIFIA!')}</div>
         <div className="crit-sub">
           {shown.who}
           {shown.label ? ` · ${shown.label}` : ''} · {shown.total}
@@ -133,25 +135,28 @@ export function FxPanel() {
   const { enabled, sound, board, dice3d, set } = useFx();
   return (
     <div className="panel">
-      <h3>Efectos</h3>
+      <h3>{tr('Efectos')}</h3>
       <label className="switch">
         <input type="checkbox" checked={enabled} onChange={(e) => set({ enabled: e.target.checked })} />
-        Animación de críticos y pifias
+        {tr('Animación de críticos y pifias')}
       </label>
       <label className="switch">
         <input type="checkbox" checked={board} onChange={(e) => set({ board: e.target.checked })} />
-        Animaciones de ataques y hechizos en el tablero
+        {tr('Animaciones de ataques y hechizos en el tablero')}
       </label>
       <label className="switch">
         <input type="checkbox" checked={sound} onChange={(e) => set({ sound: e.target.checked })} />
-        Sonidos (dados, ataques, hechizos, puertas y críticos)
+        {tr('Sonidos (dados, ataques, hechizos, puertas y críticos)')}
       </label>
       <label className="switch">
         <input type="checkbox" checked={dice3d} onChange={(e) => set({ dice3d: e.target.checked })} />
-        Dados 3D al tirar
+        {tr('Dados 3D al tirar')}
       </label>
-      <p className="muted hint">Para apuntar: Alt+clic en un token (o clic en uno que no sea tuyo) antes de atacar. </p>
-      <p className="muted hint">Solo en este dispositivo: cada jugador lo elige.</p>
+      <label>
+        {tr('Idioma')} <LangSelect />
+      </label>
+      <p className="muted hint">{tr('Para apuntar: Alt+clic en un token (o clic en uno que no sea tuyo) antes de atacar.')}</p>
+      <p className="muted hint">{tr('Solo en este dispositivo: cada jugador lo elige.')}</p>
     </div>
   );
 }

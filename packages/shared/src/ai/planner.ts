@@ -1,4 +1,5 @@
 import type { TokenAi } from '../schemas/ai.js';
+import { tr } from '../i18n/index.js';
 
 /**
  * Planificador de la IA de enemigos: decide en la cuadrícula adónde se mueve una
@@ -193,7 +194,7 @@ export function planTurn(input: PlanInput): Plan {
   const { self, ai, targets } = input;
   const budget = Math.max(0, Math.floor(input.speed + 1e-9));
   const none = (reason: string, mode: PlanMode = 'none'): Plan => ({ path: [], targetId: null, attack: false, mode, reason });
-  if (!targets.length) return none('no ve a ningún enemigo');
+  if (!targets.length) return none(tr('no ve a ningún enemigo'));
 
   const distTo = (c: Cell, t: PlanCreature) => gap(c, self.size, t.cell, t.size);
   const nearestGap = (c: Cell) => Math.min(...targets.map((t) => distTo(c, t)));
@@ -210,14 +211,14 @@ export function planTurn(input: PlanInput): Plan {
       const d = nearestGap(cell);
       if (!best || d > best.d || (d === best.d && cost < best.cost)) best = { cell, d, cost };
     }
-    return { path: best ? ex.pathTo(best.cell) : [], targetId: null, attack: false, mode: 'flee', reason: 'está malherido y huye' };
+    return { path: best ? ex.pathTo(best.cell) : [], targetId: null, attack: false, mode: 'flee', reason: tr('está malherido y huye') };
   }
 
   // Guardián: espera hasta que alguien entra en su radio.
   let candidates = targets;
   if (ai.behavior === 'guard') {
     candidates = targets.filter((t) => distTo(self.cell, t) <= ai.guardRadius && (input.sees?.(self.cell, t) ?? true));
-    if (!candidates.length) return none('vigila su posición', 'hold');
+    if (!candidates.length) return none(tr('vigila su posición'), 'hold');
   }
 
   const target = pickTarget(input, candidates);
@@ -232,11 +233,11 @@ export function planTurn(input: PlanInput): Plan {
     // Si tiene a alguien pegado, intenta apartarse antes de disparar.
     if (nearestGap(self.cell) <= 1) {
       const away = bestCell(input, ex, (c) => ex.cost[ex.idx(c)]! <= budget + 0.01 && nearestGap(c) >= 2 && inRange(c), target);
-      if (away) return attackFrom(ex.pathTo(away.cell), `se aparta y dispara a ${target.name}`);
+      if (away) return attackFrom(ex.pathTo(away.cell), tr('se aparta y dispara a {name}', { name: target.name }));
     }
-    if (inRange(self.cell)) return attackFrom([], `dispara a ${target.name}`);
+    if (inRange(self.cell)) return attackFrom([], tr('dispara a {name}', { name: target.name }));
   } else if (inRange(self.cell)) {
-    return attackFrom([], `ataca a ${target.name}`);
+    return attackFrom([], tr('ataca a {name}', { name: target.name }));
   }
 
   // Acercarse hasta tener al objetivo a su alcance.
@@ -244,14 +245,14 @@ export function planTurn(input: PlanInput): Plan {
     (ranged ? bestCell(input, ex, (c) => inRange(c) && nearestGap(c) >= 2, target) : null) ?? bestCell(input, ex, inRange, target);
   if (goal) {
     const full = ex.pathTo(goal.cell);
-    if (goal.cost <= budget + 0.01) return attackFrom(full, `${ranged ? 'se coloca y dispara' : 'carga contra'} ${target.name}`);
-    return { path: truncate(full, ex, budget), targetId: target.id, attack: false, mode: 'approach', reason: `avanza hacia ${target.name}` };
+    if (goal.cost <= budget + 0.01) return attackFrom(full, `${ranged ? tr('se coloca y dispara') : tr('carga contra')} ${target.name}`);
+    return { path: truncate(full, ex, budget), targetId: target.id, attack: false, mode: 'approach', reason: tr('avanza hacia {name}', { name: target.name }) };
   }
 
   // Sin camino hasta el objetivo: se acerca todo lo que puede.
   const closer = bestCell(input, ex, (c) => ex.cost[ex.idx(c)]! <= budget + 0.01, target, true);
   if (closer && distTo(closer.cell, target) < distTo(self.cell, target)) {
-    return { path: ex.pathTo(closer.cell), targetId: target.id, attack: false, mode: 'approach', reason: `intenta llegar hasta ${target.name}` };
+    return { path: ex.pathTo(closer.cell), targetId: target.id, attack: false, mode: 'approach', reason: tr('intenta llegar hasta {name}', { name: target.name }) };
   }
-  return none(`no encuentra camino hasta ${target.name}`);
+  return none(tr('no encuentra camino hasta {name}', { name: target.name }));
 }

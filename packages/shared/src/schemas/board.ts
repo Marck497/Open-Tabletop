@@ -4,6 +4,7 @@ import { tokenAiSchema, type TokenAi } from './ai.js';
 import type { Wall } from './walls.js';
 import { lightSchema, type Light, type LightSource } from './lights.js';
 import { triggerSchema, type Trigger } from './triggers.js';
+import { tr } from '../i18n/index.js';
 
 /**
  * Capas del tablero (como en Roll20):
@@ -192,7 +193,7 @@ export type DrawingInput = z.input<typeof drawingSchema>;
 /** Vida de un token para los jugadores: oculta (solo el DM), solo la barra o la barra con números. */
 export const HP_VIEWS = ['gm', 'bar', 'numbers'] as const;
 export type HpView = (typeof HP_VIEWS)[number];
-export const HP_VIEW_LABELS: Record<HpView, string> = { gm: 'Solo el DM', bar: 'Barra sin números', numbers: 'Barra y números' };
+export const HP_VIEW_LABELS: Record<HpView, string> = { gm: tr('Solo el DM'), bar: tr('Barra sin números'), numbers: tr('Barra y números') };
 export const AC_VIEWS = ['gm', 'all'] as const;
 export type AcView = (typeof AC_VIEWS)[number];
 

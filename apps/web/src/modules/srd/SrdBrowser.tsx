@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import {
+  localName,
   actionsOf,
   computeAll,
   homebrewDataSchema,
@@ -21,13 +22,14 @@ import type { HomebrewDraft } from '../homebrew/HomebrewEditor';
 import { newRowId } from '../sheets/SheetField';
 import { useSheets } from '../sheets/store';
 import { norm, useSrd } from './useSrd';
+import { lang, tr } from '../../core/i18n';
 
 type Tab = 'spells' | 'items' | 'classes' | 'races';
 const TABS: { id: Tab; label: string }[] = [
-  { id: 'spells', label: 'Conjuros' },
-  { id: 'items', label: 'Objetos' },
-  { id: 'classes', label: 'Clases' },
-  { id: 'races', label: 'Especies' },
+  { id: 'spells', label: tr('Conjuros') },
+  { id: 'items', label: tr('Objetos') },
+  { id: 'classes', label: tr('Clases') },
+  { id: 'races', label: tr('Especies') },
 ];
 const LIMIT = 150;
 
@@ -47,10 +49,10 @@ export function SrdBrowser({ isGm, meId, onClose, onCopy }: { isGm: boolean; meI
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="card modal compendium" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Compendio de reglas">
+      <div className="card modal compendium" onClick={(e) => e.stopPropagation()} role="dialog" aria-label={tr('Compendio de reglas')}>
         <div className="row spread">
-          <h2>📚 Reglas del SRD</h2>
-          <button className="ghost small" onClick={onClose} title="Cerrar">
+          <h2>{tr('📚 Reglas del SRD')}</h2>
+          <button className="ghost small" onClick={onClose} title={tr('Cerrar')}>
             ✕
           </button>
         </div>
@@ -62,10 +64,10 @@ export function SrdBrowser({ isGm, meId, onClose, onCopy }: { isGm: boolean; meI
           ))}
         </div>
         <div className="row">
-          <input placeholder="Buscar (español o inglés)" value={query} onChange={(e) => setQuery(e.target.value)} autoFocus />
+          <input placeholder={tr('Buscar (español o inglés)')} value={query} onChange={(e) => setQuery(e.target.value)} autoFocus />
           {(tab === 'spells' || tab === 'items') && editable.length > 0 && (
             <label className="switch">
-              Añadir a
+              {tr('Añadir a')}
               <select value={target?.id ?? ''} onChange={(e) => setTargetId(e.target.value)}>
                 {editable.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -78,13 +80,13 @@ export function SrdBrowser({ isGm, meId, onClose, onCopy }: { isGm: boolean; meI
         </div>
         {message && <p className="muted">{message}</p>}
         {error && <p className="error">{error}</p>}
-        {!data && !error && <p className="muted">Cargando el SRD…</p>}
+        {!data && !error && <p className="muted">{tr('Cargando el SRD…')}</p>}
         {data && tab === 'spells' && <SpellList data={data} query={query} target={target} onAdded={setMessage} onCopy={onCopy && ((s) => onCopy(draftOf(homebrewFromSrdSpell(s, template && actionsOf(template)), isGm)))} />}
         {data && tab === 'items' && <ItemList data={data} query={query} target={target} onAdded={setMessage} onCopy={onCopy && ((it) => onCopy(draftOf(homebrewFromSrdItem(it, template), isGm)))} />}
         {data && tab === 'classes' && <ClassList data={data} query={query} />}
         {data && tab === 'races' && <RaceList data={data} query={query} />}
         <p className="muted hint">
-          Contenido del SRD 5.1 de D&D, © Wizards of the Coast, bajo licencia CC-BY-4.0, a través de 5e-bits/5e-database (MIT). Nombres traducidos; las descripciones van en el inglés original.
+          {tr('Contenido del SRD 5.1 de D&D, © Wizards of the Coast, bajo licencia CC-BY-4.0, a través de 5e-bits/5e-database (MIT). Nombres traducidos; las descripciones van en el inglés original.')}
         </p>
       </div>
     </div>
@@ -122,8 +124,8 @@ function SpellList({ data, query, target, onAdded, onCopy }: { data: SrdData; qu
     const lvl = Number(target.values.nivel) || 1;
     const mod = template ? (computeAll(template, target.values).conj_mod ?? 0) : 0;
     try {
-      await appendRows(target, { conjuros: { nivel: s.level, nombre: s.name, preparado: true, efecto: spellEffect(s, lvl, mod), notas: spellNotes(s) } });
-      onAdded(`Añadido a los conjuros de ${target.name}: ${s.name}.`);
+      await appendRows(target, { conjuros: { nivel: s.level, nombre: localName(s), preparado: true, efecto: spellEffect(s, lvl, mod), notas: spellNotes(s) } });
+      onAdded(tr('Añadido a los conjuros de {name}: {name2}.', { name: target.name, name2: localName(s) }));
     } catch (e) {
       onAdded((e as Error).message);
     }
@@ -133,7 +135,7 @@ function SpellList({ data, query, target, onAdded, onCopy }: { data: SrdData; qu
     <>
       <div className="row">
         <select value={classId} onChange={(e) => setClassId(e.target.value)}>
-          <option value="">Todas las clases</option>
+          <option value="">{tr('Todas las clases')}</option>
           {data.classes
             .filter((c) => c.spellcasting)
             .map((c) => (
@@ -143,34 +145,34 @@ function SpellList({ data, query, target, onAdded, onCopy }: { data: SrdData; qu
             ))}
         </select>
         <select value={level} onChange={(e) => setLevel(Number(e.target.value))}>
-          <option value={-1}>Todos los niveles</option>
+          <option value={-1}>{tr('Todos los niveles')}</option>
           {Array.from({ length: 10 }, (_, i) => (
             <option key={i} value={i}>
-              {i === 0 ? 'Trucos' : `Nivel ${i}`}
+              {i === 0 ? tr('Trucos') : tr('Nivel {i}', { i })}
             </option>
           ))}
         </select>
-        <span className="muted">{list.length} conjuros</span>
+        <span className="muted">{tr('{n} conjuros', { n: list.length })}</span>
       </div>
       <ul className="compendium-list">
         {list.slice(0, LIMIT).map((s) => (
           <li key={s.id}>
             <div className="row spread compendium-row">
               <button className="ghost compendium-name" onClick={() => setOpen(open === s.id ? null : s.id)}>
-                <strong>{s.name}</strong> <small className="muted">{s.en}</small>
+                <strong>{localName(s)}</strong> {lang === 'es' && <small className="muted">{s.en}</small>}
               </button>
               <span className="compendium-stats">
-                {s.level ? `Nv ${s.level}` : 'Truco'} · {s.school}
-                {s.concentration ? ' · C' : ''}
-                {s.ritual ? ' · R' : ''}
+                {s.level ? tr('Nv {level}', { level: s.level }) : tr('Truco')} · {tr(s.school)}
+                {s.concentration ? tr(' · C') : ''}
+                {s.ritual ? tr(' · R') : ''}
               </span>
               {target && (
-                <button className="ghost small" onClick={() => void add(s)} title={`Añadir a ${target.name}`}>
-                  + Hoja
+                <button className="ghost small" onClick={() => void add(s)} title={tr('Añadir a {name}', { name: target.name })}>
+                  {tr('+ Hoja')}
                 </button>
               )}
               {onCopy && (
-                <button className="ghost small" onClick={() => onCopy(s)} title="Copiar a ⚗ Creaciones para editarlo (daño, salvación, área…)">
+                <button className="ghost small" onClick={() => onCopy(s)} title={tr('Copiar a ⚗ Creaciones para editarlo (daño, salvación, área…)')}>
                   ✎
                 </button>
               )}
@@ -178,28 +180,28 @@ function SpellList({ data, query, target, onAdded, onCopy }: { data: SrdData; qu
             {open === s.id && <SpellDetails s={s} />}
           </li>
         ))}
-        {list.length > LIMIT && <p className="muted">Y {list.length - LIMIT} más: afina la búsqueda.</p>}
+        {list.length > LIMIT && <p className="muted">Y {list.length - LIMIT}{' '}{tr('más: afina la búsqueda.')}</p>}
       </ul>
     </>
   );
 }
 
-const SAVE: Record<SrdAbility, string> = { fue: 'Fuerza', des: 'Destreza', con: 'Constitución', int: 'Inteligencia', sab: 'Sabiduría', car: 'Carisma' };
+const SAVE: Record<SrdAbility, string> = { fue: tr('Fuerza'), des: tr('Destreza'), con: tr('Constitución'), int: tr('Inteligencia'), sab: tr('Sabiduría'), car: tr('Carisma') };
 
 export function SpellDetails({ s }: { s: SrdSpell }) {
   return (
     <div className="monster-details">
       <p className="muted">
-        {s.level ? `Nivel ${s.level}` : 'Truco'} de {s.school.toLowerCase()}
-        {s.ritual ? ' (ritual)' : ''} · {s.time} · {s.range}
-        {s.area ? ` (${s.area})` : ''} · {s.components} · {s.concentration ? `Concentración, ${s.duration.toLowerCase()}` : s.duration}
+        {s.level ? tr('Nivel {level}', { level: s.level }) : tr('Truco')} {tr('de')} {tr(s.school).toLowerCase()}
+        {s.ritual ? tr(' (ritual)') : ''} · {s.time} · {s.range}
+        {s.area ? ` (${s.area})` : ''} · {s.components} · {s.concentration ? tr('Concentración, {0}', { '0': s.duration.toLowerCase() }) : s.duration}
       </p>
       {(s.attack || s.save || s.damage || s.heal) && (
         <p>
-          {s.attack ? `Ataque de conjuro ${s.attack === 'melee' ? 'cuerpo a cuerpo' : 'a distancia'}. ` : ''}
-          {s.save ? `Salvación de ${SAVE[s.save]}. ` : ''}
-          {s.damage?.map((d) => `${Object.values(d.bySlot ?? d.byLevel ?? {})[0] ?? ''} ${d.type}`.trim()).join(' + ')}
-          {s.heal ? `Cura ${Object.values(s.heal)[0]?.replace('MOD', 'mod.')}` : ''}
+          {s.attack ? tr('Ataque de conjuro {0}. ', { '0': s.attack === 'melee' ? tr('cuerpo a cuerpo') : tr('a distancia') }) : ''}
+          {s.save ? tr('Salvación de {0}. ', { '0': SAVE[s.save] }) : ''}
+          {s.damage?.map((d) => `${Object.values(d.bySlot ?? d.byLevel ?? {})[0] ?? ''} ${tr(d.type)}`.trim()).join(' + ')}
+          {s.heal ? tr('Cura {0}', { '0': Object.values(s.heal)[0]?.replace('MOD', 'mod.') }) : ''}
         </p>
       )}
       <p className="srd-desc">{s.desc}</p>
@@ -209,12 +211,12 @@ export function SpellDetails({ s }: { s: SrdSpell }) {
 }
 
 const ITEM_FILTERS = [
-  { id: '', label: 'Todo' },
-  { id: 'arma', label: 'Armas' },
-  { id: 'armadura', label: 'Armaduras' },
-  { id: 'equipo', label: 'Equipo' },
-  { id: 'herramienta', label: 'Herramientas' },
-  { id: 'mágico', label: 'Mágicos' },
+  { id: '', label: tr('Todo') },
+  { id: 'arma', label: tr('Armas') },
+  { id: 'armadura', label: tr('Armaduras') },
+  { id: 'equipo', label: tr('Equipo') },
+  { id: 'herramienta', label: tr('Herramientas') },
+  { id: 'mágico', label: tr('Mágicos') },
 ];
 
 function ItemList({ data, query, target, onAdded, onCopy }: { data: SrdData; query: string; target?: Character; onAdded: (m: string) => void; onCopy?: (it: SrdItem) => void }) {
@@ -231,11 +233,11 @@ function ItemList({ data, query, target, onAdded, onCopy }: { data: SrdData; que
     if (!target) return;
     const scores = { fue: 10, des: 10, con: 10, int: 10, sab: 10, car: 10 } as Record<SrdAbility, number>;
     for (const k of Object.keys(scores) as SrdAbility[]) scores[k] = Number(target.values[k]) || 10;
-    const rows: Record<string, Omit<SheetRow, '_id'>> = { inventario: { objeto: it.name, cantidad: 1, peso: it.weight ?? 0 } };
+    const rows: Record<string, Omit<SheetRow, '_id'>> = { inventario: { objeto: localName(it), cantidad: 1, peso: it.weight ?? 0 } };
     if (it.weapon) rows.ataques = weaponAttack(it, scores, Number(target.values.nivel) || 1);
     try {
       await appendRows(target, rows);
-      onAdded(`Añadido al inventario de ${target.name}${it.weapon ? ' y a sus ataques' : ''}: ${it.name}.`);
+      onAdded(tr('Añadido al inventario de {name}{1}: {name2}.', { name: target.name, '1': it.weapon ? tr(' y a sus ataques') : '', name2: localName(it) }));
     } catch (e) {
       onAdded((e as Error).message);
     }
@@ -249,23 +251,23 @@ function ItemList({ data, query, target, onAdded, onCopy }: { data: SrdData; que
             {f.label}
           </button>
         ))}
-        <span className="muted">{list.length} objetos</span>
+        <span className="muted">{tr('{n} objetos', { n: list.length })}</span>
       </div>
       <ul className="compendium-list">
         {list.slice(0, LIMIT).map((it) => (
           <li key={it.id}>
             <div className="row spread compendium-row">
               <button className="ghost compendium-name" onClick={() => setOpen(open === it.id ? null : it.id)}>
-                <strong>{it.name}</strong> {it.en !== it.name && <small className="muted">{it.en}</small>}
+                <strong>{localName(it)}</strong> {lang === 'es' && it.en !== it.name && <small className="muted">{it.en}</small>}
               </button>
               <span className="compendium-stats">{itemStats(it)}</span>
               {target && (
-                <button className="ghost small" onClick={() => void add(it)} title={`Añadir a ${target.name}`}>
-                  + Hoja
+                <button className="ghost small" onClick={() => void add(it)} title={tr('Añadir a {name}', { name: target.name })}>
+                  {tr('+ Hoja')}
                 </button>
               )}
               {onCopy && (
-                <button className="ghost small" onClick={() => onCopy(it)} title="Copiar a ⚗ Creaciones para editarlo (ataque, daño, usos…)">
+                <button className="ghost small" onClick={() => onCopy(it)} title={tr('Copiar a ⚗ Creaciones para editarlo (ataque, daño, usos…)')}>
                   ✎
                 </button>
               )}
@@ -273,33 +275,33 @@ function ItemList({ data, query, target, onAdded, onCopy }: { data: SrdData; que
             {open === it.id && (
               <div className="monster-details">
                 <p className="muted">
-                  {it.cat}
-                  {it.rarity ? `, ${it.rarity}` : ''}
+                  {tr(it.cat)}
+                  {it.rarity ? `, ${tr(it.rarity)}` : ''}
                   {it.cost ? ` · ${it.cost}` : ''}
-                  {it.weight ? ` · ${it.weight} lb` : ''}
+                  {it.weight ? tr(' · {weight} lb', { weight: it.weight }) : ''}
                 </p>
                 {it.weapon && (
                   <p>
-                    Arma {it.weapon.martial ? 'marcial' : 'sencilla'} {it.weapon.ranged ? 'a distancia' : 'cuerpo a cuerpo'}: {it.weapon.damage} {it.weapon.type}
-                    {it.weapon.twoHanded ? ` (${it.weapon.twoHanded} a dos manos)` : ''}
-                    {it.weapon.range ? `, alcance ${it.weapon.range} pies` : ''}
-                    {it.weapon.props.length ? `. ${it.weapon.props.join(', ')}.` : '.'}
+                    {tr('Arma')}{' '}{it.weapon.martial ? tr('marcial') : tr('sencilla')} {it.weapon.ranged ? tr('a distancia') : tr('cuerpo a cuerpo')}: {it.weapon.damage} {it.weapon.type}
+                    {it.weapon.twoHanded ? tr(' ({twoHanded} a dos manos)', { twoHanded: it.weapon.twoHanded }) : ''}
+                    {it.weapon.range ? tr(', alcance {range} pies', { range: it.weapon.range }) : ''}
+                    {it.weapon.props.length ? `. ${it.weapon.props.map((p) => tr(p)).join(', ')}.` : '.'}
                   </p>
                 )}
                 {it.armor && (
                   <p>
-                    {it.armor.kind === 'escudo' ? `Escudo: +${it.armor.base} a la CA` : `Armadura ${it.armor.kind}: CA ${it.armor.base}${it.armor.dex ? ` + Des${it.armor.maxDex ? ` (máx. ${it.armor.maxDex})` : ''}` : ''}`}
-                    {it.armor.str ? `, Fuerza ${it.armor.str}` : ''}
-                    {it.armor.stealthDisadvantage ? ', desventaja en Sigilo' : ''}.
+                    {it.armor.kind === 'escudo' ? tr('Escudo: +{base} a la CA', { base: it.armor.base }) : tr('Armadura {kind}: CA {base}{2}', { kind: it.armor.kind, base: it.armor.base, '2': it.armor.dex ? tr(' + Des{0}', { '0': it.armor.maxDex ? tr(' (máx. {maxDex})', { maxDex: it.armor.maxDex }) : '' }) : '' })}
+                    {it.armor.str ? tr(', Fuerza {str}', { str: it.armor.str }) : ''}
+                    {it.armor.stealthDisadvantage ? tr(', desventaja en Sigilo') : ''}.
                   </p>
                 )}
-                {it.contents && <p>Contiene: {it.contents.map(([id, n]) => `${data.items.find((x) => x.id === id)?.name ?? id}${n > 1 ? ` ×${n}` : ''}`).join(', ')}.</p>}
+                {it.contents && <p>{tr('Contiene:')}{' '}{it.contents.map(([id, n]) => `${data.items.find((x) => x.id === id)?.name ?? id}${n > 1 ? ` ×${n}` : ''}`).join(', ')}.</p>}
                 {it.desc && <p className="srd-desc">{it.desc}</p>}
               </div>
             )}
           </li>
         ))}
-        {list.length > LIMIT && <p className="muted">Y {list.length - LIMIT} más: afina la búsqueda.</p>}
+        {list.length > LIMIT && <p className="muted">Y {list.length - LIMIT}{' '}{tr('más: afina la búsqueda.')}</p>}
       </ul>
     </>
   );
@@ -307,7 +309,7 @@ function ItemList({ data, query, target, onAdded, onCopy }: { data: SrdData; que
 
 function itemStats(it: SrdItem) {
   if (it.weapon) return `${it.weapon.damage} ${it.weapon.type}`;
-  if (it.armor) return it.armor.kind === 'escudo' ? `+${it.armor.base} CA` : `CA ${it.armor.base}${it.armor.dex ? '+Des' : ''}`;
+  if (it.armor) return it.armor.kind === 'escudo' ? `+${it.armor.base} CA` : tr('CA {base}{1}', { base: it.armor.base, '1': it.armor.dex ? tr('+Des') : '' });
   if (it.rarity) return it.rarity;
   return it.cost ?? '';
 }
@@ -317,7 +319,7 @@ function ClassList({ data, query }: { data: SrdData; query: string }) {
   return (
     <ul className="compendium-list">
       {data.classes.map((c) => {
-        const features = [...c.features, ...c.subclasses.flatMap((s) => s.features.map((f) => ({ ...f, name: `${f.name} (${s.name})` })))]
+        const features = [...c.features, ...c.subclasses.flatMap((s) => s.features.map((f) => ({ ...f, name: `${tr(f.name)} (${localName(s)})` })))]
           .filter((f) => !q || norm(`${c.name} ${c.en} ${f.name}`).includes(q))
           .sort((a, b) => a.level - b.level);
         if (q && !features.length) return null;
@@ -325,18 +327,18 @@ function ClassList({ data, query }: { data: SrdData; query: string }) {
           <li key={c.id}>
             <details open={!!q}>
               <summary>
-                <strong>{c.name}</strong> <small className="muted">d{c.hitDie} · {c.proficiencies.join(', ') || 'sin armaduras'}</small>
+                <strong>{localName(c)}</strong> <small className="muted">d{c.hitDie} · {c.proficiencies.map((p) => tr(p)).join(', ') || tr('sin armaduras')}</small>
               </summary>
               <div className="srd-traits">
                 {features.map((f, i) => (
                   <details key={`${f.name}${i}`}>
                     <summary>
-                      Nv {f.level} · {f.name}
+                      {tr('Nv')}{' '}{f.level} · {tr(f.name)}
                     </summary>
                     <p className="srd-desc">{f.desc}</p>
                     {f.options?.map((o) => (
                       <p key={o.name} className="srd-desc">
-                        <b>{o.name}.</b> {o.desc}
+                        <b>{tr(o.name)}.</b> {o.desc}
                       </p>
                     ))}
                   </details>
@@ -360,12 +362,12 @@ function RaceList({ data, query }: { data: SrdData; query: string }) {
           <li key={r.id}>
             <details open={!!q}>
               <summary>
-                <strong>{r.name}</strong> <small className="muted">{r.size} · {r.speed} pies · {r.languages.join(', ')}</small>
+                <strong>{localName(r)}</strong> <small className="muted">{tr(r.size)} · {r.speed}{' '}{tr('pies ·')}{' '}{r.languages.map((l) => tr(l)).join(', ')}</small>
               </summary>
               <div className="srd-traits">
-                {[...r.traits, ...r.subraces.flatMap((s) => s.traits.map((t) => ({ ...t, name: `${t.name} (${s.name})` })))].map((t, i) => (
+                {[...r.traits, ...r.subraces.flatMap((s) => s.traits.map((t) => ({ ...t, name: `${tr(t.name)} (${localName(s)})` })))].map((t, i) => (
                   <details key={`${t.name}${i}`}>
-                    <summary>{t.name}</summary>
+                    <summary>{tr(t.name)}</summary>
                     <p className="srd-desc">{t.desc}</p>
                   </details>
                 ))}

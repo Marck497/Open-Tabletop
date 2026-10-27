@@ -1,5 +1,6 @@
 import type { Scene, SceneLibraryEntry } from '@vtt/shared';
 import { api, ApiError } from '../../core/api';
+import { tr } from '../../core/i18n';
 
 /** Copia la escena en la misma partida, justo debajo (sin los tokens de los jugadores). */
 export const duplicateScene = (sceneId: string) => api.post<{ scene: Scene }>(`/scenes/${sceneId}/duplicate`).then((r) => r.scene);
@@ -24,7 +25,7 @@ export async function importSceneFile(campaignId: string, file: File): Promise<S
   form.append('file', file);
   const res = await fetch(`/api/campaigns/${campaignId}/scenes/import`, { method: 'POST', body: form, credentials: 'same-origin' });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new ApiError(res.status, data.error ?? (res.status === 413 ? 'El archivo es demasiado grande' : 'No se pudo importar'));
+  if (!res.ok) throw new ApiError(res.status, data.error ?? (res.status === 413 ? tr('El archivo es demasiado grande') : tr('No se pudo importar')));
   return data.scene;
 }
 

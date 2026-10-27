@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import {
+  localName,
   abilityMod,
   finalAbilities,
   hitPoints,
@@ -25,17 +26,18 @@ import { api } from '../../core/api';
 import { useSheets } from '../sheets/store';
 import { SpellDetails } from './SrdBrowser';
 import { ABILITY_LABELS, norm, SKILL_LABELS, useSrd } from './useSrd';
+import { lang, tr } from '../../core/i18n';
 
 type Method = 'array' | 'pointbuy' | 'roll' | 'manual';
 type EquipState = Record<string, { option: number; picks: string[][] }>;
 
 const METHODS: { id: Method; label: string }[] = [
-  { id: 'array', label: 'Serie estándar' },
-  { id: 'pointbuy', label: 'Compra por puntos' },
-  { id: 'roll', label: 'Tirar 4d6' },
-  { id: 'manual', label: 'A mano' },
+  { id: 'array', label: tr('Serie estándar') },
+  { id: 'pointbuy', label: tr('Compra por puntos') },
+  { id: 'roll', label: tr('Tirar 4d6') },
+  { id: 'manual', label: tr('A mano') },
 ];
-const ALIGNMENTS = ['Legal bueno', 'Neutral bueno', 'Caótico bueno', 'Legal neutral', 'Neutral', 'Caótico neutral', 'Legal malvado', 'Neutral malvado', 'Caótico malvado'];
+const ALIGNMENTS = [tr('Legal bueno'), tr('Neutral bueno'), tr('Caótico bueno'), tr('Legal neutral'), tr('Neutral'), tr('Caótico neutral'), tr('Legal malvado'), tr('Neutral malvado'), tr('Caótico malvado')];
 const fromArray = (values: readonly number[]) => Object.fromEntries(SRD_ABILITIES.map((a, i) => [a, values[i] ?? 10])) as Record<SrdAbility, number>;
 const signed = (n: number) => (n >= 0 ? `+${n}` : `${n}`);
 
@@ -44,15 +46,15 @@ export function CharacterCreator({ campaignId, onClose }: { campaignId: string; 
   const { data, error } = useSrd();
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="card modal creator" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Creador de personajes">
+      <div className="card modal creator" onClick={(e) => e.stopPropagation()} role="dialog" aria-label={tr('Creador de personajes')}>
         <div className="row spread">
-          <h2>✨ Nuevo personaje (D&D 5e)</h2>
-          <button className="ghost small" onClick={onClose} title="Cerrar">
+          <h2>{tr('✨ Nuevo personaje (D&D 5e)')}</h2>
+          <button className="ghost small" onClick={onClose} title={tr('Cerrar')}>
             ✕
           </button>
         </div>
         {error && <p className="error">{error}</p>}
-        {!data && !error && <p className="muted">Cargando el SRD…</p>}
+        {!data && !error && <p className="muted">{tr('Cargando el SRD…')}</p>}
         {data && <Creator data={data} campaignId={campaignId} onDone={onClose} />}
       </div>
     </div>
@@ -134,18 +136,19 @@ function Creator({ data, campaignId, onDone }: { data: SrdData; campaignId: stri
     alignment: alignment || undefined,
   };
 
+  // Los nombres de los pasos se comparan abajo: se traducen solo al mostrarlos.
   const steps = ['Especie', 'Clase', 'Características', 'Trasfondo', 'Equipo', ...(hasSpells ? ['Conjuros'] : []), 'Resumen'];
   const stepName = steps[Math.min(step, steps.length - 1)]!;
 
   // Avisos que no bloquean: se puede crear igualmente y retocar la hoja después.
   const warnings: Record<string, string[]> = {
-    Especie: race.bonusChoice && bonusChoice.length < race.bonusChoice.choose ? [`Elige ${race.bonusChoice.choose} características para el +${race.bonusChoice.amount}.`] : [],
-    Clase: classSkills.length < cls.skills.choose ? [`Elige ${cls.skills.choose} habilidades de clase.`] : [],
-    Características: validScores(method, SRD_ABILITIES.map((a) => scores[a])) ? [] : [method === 'pointbuy' ? `Te pasas de ${POINT_BUY_BUDGET} puntos.` : 'Usa cada valor una vez.'],
-    Trasfondo: !bg && bgSkills.length < 2 ? ['Elige 2 habilidades del trasfondo.'] : [],
+    Especie: race.bonusChoice && bonusChoice.length < race.bonusChoice.choose ? [tr('Elige {choose} características para el +{amount}.', { choose: race.bonusChoice.choose, amount: race.bonusChoice.amount })] : [],
+    Clase: classSkills.length < cls.skills.choose ? [tr('Elige {choose} habilidades de clase.', { choose: cls.skills.choose })] : [],
+    Características: validScores(method, SRD_ABILITIES.map((a) => scores[a])) ? [] : [method === 'pointbuy' ? tr('Te pasas de {POINT_BUY_BUDGET} puntos.', { POINT_BUY_BUDGET }) : tr('Usa cada valor una vez.')],
+    Trasfondo: !bg && bgSkills.length < 2 ? [tr('Elige 2 habilidades del trasfondo.')] : [],
     Equipo: [],
     Conjuros: [],
-    Resumen: name.trim() ? [] : ['Ponle un nombre.'],
+    Resumen: name.trim() ? [] : [tr('Ponle un nombre.')],
   };
 
   function changeMethod(m: Method) {
@@ -175,7 +178,7 @@ function Creator({ data, campaignId, onDone }: { data: SrdData; campaignId: stri
     setMessage(null);
     try {
       const values = srdCharacterValues(template, build, data);
-      const { character } = await api.post<{ character: Character }>(`/campaigns/${campaignId}/characters`, { name: name.trim() || 'Sin nombre' });
+      const { character } = await api.post<{ character: Character }>(`/campaigns/${campaignId}/characters`, { name: name.trim() || tr('Sin nombre') });
       const { character: full } = await api.patch<{ character: Character }>(`/characters/${character.id}`, { values });
       useSheets.getState().upsert(full);
       useSheets.getState().openSheet(full.id);
@@ -194,7 +197,7 @@ function Creator({ data, campaignId, onDone }: { data: SrdData; campaignId: stri
       <nav className="creator-steps">
         {steps.map((s, i) => (
           <button key={s} className={`small ${i === step ? 'active' : 'ghost'}`} onClick={() => setStep(i)}>
-            {i + 1}. {s}
+            {i + 1}. {tr(s)}
             {warnings[s]?.length ? ' •' : ''}
           </button>
         ))}
@@ -204,7 +207,7 @@ function Creator({ data, campaignId, onDone }: { data: SrdData; campaignId: stri
         {stepName === 'Especie' && (
           <>
             <Choices
-              items={data.races.map((r) => ({ id: r.id, label: r.name, hint: bonusText(r.bonuses) }))}
+              items={data.races.map((r) => ({ id: r.id, label: localName(r), hint: bonusText(r.bonuses) }))}
               value={raceId}
               onChange={(id) => {
                 setRaceId(id);
@@ -214,16 +217,16 @@ function Creator({ data, campaignId, onDone }: { data: SrdData; campaignId: stri
               }}
             />
             {race.subraces.length > 0 && (
-              <Choices items={race.subraces.map((s) => ({ id: s.id, label: s.name, hint: bonusText(s.bonuses) }))} value={sub?.id} onChange={setSubraceId} />
+              <Choices items={race.subraces.map((s) => ({ id: s.id, label: localName(s), hint: bonusText(s.bonuses) }))} value={sub?.id} onChange={setSubraceId} />
             )}
             <p className="muted">
-              {race.size} · {race.speed} pies · Idiomas: {race.languages.join(', ')}
-              {extraLanguages && race.extraLanguages ? ` y ${race.extraLanguages} a elegir` : ''}
-              {race.proficiencies.length ? ` · ${race.proficiencies.join(', ')}` : ''}
+              {tr(race.size)} · {race.speed}{' '}{tr('pies · Idiomas:')}{' '}{race.languages.map((l) => tr(l)).join(', ')}
+              {extraLanguages && race.extraLanguages ? tr(' y {extraLanguages} a elegir', { extraLanguages: race.extraLanguages }) : ''}
+              {race.proficiencies.length ? ` · ${race.proficiencies.map((p) => tr(p)).join(', ')}` : ''}
             </p>
             {race.bonusChoice && (
               <Picker
-                label={`+${race.bonusChoice.amount} a ${race.bonusChoice.choose} características`}
+                label={tr('+{amount} a {choose} características', { amount: race.bonusChoice.amount, choose: race.bonusChoice.choose })}
                 options={race.bonusChoice.from.map((a) => ({ id: a, label: ABILITY_LABELS[a]! }))}
                 selected={bonusChoice}
                 onToggle={(a) => toggle(bonusChoice, (l) => setBonusChoice(l as SrdAbility[]), a, race.bonusChoice!.choose)}
@@ -231,7 +234,7 @@ function Creator({ data, campaignId, onDone }: { data: SrdData; campaignId: stri
             )}
             {race.skillChoice && (
               <Picker
-                label={`${race.skillChoice.choose} habilidades a elegir`}
+                label={tr('{choose} habilidades a elegir', { choose: race.skillChoice.choose })}
                 options={race.skillChoice.from.filter((s) => !fixedSkills.has(s)).map((s) => ({ id: s, label: SKILL_LABELS[s] ?? s }))}
                 selected={raceSkills}
                 onToggle={(s) => toggle(raceSkills, setRaceSkills, s, race.skillChoice!.choose)}
@@ -245,7 +248,7 @@ function Creator({ data, campaignId, onDone }: { data: SrdData; campaignId: stri
         {stepName === 'Clase' && (
           <>
             <Choices
-              items={data.classes.map((c) => ({ id: c.id, label: c.name, hint: `d${c.hitDie}` }))}
+              items={data.classes.map((c) => ({ id: c.id, label: localName(c), hint: `d${c.hitDie}` }))}
               value={classId}
               onChange={(id) => {
                 setClassId(id);
@@ -257,33 +260,33 @@ function Creator({ data, campaignId, onDone }: { data: SrdData; campaignId: stri
             />
             <div className="row">
               <label className="switch">
-                Nivel
+                {tr('Nivel')}
                 <input type="number" className="tiny-number" min={1} max={20} value={level} onChange={(e) => setLevel(Math.max(1, Math.min(20, Math.round(Number(e.target.value)) || 1)))} />
               </label>
               {cls.subclasses.map((s) =>
                 s.level <= level ? (
                   <button key={s.id} className={`small ${subclass?.id === s.id ? 'active' : ''}`} onClick={() => setSubclassId(subclass?.id === s.id ? '' : s.id)}>
-                    {s.name}
+                    {localName(s)}
                   </button>
                 ) : (
                   <span key={s.id} className="muted">
-                    Subclase ({s.name}) a nivel {s.level}
+                    {tr('Subclase (')}{localName(s)}{tr(') a nivel')}{' '}{s.level}
                   </span>
                 ),
               )}
             </div>
             <p className="muted">
-              PG {hitPoints(cls, level, final.con, sub?.id)} · Salvaciones: {cls.saves.map((a) => ABILITY_LABELS[a]).join(', ')} · {cls.proficiencies.join(', ') || 'Sin armaduras'}
-              {cls.spellcasting ? ` · Conjuros con ${ABILITY_LABELS[cls.spellcasting.ability]}` : ''}
+              {tr('PG')} {hitPoints(cls, level, final.con, sub?.id)}{' '}{tr('· Salvaciones:')}{' '}{cls.saves.map((a) => ABILITY_LABELS[a]).join(', ')} · {cls.proficiencies.join(', ') || tr('Sin armaduras')}
+              {cls.spellcasting ? tr(' · Conjuros con {0}', { '0': ABILITY_LABELS[cls.spellcasting.ability] }) : ''}
             </p>
             <Picker
-              label={`${cls.skills.choose} habilidades de clase`}
+              label={tr('{choose} habilidades de clase', { choose: cls.skills.choose })}
               options={cls.skills.from.map((s) => ({ id: s, label: SKILL_LABELS[s] ?? s, disabled: fixedSkills.has(s) || raceSkills.includes(s) }))}
               selected={classSkills}
               onToggle={(s) => toggle(classSkills, setClassSkills, s, cls.skills.choose)}
             />
             <TraitOptions traits={classOptions} options={options} setOptions={setOptions} />
-            <Traits traits={[...cls.features, ...(subclass?.features ?? [])].filter((f) => f.level <= level).map((f) => ({ ...f, name: `Nv ${f.level} · ${f.name}` }))} />
+            <Traits traits={[...cls.features, ...(subclass?.features ?? [])].filter((f) => f.level <= level).map((f) => ({ ...f, name: tr('Nv {level} · {name}', { level: f.level, name: tr(f.name) }) }))} />
           </>
         )}
 
@@ -296,17 +299,17 @@ function Creator({ data, campaignId, onDone }: { data: SrdData; campaignId: stri
                 </button>
               ))}
               {method === 'roll' && (
-                <button className="small" onClick={rollAll} title="Vuelve a tirar las seis">
-                  🎲 Repetir
+                <button className="small" onClick={rollAll} title={tr('Vuelve a tirar las seis')}>
+                  {tr('🎲 Repetir')}
                 </button>
               )}
             </div>
             {method === 'pointbuy' && (
               <p className="muted">
-                Puntos: {pointBuyCost(SRD_ABILITIES.map((a) => scores[a])) ?? '—'} / {POINT_BUY_BUDGET} (de 8 a 15)
+                {tr('Puntos:')}{' '}{pointBuyCost(SRD_ABILITIES.map((a) => scores[a])) ?? '—'} / {POINT_BUY_BUDGET}{' '}{tr('(de 8 a 15)')}
               </p>
             )}
-            {method === 'roll' && rolls.length > 0 && <p className="muted">Tiradas: {rolls.map((d) => `[${d.join(', ')}]`).join(' ')} (sin el dado más bajo)</p>}
+            {method === 'roll' && rolls.length > 0 && <p className="muted">{tr('Tiradas:')}{' '}{rolls.map((d) => `[${d.join(', ')}]`).join(' ')}{' '}{tr('(sin el dado más bajo)')}</p>}
             <div className="ability-grid">
               {SRD_ABILITIES.map((a) => {
                 const bonus = final[a] - scores[a];
@@ -331,7 +334,7 @@ function Creator({ data, campaignId, onDone }: { data: SrdData; campaignId: stri
                       />
                     )}
                     <span className="muted">
-                      {bonus ? `${signed(bonus)} especie → ` : ''}
+                      {bonus ? tr('{0} especie → ', { '0': signed(bonus) }) : ''}
                       <b>{final[a]}</b> ({signed(abilityMod(final[a]))})
                     </span>
                   </div>
@@ -344,7 +347,7 @@ function Creator({ data, campaignId, onDone }: { data: SrdData; campaignId: stri
         {stepName === 'Trasfondo' && (
           <>
             <Choices
-              items={[...data.backgrounds.map((b) => ({ id: b.id, label: b.name, hint: b.skills.map((s) => SKILL_LABELS[s]).join(', ') })), { id: '', label: 'Otro (propio)', hint: '2 habilidades a elegir' }]}
+              items={[...data.backgrounds.map((b) => ({ id: b.id, label: localName(b), hint: b.skills.map((s) => SKILL_LABELS[s]).join(', ') })), { id: '', label: tr('Otro (propio)'), hint: tr('2 habilidades a elegir') }]}
               value={backgroundId}
               onChange={setBackgroundId}
             />
@@ -352,9 +355,9 @@ function Creator({ data, campaignId, onDone }: { data: SrdData; campaignId: stri
               <Traits traits={[bg.feature]} />
             ) : (
               <>
-                <input placeholder="Nombre del trasfondo (Soldado, Criminal…)" value={backgroundName} onChange={(e) => setBackgroundName(e.target.value)} />
+                <input placeholder={tr('Nombre del trasfondo (Soldado, Criminal…)')} value={backgroundName} onChange={(e) => setBackgroundName(e.target.value)} />
                 <Picker
-                  label="2 habilidades"
+                  label={tr('2 habilidades')}
                   options={Object.keys(SKILL_LABELS).map((s) => ({ id: s, label: SKILL_LABELS[s]!, disabled: fixedSkills.has(s) || raceSkills.includes(s) || classSkills.includes(s) }))}
                   selected={bgSkills}
                   onToggle={(s) => toggle(bgSkills, setBgSkills, s, 2)}
@@ -362,7 +365,7 @@ function Creator({ data, campaignId, onDone }: { data: SrdData; campaignId: stri
               </>
             )}
             <label>
-              Alineamiento
+              {tr('Alineamiento')}
               <select value={alignment} onChange={(e) => setAlignment(e.target.value)}>
                 <option value="">—</option>
                 {ALIGNMENTS.map((a) => (
@@ -372,8 +375,8 @@ function Creator({ data, campaignId, onDone }: { data: SrdData; campaignId: stri
             </label>
             {extraLanguages > 0 && (
               <Picker
-                label={`${extraLanguages} idioma${extraLanguages > 1 ? 's' : ''} más`}
-                options={data.languages.filter((l) => !race.languages.includes(l)).map((l) => ({ id: l, label: l }))}
+                label={tr('{extraLanguages} idioma{1} más', { extraLanguages, '1': extraLanguages > 1 ? 's' : '' })}
+                options={data.languages.filter((l) => !race.languages.includes(l)).map((l) => ({ id: l, label: tr(l) }))}
                 selected={languages}
                 onToggle={(l) => toggle(languages, setLanguages, l, extraLanguages)}
               />
@@ -385,13 +388,13 @@ function Creator({ data, campaignId, onDone }: { data: SrdData; campaignId: stri
           <>
             {[...cls.equipment, ...(bg?.equipment ?? [])].length > 0 && (
               <p>
-                <strong>Siempre:</strong> {[...cls.equipment, ...(bg?.equipment ?? [])].map((g) => gearLabel(g, data)).join(', ')}
+                <strong>{tr('Siempre:')}</strong> {[...cls.equipment, ...(bg?.equipment ?? [])].map((g) => gearLabel(g, data)).join(', ')}
               </p>
             )}
             {choices.map(([key, c]) => (
               <EquipChoiceView key={key} choice={c} data={data} state={equip[key] ?? { option: 0, picks: [] }} onChange={(st) => setEquip({ ...equip, [key]: st })} />
             ))}
-            {bg?.gold ? <p className="muted">Y {bg.gold} po.</p> : null}
+            {bg?.gold ? <p className="muted">{tr('Y {gold} po.', { gold: bg.gold })}</p> : null}
           </>
         )}
 
@@ -419,19 +422,19 @@ function Creator({ data, campaignId, onDone }: { data: SrdData; campaignId: stri
       {message && <p className="error">{message}</p>}
       <div className="row spread">
         <button className="ghost" disabled={step === 0} onClick={() => setStep(step - 1)}>
-          ← Atrás
+          {tr('← Atrás')}
         </button>
         {step < steps.length - 1 ? (
           <button className="primary" onClick={() => setStep(step + 1)}>
-            Siguiente →
+            {tr('Siguiente →')}
           </button>
         ) : (
           <button className="primary" disabled={busy || !template || !name.trim()} onClick={() => void create()}>
-            Crear personaje
+            {tr('Crear personaje')}
           </button>
         )}
       </div>
-      <p className="muted hint">Datos del SRD 5.1 de D&D (CC-BY-4.0). Todo se puede cambiar después en la hoja.</p>
+      <p className="muted hint">{tr('Datos del SRD 5.1 de D&D (CC-BY-4.0). Todo se puede cambiar después en la hoja.')}</p>
     </>
   );
 }
@@ -483,11 +486,13 @@ function TraitOptions({ traits, options, setOptions }: { traits: SrdTrait[]; opt
     <>
       {traits.map((t) => (
         <label key={t.name}>
-          {t.name}
+          {tr(t.name)}
           <select value={options[t.name] ?? ''} onChange={(e) => setOptions({ ...options, [t.name]: e.target.value })}>
-            <option value="">— elige —</option>
+            <option value="">{tr('— elige —')}</option>
             {t.options!.map((o) => (
-              <option key={o.name}>{o.name}</option>
+              <option key={o.name} value={o.name}>
+                {tr(o.name)}
+              </option>
             ))}
           </select>
           {options[t.name] && <small className="muted srd-desc">{t.options!.find((o) => o.name === options[t.name])?.desc}</small>}
@@ -503,7 +508,7 @@ function Traits({ traits }: { traits: { name: string; desc: string }[] }) {
     <div className="srd-traits">
       {traits.map((t, i) => (
         <details key={`${t.name}${i}`}>
-          <summary>{t.name}</summary>
+          <summary>{tr(t.name)}</summary>
           <p className="srd-desc">{t.desc}</p>
         </details>
       ))}
@@ -594,11 +599,11 @@ function SpellStep({
   return (
     <>
       <p className="muted">
-        Trucos {cantrips}/{cantripMax}
-        {extra ? ` (uno de mago por ser ${extra.label})` : ''} · Conjuros {leveled}/{limits.spells}
-        {limits.maxLevel ? ` (hasta nivel ${limits.maxLevel})` : ''}
+        {tr('Trucos')}{' '}{cantrips}/{cantripMax}
+        {extra ? tr(' (uno de mago por ser {label})', { label: extra.label }) : ''}{' '}{tr('· Conjuros')}{' '}{leveled}/{limits.spells}
+        {limits.maxLevel ? tr(' (hasta nivel {maxLevel})', { maxLevel: limits.maxLevel }) : ''}
       </p>
-      <input placeholder="Buscar conjuro" value={query} onChange={(e) => setQuery(e.target.value)} />
+      <input placeholder={tr('Buscar conjuro')} value={query} onChange={(e) => setQuery(e.target.value)} />
       <ul className="compendium-list creator-spells">
         {list.map((s) => {
           const on = selected.includes(s.id);
@@ -608,9 +613,9 @@ function SpellStep({
               <div className="row compendium-row">
                 <input type="checkbox" checked={on} disabled={full} onChange={() => toggle(s)} aria-label={s.name} />
                 <button className="ghost compendium-name" onClick={() => setOpen(open === s.id ? null : s.id)}>
-                  <strong>{s.name}</strong> <small className="muted">{s.en}</small>
+                  <strong>{localName(s)}</strong> {lang === 'es' && <small className="muted">{s.en}</small>}
                 </button>
-                <span className="compendium-stats">{s.level ? `Nv ${s.level}` : 'Truco'} · {s.school}</span>
+                <span className="compendium-stats">{s.level ? tr('Nv {level}', { level: s.level }) : tr('Truco')} · {tr(s.school)}</span>
               </div>
               {open === s.id && <SpellDetails s={s} />}
             </li>
@@ -627,34 +632,34 @@ function Summary({ data, build, name, setName }: { data: SrdData; build: SrdBuil
   const rows = (key: string) => (Array.isArray(v[key]) ? (v[key] as Record<string, unknown>[]) : []);
   return (
     <>
-      <input placeholder="Nombre del personaje" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+      <input placeholder={tr('Nombre del personaje')} value={name} onChange={(e) => setName(e.target.value)} autoFocus />
       <p>
         <strong>
-          {String(v.raza ?? '')} · {String(v.clase ?? '')} nivel {String(v.nivel ?? '')}
+          {String(v.raza ?? '')} · {String(v.clase ?? '')} {tr('nivel')} {String(v.nivel ?? '')}
         </strong>
         {v.trasfondo ? ` · ${String(v.trasfondo)}` : ''}
         {v.alineamiento ? ` · ${String(v.alineamiento)}` : ''}
       </p>
       <p>
-        PG {String(v.pg_max ?? '—')} · CA {String(v.ca ?? '—')} · Velocidad {String(v.velocidad ?? '—')} pies ·{' '}
+        {tr('PG')} {String(v.pg_max ?? '—')}{' '}{tr('· CA')}{' '}{String(v.ca ?? '—')}{' '}{tr('· Velocidad')}{' '}{String(v.velocidad ?? '—')}{' '}{tr('pies ·')}{' '}
         {SRD_ABILITIES.map((a) => `${a.toUpperCase()} ${String(v[a] ?? '')}`).join(' · ')}
       </p>
       {rows('ataques').length > 0 && (
         <p>
-          <strong>Ataques:</strong> {rows('ataques').map((a) => `${String(a.nombre)} ${String(a.bono)} (${String(a.dano)})`).join(', ')}
+          <strong>{tr('Ataques:')}</strong> {rows('ataques').map((a) => `${String(a.nombre)} ${String(a.bono)} (${String(a.dano)})`).join(', ')}
         </p>
       )}
       {rows('conjuros').length > 0 && (
         <p>
-          <strong>Conjuros:</strong> {rows('conjuros').map((s) => String(s.nombre)).join(', ')}
+          <strong>{tr('Conjuros:')}</strong> {rows('conjuros').map((s) => String(s.nombre)).join(', ')}
         </p>
       )}
       {rows('inventario').length > 0 && (
         <p className="muted">
-          <strong>Inventario:</strong> {rows('inventario').map((i) => (Number(i.cantidad) > 1 ? `${String(i.objeto)} ×${String(i.cantidad)}` : String(i.objeto))).join(', ')}
+          <strong>{tr('Inventario:')}</strong> {rows('inventario').map((i) => (Number(i.cantidad) > 1 ? `${String(i.objeto)} ×${String(i.cantidad)}` : String(i.objeto))).join(', ')}
         </p>
       )}
-      {!template && <p className="muted">Cargando la plantilla de hoja…</p>}
+      {!template && <p className="muted">{tr('Cargando la plantilla de hoja…')}</p>}
     </>
   );
 }

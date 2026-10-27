@@ -1,6 +1,8 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './store';
+import { tr } from '../../core/i18n';
+import { LangSelect } from '../../components/LangSelect';
 
 export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
   const { login, register, registrationCodeRequired } = useAuth();
@@ -36,20 +38,23 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
       <form className="card auth-card" onSubmit={onSubmit}>
         <h1>
           <img src="/d20.svg" alt="" width={32} /> Mesa de Rol
+          <span className="auth-lang">
+            <LangSelect />
+          </span>
         </h1>
-        <h2>{mode === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}</h2>
+        <h2>{mode === 'login' ? tr('Iniciar sesión') : tr('Crear cuenta')}</h2>
         <label>
-          Usuario
+          {tr('Usuario')}
           <input autoComplete="username" required {...field('username')} />
         </label>
         {mode === 'register' && (
           <label>
-            Nombre visible
+            {tr('Nombre visible')}
             <input required maxLength={48} {...field('displayName')} />
           </label>
         )}
         <label>
-          Contraseña
+          {tr('Contraseña')}
           <input
             type="password"
             autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
@@ -60,22 +65,22 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
         </label>
         {mode === 'register' && registrationCodeRequired && (
           <label>
-            Código de registro <small>(te lo da el DM)</small>
+            {tr('Código de registro')}{' '}<small>{tr('(te lo da el DM)')}</small>
             <input required {...field('registrationCode')} />
           </label>
         )}
         {error && <p className="error">{error}</p>}
         <button className="primary" disabled={busy}>
-          {mode === 'login' ? 'Entrar' : 'Crear cuenta'}
+          {mode === 'login' ? tr('Entrar') : tr('Crear cuenta')}
         </button>
         <p className="muted">
           {mode === 'login' ? (
             <>
-              ¿No tienes cuenta? <Link to="/register" state={location.state}>Regístrate</Link>
+              {tr('¿No tienes cuenta?')}{' '}<Link to="/register" state={location.state}>{tr('Regístrate')}</Link>
             </>
           ) : (
             <>
-              ¿Ya tienes cuenta? <Link to="/login" state={location.state}>Inicia sesión</Link>
+              {tr('¿Ya tienes cuenta?')}{' '}<Link to="/login" state={location.state}>{tr('Inicia sesión')}</Link>
             </>
           )}
         </p>

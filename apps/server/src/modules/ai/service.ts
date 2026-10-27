@@ -1,5 +1,6 @@
 import { and, eq } from 'drizzle-orm';
 import {
+  tr,
   fxForHomebrew,
   fxForRow,
   applyDefenses,
@@ -148,7 +149,7 @@ export function createAiService(ctx: AppContext) {
 
   /** Ataque que usará: el de la configuración de IA o una fila de la tabla de ataques de su hoja. */
   function attackOf(template: SheetTemplate, character: Character | null, ai: TokenAi): Attack | null {
-    if (ai.attack) return { name: ai.attackName || 'Ataque', attack: ai.attack, damage: ai.damage, damageType: typeIn(`${ai.attackName} ${ai.damage}`) };
+    if (ai.attack) return { name: ai.attackName || tr('Ataque'), attack: ai.attack, damage: ai.damage, damageType: typeIn(`${ai.attackName} ${ai.damage}`) };
     const combat = combatOf(template);
     if (!character || !combat?.attacks) return null;
     const { list, name, attack, damage, extra, crit } = combat.attacks;
@@ -176,7 +177,7 @@ export function createAiService(ctx: AppContext) {
     const columns = allFields(template).find((f) => f.key === list)?.columns ?? [];
     const rollOf = (key: string) => columns.find((c) => c.key === key)?.roll || `@{${key}}`;
     return {
-      name: String(row[name] || 'Ataque'),
+      name: String(row[name] || tr('Ataque')),
       attack: rollOf(attack),
       damage: rollOf(damage),
       extra: extra && row[extra] ? splitRoll(String(row[extra])).expression || undefined : undefined,
@@ -238,7 +239,7 @@ export function createAiService(ctx: AppContext) {
     const g = scene.gridSize;
     const character = characterOf(item);
     const self = stats(template, character);
-    const name = item.name || character?.name || 'Enemigo';
+    const name = item.name || character?.name || tr('Enemigo');
     const gm = gmUser(campaignId, opts.userId);
     const base = {
       campaignId,
@@ -256,7 +257,7 @@ export function createAiService(ctx: AppContext) {
     const incapacitatedBy = (i: BoardItem) => statuses.find((d) => d.incapacitated && i.statuses.includes(d.id));
     const blocked = incapacitatedBy(item);
     if (blocked) {
-      const summary = `no puede actuar (${blocked.label.toLowerCase()})`;
+      const summary = tr('no puede actuar ({0})', { '0': tr(blocked.label).toLowerCase() });
       await say(base, 'emote', `${summary}.`, null);
       return { itemId: item.id, name, summary, moved: 0, attacked: false, hit: null, damage: null };
     }
@@ -312,13 +313,13 @@ export function createAiService(ctx: AppContext) {
 
     if (plan.path.length) await animate(scene, item, plan.path);
     const moved = plan.path.length;
-    const movedText = moved ? ` (se mueve ${formatDistance(moved, scene)})` : '';
+    const movedText = moved ? tr(' (se mueve {0})', { '0': formatDistance(moved, scene) }) : '';
     const result: AiTurnResult = { itemId: item.id, name, summary: plan.reason, moved, attacked: false, hit: null, damage: null };
 
     const target = targets.find((t) => t.id === plan.targetId);
     const attack = plan.attack && target ? attackOf(template, character, ai) : null;
     if (plan.attack && target && !attack) {
-      result.summary = `${plan.reason}, pero no tiene ningún ataque configurado`;
+      result.summary = tr('{reason}, pero no tiene ningún ataque configurado', { reason: plan.reason });
       await say(base, 'emote', `${result.summary}${movedText}.`, null);
       return result;
     }
@@ -330,8 +331,8 @@ export function createAiService(ctx: AppContext) {
     const nat = natural20(atk.rolls);
     const crit = nat !== null && nat >= (attack.critFrom ?? 20);
     const hit = crit ? true : nat === 1 ? false : target.ac === null ? null : atk.value >= target.ac;
-    const verdict = crit ? '¡crítico!' : hit === null ? '¿impacta?' : hit ? 'impacta' : nat === 1 ? 'pifia' : 'falla';
-    const acText = target.ac === null ? '' : ` (CA ${target.ac})`;
+    const verdict = crit ? tr('¡crítico!') : hit === null ? tr('¿impacta?') : hit ? tr('impacta') : nat === 1 ? tr('pifia') : tr('falla');
+    const acText = target.ac === null ? '' : tr(' (CA {ac})', { ac: target.ac });
     await say(base, 'roll', '', { label: `${attack.name} → ${target.name}${acText}: ${verdict}`, expression: attack.attack, total: atk.value, rolls: atk.rolls });
     const cue = attack.entry ? fxForHomebrew(attack.entry, crit) : fxForRow('attack', attack.name, [attack.damage, attack.extra].filter(Boolean).join(' '), crit);
     if (cue) await fx.play({ userId: gm.id, campaignId, originItemId: item.id, target: { sceneId: scene.id, targetIds: [target.item.id] }, cue, secret: base.secret });
@@ -377,9 +378,9 @@ export function createAiService(ctx: AppContext) {
         .where(eq(characters.id, before.id))
         .run();
       await broadcastCharacter(ctx, before, sheets.row(before.id));
-      applied = hp === 0 ? ` (${target.name} cae a 0)` : ` (${target.hp} → ${hp})`;
+      applied = hp === 0 ? tr(' ({name} cae a 0)', { name: target.name }) : ` (${target.hp} → ${hp})`;
     }
-    await say(base, 'roll', '', { label: `Daño a ${target.name}${crit ? ' (crítico)' : ''}${why}${applied}`, expression: [attack.damage, attack.extra].filter(Boolean).join(' + '), total: typed.reduce((s, p) => s + p.amount, 0), rolls });
+    await say(base, 'roll', '', { label: tr('Daño a {name}{1}{why}{applied}', { name: target.name, '1': crit ? tr(' (crítico)') : '', why, applied }), expression: [attack.damage, attack.extra].filter(Boolean).join(' + '), total: typed.reduce((s, p) => s + p.amount, 0), rolls });
     return result;
   }
 

@@ -1,5 +1,6 @@
 import { and, eq, inArray } from 'drizzle-orm';
 import {
+  tr,
   ActionError,
   actionsOf,
   allFields,
@@ -85,10 +86,10 @@ export function createHomebrewEffects(ctx: AppContext) {
           const spent = spendSlot(template, values, d.level, opts.slot);
           Object.assign(patch, spent.patch);
           castLevel = spent.slot;
-          notes.push(`espacio de nivel ${spent.slot}, quedan ${spent.left}/${spent.max}`);
+          notes.push(tr('espacio de nivel {slot}, quedan {left}/{max}', { slot: spent.slot, left: spent.left, max: spent.max }));
         } else {
           castLevel = Math.max(d.level, opts.slot ?? d.level);
-          notes.push(`nivel ${castLevel}`);
+          notes.push(tr('nivel {castLevel}', { castLevel }));
         }
       } else if (entry.kind === 'spell') notes.push('truco');
 
@@ -97,7 +98,7 @@ export function createHomebrewEffects(ctx: AppContext) {
       if (res) {
         const used = spendUse(template, current(), res._id);
         Object.assign(patch, used.patch);
-        notes.push(`quedan ${used.left}/${used.max} usos`);
+        notes.push(tr('quedan {left}/{max} usos', { left: used.left, max: used.max }));
       }
       // Consumibles: uno menos en el inventario.
       const inv = a.inventory;
@@ -107,7 +108,7 @@ export function createHomebrewEffects(ctx: AppContext) {
         if (qty <= 0) throw new ActionError(`No te quedan ${entry.name}`);
         const rows = current()[inv.list] as SheetRow[];
         patch[inv.list] = rows.map((r) => (r._id === item._id ? { ...r, [inv.qty]: qty - 1 } : r));
-        notes.push(`quedan ${qty - 1}`);
+        notes.push(tr('quedan {0}', { '0': qty - 1 }));
       }
 
       const r = rollHomebrew(d, { resolve: createResolver(template, values, opts.row), rng: secureRng, castLevel, kind: entry.kind });
@@ -124,7 +125,7 @@ export function createHomebrewEffects(ctx: AppContext) {
         conditions: d.conditions.filter((c) => statusesOf(template).some((s) => s.id === c)),
         area: d.area.shape !== 'none' && d.area.size > 0 ? { shape: d.area.shape, size: d.area.size } : null,
       };
-      const verdict = r.attack?.crit ? ' — ¡crítico!' : r.attack?.natural === 1 ? ' — pifia' : '';
+      const verdict = r.attack?.crit ? tr(' — ¡crítico!') : r.attack?.natural === 1 ? tr(' — pifia') : '';
       const label = `${entry.name}${notes.length ? ` (${notes.join(', ')})` : ''}${verdict}`;
       let roll: ChatRoll;
       if (r.attack) roll = { label, expression: r.attack.expression, total: r.attack.total, rolls: r.attack.rolls, parts: r.parts, crit: r.attack.crit, effect };
@@ -201,7 +202,7 @@ export function createHomebrewEffects(ctx: AppContext) {
 
     for (const item of items) {
       let character = damage.characterOf(item);
-      const name = item.name || character?.name || 'Token';
+      const name = item.name || character?.name || tr('Token');
       if (item.layer === 'gm') hidden = true;
       const resolve = character ? createResolver(template, character.values) : undefined;
       const pieces: string[] = [];
@@ -210,7 +211,7 @@ export function createHomebrewEffects(ctx: AppContext) {
       if (effect.attack) {
         const ac = resolve && combat?.ac ? formulaValue(combat.ac, resolve) : null;
         hit = effect.attack.crit || (effect.attack.natural !== 1 && (ac === null || effect.attack.total >= ac));
-        pieces.push(`${effect.attack.crit ? '¡crítico!' : hit ? 'impacta' : 'falla'}${ac !== null && !effect.attack.crit ? ` (CA ${ac})` : ''}`);
+        pieces.push(`${effect.attack.crit ? tr('¡crítico!') : hit ? tr('impacta') : tr('falla')}${ac !== null && !effect.attack.crit ? tr(' (CA {ac})', { ac }) : ''}`);
       }
       let saved = false;
       if (hit && effect.save) {
@@ -227,7 +228,7 @@ export function createHomebrewEffects(ctx: AppContext) {
           rolls = r.rolls;
         }
         saved = total >= effect.save.dc;
-        parts.push({ label: `${name}: salvación de ${effect.save.label} (CD ${effect.save.dc}) ${saved ? '✔ salva' : '✘ falla'}`, expression, total, rolls });
+        parts.push({ label: tr('{name}: salvación de {label} (CD {dc}) {3}', { name, label: tr(effect.save.label), dc: effect.save.dc, '3': saved ? tr('✔ salva') : tr('✘ falla') }), expression, total, rolls });
       }
 
       // Daño por tipos (los mensajes antiguos solo traen el total) con la salvación y luego las defensas.
@@ -248,7 +249,7 @@ export function createHomebrewEffects(ctx: AppContext) {
         await addStatuses(item, conditions);
         pieces.push(conditions.map((c) => statusDefs.find((s) => s.id === c)!.label.toLowerCase()).join(', '));
       }
-      lines.push(`${name}: ${pieces.join(', ') || 'sin efecto'}`);
+      lines.push(`${name}: ${pieces.join(', ') || tr('sin efecto')}`);
     }
 
     const message = chat.insert({
@@ -259,7 +260,7 @@ export function createHomebrewEffects(ctx: AppContext) {
       characterName: null,
       kind: 'roll',
       text: lines.join('\n'),
-      roll: { label: `${effect.name}: aplicado a ${items.length} token${items.length > 1 ? 's' : ''}`, expression: '', total: 0, rolls: [], parts },
+      roll: { label: tr('{name}: aplicado a {length} token{2}', { name: effect.name, length: items.length, '2': items.length > 1 ? 's' : '' }), expression: '', total: 0, rolls: [], parts },
       whisperTo: null,
       // Si hay tokens ocultos (capa del DM), el resumen solo lo ve el DM.
       secret: hidden || m.secret,

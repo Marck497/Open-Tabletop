@@ -1,5 +1,6 @@
 import { and, inArray } from 'drizzle-orm';
 import {
+  tr,
   applyDefenses,
   damagePatch,
   defensesOf,
@@ -65,24 +66,24 @@ export function createDamageService(ctx: AppContext) {
     const defended = applyDefenses(pieces, defensesOf(template, character?.values ?? null, item.statuses));
     const damage = defended.total;
     const why = defended.notes.length ? ` (${defended.notes.join(', ')})` : '';
-    if (damage <= 0) return { damage, text: `sin daño${why}`, character };
+    if (damage <= 0) return { damage, text: tr('sin daño{why}', { why }), character };
     const p = character ? damagePatch(template, character.values, damage) : null;
-    if (!character || !p) return { damage, text: `${damage} de daño${why} (sin hoja)`, character };
+    if (!character || !p) return { damage, text: tr('{damage} de daño{why} (sin hoja)', { damage, why }), character };
     const isPc = character.controlledBy.length > 0;
     const after = sheets.update(character.id, user.id, { values: p.patch }).after;
     await broadcastCharacter(ctx, character, after);
-    return { damage, text: `${damage} de daño${why}${isPc ? ` (${p.before} → ${p.after})` : p.after === 0 ? ' (cae a 0)' : ''}`, character: after };
+    return { damage, text: tr('{damage} de daño{why}{2}', { damage, why, '2': isPc ? ` (${p.before} → ${p.after})` : p.after === 0 ? tr(' (cae a 0)') : '' }), character: after };
   }
 
   /** Curación a la hoja (sin pasar del máximo). */
   async function heal(user: PublicUser, campaignId: string, item: BoardItem, character: Character | null, amount: number) {
     const template = sheets.getTemplate(campaignId);
     const p = character ? healPatch(template, character.values, amount) : null;
-    if (!character || !p) return { text: `cura ${amount} (sin hoja)`, character };
+    if (!character || !p) return { text: tr('cura {amount} (sin hoja)', { amount }), character };
     const isPc = character.controlledBy.length > 0;
     const after = sheets.update(character.id, user.id, { values: p.patch }).after;
     await broadcastCharacter(ctx, character, after);
-    return { text: `recupera ${p.after - p.before} PG${isPc ? ` (${p.before} → ${p.after})` : ''}`, character: after };
+    return { text: tr('recupera {0} PG{1}', { '0': p.after - p.before, '1': isPc ? ` (${p.before} → ${p.after})` : '' }), character: after };
   }
 
   /** Solo el DM: daño o curación a mano a unos tokens. La cantidad se tira aquí si lleva dados. */
@@ -105,13 +106,13 @@ export function createDamageService(ctx: AppContext) {
     const lines: string[] = [];
     for (const item of items) {
       const character = characterOf(item);
-      const name = item.name || character?.name || 'Token';
+      const name = item.name || character?.name || tr('Token');
       const r = kind === 'heal' ? await heal(user, campaignId, item, character, total) : await hurt(user, campaignId, item, character, [{ type, amount: total }]);
       lines.push(`${name}: ${r.text}`);
     }
 
-    const targets = `${items.length} token${items.length > 1 ? 's' : ''}`;
-    const label = kind === 'heal' ? `💚 Curación de ${total} a ${targets}` : `🩸 ${total} de daño${type ? ` de ${type}` : ''} a ${targets}`;
+    const targets = tr('{length} token{1}', { length: items.length, '1': items.length > 1 ? 's' : '' });
+    const label = kind === 'heal' ? tr('💚 Curación de {total} a {targets}', { total, targets }) : tr('🩸 {total} de daño{1} a {targets}', { total, '1': type ? tr(' de {type}', { type: tr(type) }) : '', targets });
     return chat.insert({
       campaignId,
       userId: user.id,

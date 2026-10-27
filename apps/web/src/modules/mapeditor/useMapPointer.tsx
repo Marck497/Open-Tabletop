@@ -22,6 +22,7 @@ import {
 } from '@vtt/shared';
 import { useBoard } from '../board/store';
 import { commitTerrain, placeItems, placePrefab, remember, removeItems, toggleDoorAt, useMapEditor } from './store';
+import { tr } from '../../core/i18n';
 
 interface Cell {
   x: number;
@@ -142,7 +143,7 @@ export function useMapPointer(scene: Scene | null, scale: number) {
         if (!def || !inside(c)) return;
         const placed = rotatePrefab(def, ed.prefabTurns);
         const at = fitPrefab(placed, w, h, c.x, c.y);
-        if (!at) return useBoard.getState().showNotice(`La sala (${placed.w} × ${placed.h}) no cabe en la escena: agrándala en Ajustes de la escena.`);
+        if (!at) return useBoard.getState().showNotice(tr('La sala ({w} × {h}) no cabe en la escena: agrándala en Ajustes de la escena.', { w: placed.w, h: placed.h }));
         void placePrefab(scene!, placed, at.x, at.y, def.outdoor);
       }
     }
@@ -270,7 +271,7 @@ function prefabPreview(scene: Scene, c: { x: number; y: number }, prefabId: stri
   const at = fitPrefab(p, w, h, c.x, c.y);
   if (!at) {
     return (
-      <Text x={c.x * g} y={c.y * g} text={`No cabe (${p.w} × ${p.h})`} fontSize={16 / scale} fill="#ff6b6b" shadowColor="#000" shadowBlur={3} listening={false} />
+      <Text x={c.x * g} y={c.y * g} text={tr('No cabe ({w} × {h})', { w: p.w, h: p.h })} fontSize={16 / scale} fill="#ff6b6b" shadowColor="#000" shadowBlur={3} listening={false} />
     );
   }
   const cells = p.rows.flatMap((row, y) =>

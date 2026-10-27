@@ -58,3 +58,12 @@ Cada partida es una sala de Socket.IO (`campaign:<id>`). Patrón general:
 1. El cliente envía una acción (evento con *acknowledgement*).
 2. El servidor valida permisos, guarda en SQLite y emite el cambio a la sala.
 3. Los clientes aplican el cambio. Lo que el DM oculta (capa del DM, niebla) se filtra **en el servidor** antes de enviarlo a los jugadores, nunca solo en la interfaz.
+
+## Idiomas
+
+La interfaz está en español y en inglés.
+
+- **Textos:** se escriben en español dentro de `tr('…')`, que es a la vez la clave. La traducción está en `packages/shared/src/i18n/en/` (`en/srd.ts` lo genera `scripts/srd/en-names.mjs`). Lo que no está en el diccionario sale tal cual, así que los textos propios de cada mesa no se tocan. Huecos con `{nombre}`: `tr('Turno de {name}', { name })`.
+- **Web:** el idioma se elige en cada navegador (selector arriba a la derecha o en *Mesa → Efectos*) y se guarda en `localStorage`. Cambiarlo recarga la página: `core/lang.ts` lo fija antes de cargar `@vtt/shared`, así que también las etiquetas fijas de ahí salen ya traducidas.
+- **Servidor:** cada partida tiene su idioma (`campaigns.lang`, por defecto el de quien la crea; el DM lo cambia en *Ajustes*). `requireMember` lo deja en un `AsyncLocalStorage` (`core/lang.ts`) y `tr()` lo usa para lo que escribe el servidor: chat, escenas nuevas, aventuras y hojas de monstruos. Los errores van siempre en español y la web los traduce al recibirlos.
+- **Datos:** la plantilla de hoja, los estados, los tipos de daño y los nombres del SRD se guardan en español; se traducen al mostrarlos (`tr()`, `localName()`). Los tipos de daño en inglés («fire») cuentan igual que en español para resistencias e inmunidades.

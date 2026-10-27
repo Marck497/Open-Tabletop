@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { checkSyntax } from '../expr.js';
 import type { Point } from './measure.js';
+import { tr } from '../i18n/index.js';
 
 /**
  * Trampas y zonas de aviso: un rectángulo en la capa del DM que «salta» cuando un token entra en él.
@@ -12,20 +13,20 @@ import type { Point } from './measure.js';
 
 export const TRIGGER_KINDS = ['trap', 'zone'] as const;
 export type TriggerKind = (typeof TRIGGER_KINDS)[number];
-export const TRIGGER_LABELS: Record<TriggerKind, string> = { trap: 'Trampa', zone: 'Zona de aviso' };
+export const TRIGGER_LABELS: Record<TriggerKind, string> = { trap: tr('Trampa'), zone: tr('Zona de aviso') };
 export const TRIGGER_ICONS: Record<TriggerKind, string> = { trap: '🪤', zone: '❗' };
 /** Color del rectángulo (lo ve solo el DM). */
 export const TRIGGER_COLORS: Record<TriggerKind, string> = { trap: '#e0533d', zone: '#4d9de0' };
 
 /** Quién la dispara: los tokens de los jugadores o cualquier token (también monstruos). */
 export const TRIGGER_WHO = ['players', 'all'] as const;
-export const TRIGGER_WHO_LABELS: Record<(typeof TRIGGER_WHO)[number], string> = { players: 'Tokens de jugadores', all: 'Cualquier token' };
+export const TRIGGER_WHO_LABELS: Record<(typeof TRIGGER_WHO)[number], string> = { players: tr('Tokens de jugadores'), all: tr('Cualquier token') };
 
 const expr = z
   .string()
   .trim()
   .max(60)
-  .refine((v) => !v || !checkSyntax(v), { message: 'Daño: fórmula no válida' });
+  .refine((v) => !v || !checkSyntax(v), { message: tr('Daño: fórmula no válida') });
 
 export const triggerSchema = z.object({
   kind: z.enum(TRIGGER_KINDS),

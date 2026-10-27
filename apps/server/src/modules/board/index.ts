@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { campaignRoom, measureSchema, movePathSchema, pingSchema, sceneRoom, userColor, type BoardItem } from '@vtt/shared';
+import { tr, campaignRoom, measureSchema, movePathSchema, pingSchema, sceneRoom, userColor, type BoardItem } from '@vtt/shared';
 import type { ServerModule } from '../../core/module.js';
 import { handleAck } from '../../core/socket-utils.js';
 import { requireUser } from '../auth/index.js';
@@ -27,7 +27,7 @@ export const boardModule: ServerModule = {
     const board = createBoardService(ctx);
     // Cada partida nueva empieza con una escena lista y activa.
     ctx.events.on('campaign:created', ({ campaignId, userId }) => {
-      const scene = board.createScene(campaignId, userId, { name: 'Escena 1' });
+      const scene = board.createScene(campaignId, userId, { name: tr('Escena 1') });
       board.setActiveScene(campaignId, userId, scene.id);
     });
     // Si echan a alguien, deja de recibir las escenas de esa partida.

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { CampaignSummary } from '@vtt/shared';
 import { api } from '../../core/api';
+import { tr } from '../../core/i18n';
 
 /** Enlace de invitación: /join/CODIGO une al usuario y lo lleva a la partida. */
 export function JoinPage() {
@@ -20,10 +21,10 @@ export function JoinPage() {
       {error ? (
         <>
           <p className="error">{error}</p>
-          <button onClick={() => navigate('/')}>Volver</button>
+          <button onClick={() => navigate('/')}>{tr('Volver')}</button>
         </>
       ) : (
-        <p className="muted">Uniéndote a la partida…</p>
+        <p className="muted">{tr('Uniéndote a la partida…')}</p>
       )}
     </main>
   );

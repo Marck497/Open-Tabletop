@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import {
+  tr,
   actionsOf,
   coinsOf,
   evaluate,
@@ -102,8 +103,8 @@ export function createLootService(ctx: AppContext) {
       characterId: null,
       characterName: null,
       kind: parts.length ? 'roll' : 'system',
-      text: `💰 Botín\n${lines.join('\n')}`,
-      roll: parts.length ? { label: '💰 Tesoro', expression: '', total: parts.reduce((s, p) => s + p.total, 0), rolls: [], parts } : null,
+      text: tr('💰 Botín\n{0}', { '0': lines.join('\n') }),
+      roll: parts.length ? { label: tr('💰 Tesoro'), expression: '', total: parts.reduce((s, p) => s + p.total, 0), rolls: [], parts } : null,
       whisperTo: null,
       secret: false,
     });

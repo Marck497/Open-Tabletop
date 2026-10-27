@@ -16,6 +16,7 @@ import {
   type SheetTemplate,
 } from '@vtt/shared';
 import { api } from '../../core/api';
+import { tr } from '../../core/i18n';
 
 interface Props {
   campaignId: string;
@@ -52,11 +53,11 @@ export function TemplateEditor({ campaignId, template, onClose }: Props) {
     for (const s of t.sections)
       for (const f of [...s.fields, ...s.fields.flatMap((x) => x.columns ?? [])]) {
         for (const [what, expr] of [
-          ['fórmula', f.formula],
+          [tr('fórmula'), f.formula],
           ['tirada', f.roll],
         ] as const) {
           const err = expr ? checkSyntax(expr) : null;
-          if (err) return `Campo "${f.key}", ${what}: ${err}`;
+          if (err) return tr('Campo "{key}", {what}: {err}', { key: f.key, what, err });
         }
       }
     return null;
@@ -68,7 +69,7 @@ export function TemplateEditor({ campaignId, template, onClose }: Props) {
       try {
         t = JSON.parse(json);
       } catch {
-        return setError('El JSON no es válido');
+        return setError(tr('El JSON no es válido'));
       }
     }
     const err = validate(t);
@@ -85,7 +86,7 @@ export function TemplateEditor({ campaignId, template, onClose }: Props) {
   }
 
   async function loadBuiltin(id: string) {
-    if (!confirm('Se sustituirá la plantilla actual por la elegida. Los valores ya escritos en las hojas se conservan. ¿Seguir?')) return;
+    if (!confirm(tr('Se sustituirá la plantilla actual por la elegida. Los valores ya escritos en las hojas se conservan. ¿Seguir?'))) return;
     await api.post(`/campaigns/${campaignId}/sheet-template/reset`, { builtinId: id });
     onClose();
   }
@@ -108,7 +109,7 @@ export function TemplateEditor({ campaignId, template, onClose }: Props) {
       setSectionIdx(0);
       setError(null);
     } catch {
-      setError('El archivo no es un JSON válido');
+      setError(tr('El archivo no es un JSON válido'));
     }
   }
 
@@ -119,7 +120,7 @@ export function TemplateEditor({ campaignId, template, onClose }: Props) {
         setDraft(JSON.parse(json));
         setSectionIdx(0);
       } catch {
-        return setError('El JSON no es válido');
+        return setError(tr('El JSON no es válido'));
       }
     setError(null);
     setJsonMode(!jsonMode);
@@ -129,10 +130,10 @@ export function TemplateEditor({ campaignId, template, onClose }: Props) {
     <div className="modal-backdrop">
       <div className="modal card template-editor">
         <div className="row spread">
-          <h2>Plantilla de hoja</h2>
+          <h2>{tr('Plantilla de hoja')}</h2>
           <div className="row">
             <select defaultValue="" onChange={(e) => e.target.value && void loadBuiltin(e.target.value)}>
-              <option value="">Cargar sistema de serie…</option>
+              <option value="">{tr('Cargar sistema de serie…')}</option>
               {Object.entries(BUILTIN_TEMPLATES).map(([id, b]) => (
                 <option key={id} value={id}>
                   {b.label}
@@ -140,14 +141,14 @@ export function TemplateEditor({ campaignId, template, onClose }: Props) {
               ))}
             </select>
             <button className="ghost small" onClick={exportJson}>
-              Exportar
+              {tr('Exportar')}
             </button>
             <label className="button-like ghost small">
-              Importar
+              {tr('Importar')}
               <input type="file" accept="application/json" hidden onChange={(e) => e.target.files?.[0] && void importJson(e.target.files[0])} />
             </label>
             <button className="ghost small" onClick={toggleJson}>
-              {jsonMode ? 'Editor visual' : 'Editar JSON'}
+              {jsonMode ? tr('Editor visual') : tr('Editar JSON')}
             </button>
           </div>
         </div>
@@ -158,7 +159,7 @@ export function TemplateEditor({ campaignId, template, onClose }: Props) {
           <>
             <div className="field-row">
               <label>
-                Nombre del sistema
+                {tr('Nombre del sistema')}
                 <input value={draft.name} onChange={(e) => update((t) => void (t.name = e.target.value))} />
               </label>
               <BarsEditor template={draft} update={update} />
@@ -169,17 +170,17 @@ export function TemplateEditor({ campaignId, template, onClose }: Props) {
               <nav className="template-sections">
                 {draft.sections.map((s, i) => (
                   <button key={i} className={`ghost ${i === sectionIdx ? 'active' : ''}`} onClick={() => setSectionIdx(i)}>
-                    {s.title || '(sin título)'}
+                    {s.title || tr('(sin título)')}
                   </button>
                 ))}
                 <button
                   className="ghost small"
                   onClick={() => {
-                    update((t) => void t.sections.push({ id: `seccion_${t.sections.length + 1}`, title: 'Nueva sección', columns: 2, fields: [] }));
+                    update((t) => void t.sections.push({ id: `seccion_${t.sections.length + 1}`, title: tr('Nueva sección'), columns: 2, fields: [] }));
                     setSectionIdx(draft.sections.length);
                   }}
                 >
-                  + Sección
+                  {tr('+ Sección')}
                 </button>
               </nav>
               {section && (
@@ -194,7 +195,7 @@ export function TemplateEditor({ campaignId, template, onClose }: Props) {
                     setSectionIdx(j);
                   }}
                   onDelete={() => {
-                    if (!confirm('¿Quitar esta sección?')) return;
+                    if (!confirm(tr('¿Quitar esta sección?'))) return;
                     update((t) => void t.sections.splice(sectionIdx, 1));
                     setSectionIdx(Math.max(0, sectionIdx - 1));
                   }}
@@ -205,23 +206,23 @@ export function TemplateEditor({ campaignId, template, onClose }: Props) {
         )}
 
         <details className="help">
-          <summary>Ayuda: fórmulas y tiradas</summary>
+          <summary>{tr('Ayuda: fórmulas y tiradas')}</summary>
           <p>
-            Las fórmulas usan las <b>claves</b> de otros campos: <code>floor((fue - 10) / 2)</code>. Funciones: <code>floor ceil round abs min max if(cond, a, b)</code>. Comparaciones: <code>== != &lt; &gt; &lt;= &gt;=</code>.
+            {tr('Las fórmulas usan las')}{' '}<b>{tr('claves')}</b>{' '}{tr('de otros campos:')}{' '}<code>floor((fue - 10) / 2)</code>. {tr('Funciones:')} <code>floor ceil round abs min max if(cond, a, b)</code>. {tr('Comparaciones:')} <code>== != &lt; &gt; &lt;= &gt;=</code>.
           </p>
           <p>
-            Las tiradas además admiten dados: <code>1d20 + @{'{fue_mod}'}</code>, ventaja <code>2d20kh1</code>, desventaja <code>2d20kl1</code>. Si un campo de texto contiene una tirada (p. ej. daño <code>1d8+3</code>), <code>@{'{dano}'}</code> la tira.
+            {tr('Las tiradas además admiten dados:')}{' '}<code>1d20 + @{'{fue_mod}'}</code>{tr(', ventaja')}{' '}<code>2d20kh1</code>{tr(', desventaja')}{' '}<code>2d20kl1</code>. {tr('Si un campo de texto contiene una tirada (p. ej. daño')} <code>1d8+3</code>), <code>@{'{dano}'}</code>{' '}{tr('la tira.')}
           </p>
-          <p>Cambiar una clave hace que los personajes pierdan el valor guardado con la clave antigua.</p>
+          <p>{tr('Cambiar una clave hace que los personajes pierdan el valor guardado con la clave antigua.')}</p>
         </details>
 
         {error && <p className="error">{error}</p>}
         <div className="row spread">
           <button className="ghost" onClick={onClose}>
-            Cancelar
+            {tr('Cancelar')}
           </button>
           <button className="primary" disabled={saving} onClick={() => void save()}>
-            Guardar plantilla
+            {tr('Guardar plantilla')}
           </button>
         </div>
       </div>
@@ -234,13 +235,13 @@ function BarsEditor({ template, update }: { template: SheetTemplate; update: (fn
   const numericKeys = template.sections.flatMap((s) => s.fields).filter((f) => f.type === 'number' || f.type === 'computed');
   return (
     <label>
-      Barra sobre los tokens (valor / máximo)
+      {tr('Barra sobre los tokens (valor / máximo)')}
       <span className="row">
         <select
           value={bar?.value ?? ''}
           onChange={(e) => update((t) => void (t.bars = e.target.value ? [{ value: e.target.value, max: bar?.max, color: bar?.color ?? '#c0392b' }] : []))}
         >
-          <option value="">Sin barra</option>
+          <option value="">{tr('Sin barra')}</option>
           {numericKeys.map((f) => (
             <option key={f.key} value={f.key}>
               {f.label} ({f.key})
@@ -249,7 +250,7 @@ function BarsEditor({ template, update }: { template: SheetTemplate; update: (fn
         </select>
         {bar && (
           <select value={bar.max ?? ''} onChange={(e) => update((t) => void (t.bars[0]!.max = e.target.value || undefined))}>
-            <option value="">Sin máximo</option>
+            <option value="">{tr('Sin máximo')}</option>
             {numericKeys.map((f) => (
               <option key={f.key} value={f.key}>
                 {f.label} ({f.key})
@@ -299,19 +300,19 @@ function CombatEditor({ template, update }: { template: SheetTemplate; update: (
   );
   return (
     <details className="help">
-      <summary>Combate, barras de vida, botones de acción e IA de enemigos</summary>
-      <p className="muted hint">Qué campos usan los enemigos con IA para atacar y para saber a quién le queda poca vida, y los botones de atacar, lanzar, usar y descansar de las hojas.</p>
+      <summary>{tr('Combate, barras de vida, botones de acción e IA de enemigos')}</summary>
+      <p className="muted hint">{tr('Qué campos usan los enemigos con IA para atacar y para saber a quién le queda poca vida, y los botones de atacar, lanzar, usar y descansar de las hojas.')}</p>
       <div className="field-row">
-        {pick('ac', 'Defensa (CA)')}
-        {pick('speed', 'Velocidad')}
+        {pick('ac', tr('Defensa (CA)'))}
+        {pick('speed', tr('Velocidad'))}
       </div>
       <div className="field-row">
-        {pick('hp', 'Vida actual (se le resta el daño)', fields.filter((f) => f.type === 'number'))}
-        {pick('hpMax', 'Vida máxima')}
+        {pick('hp', tr('Vida actual (se le resta el daño)'), fields.filter((f) => f.type === 'number'))}
+        {pick('hpMax', tr('Vida máxima'))}
       </div>
-      <div className="field-row">{pick('hpTemp', 'Puntos de golpe temporales', fields.filter((f) => f.type === 'number'))}</div>
+      <div className="field-row">{pick('hpTemp', tr('Puntos de golpe temporales'), fields.filter((f) => f.type === 'number'))}</div>
       <label>
-        Tabla de ataques
+        {tr('Tabla de ataques')}
         <select
           value={combat.attacks?.list ?? ''}
           onChange={(e) => {
@@ -320,7 +321,7 @@ function CombatEditor({ template, update }: { template: SheetTemplate; update: (
             set({ attacks: l ? { list: l.key, name: first, attack: first, damage: first } : null });
           }}
         >
-          <option value="">Ninguna</option>
+          <option value="">{tr('Ninguna')}</option>
           {lists.map((f) => (
             <option key={f.key} value={f.key}>
               {f.label} ({f.key})
@@ -331,38 +332,38 @@ function CombatEditor({ template, update }: { template: SheetTemplate; update: (
       {combat.attacks && list && (
         <>
           <div className="field-row three">
-            {col('name', 'Nombre')}
-            {col('attack', 'Tirada de ataque')}
-            {col('damage', 'Daño')}
+            {col('name', tr('Nombre'))}
+            {col('attack', tr('Tirada de ataque'))}
+            {col('damage', tr('Daño'))}
           </div>
           <div className="field-row">
-            {col('extra', 'Daño extra (opcional)', true)}
-            {col('crit', 'Crítico con (opcional)', true)}
+            {col('extra', tr('Daño extra (opcional)'), true)}
+            {col('crit', tr('Crítico con (opcional)'), true)}
           </div>
         </>
       )}
       <TableMapping
-        label="Tabla de conjuros (✨ Lanzar)"
+        label={tr('Tabla de conjuros (✨ Lanzar)')}
         lists={lists}
         value={combat.spells ?? null}
         columns={[
-          ['name', 'Nombre'],
-          ['level', 'Nivel (0 = truco)'],
-          ['effect', 'Tirada de efecto'],
+          ['name', tr('Nombre')],
+          ['level', tr('Nivel (0 = truco)')],
+          ['effect', tr('Tirada de efecto')],
         ]}
         onChange={(spells) => set({ spells: spells as CombatMapping['spells'] })}
       />
       <div className="field-row three">
         <label>
-          Espacios máx. ({'{n}'} = nivel)
+          {tr('Espacios máx. (')}{'{n}'}{' '}{tr('= nivel)')}
           <input value={combat.slots?.max ?? ''} placeholder="espacios_{n}_max" onChange={(e) => set({ slots: e.target.value ? { max: e.target.value, used: combat.slots?.used ?? '', pact: combat.slots?.pact ?? '' } : null })} />
         </label>
         <label>
-          Espacios gastados
+          {tr('Espacios gastados')}
           <input value={combat.slots?.used ?? ''} placeholder="espacios_{n}_usados" disabled={!combat.slots} onChange={(e) => set({ slots: { ...combat.slots!, used: e.target.value } })} />
         </label>
         <label>
-          Casilla de pacto
+          {tr('Casilla de pacto')}
           <select value={combat.slots?.pact ?? ''} disabled={!combat.slots} onChange={(e) => set({ slots: { ...combat.slots!, pact: e.target.value } })}>
             <option value="">—</option>
             {fields
@@ -376,55 +377,55 @@ function CombatEditor({ template, update }: { template: SheetTemplate; update: (
         </label>
       </div>
       <TableMapping
-        label="Tabla de recursos con usos (▶ Usar y descansos)"
+        label={tr('Tabla de recursos con usos (▶ Usar y descansos)')}
         lists={lists}
         value={combat.resources ?? null}
         columns={[
-          ['name', 'Nombre'],
-          ['uses', 'Usos que quedan'],
-          ['max', 'Máximo'],
-          ['recharge', 'Recarga ("corto" o "largo")'],
+          ['name', tr('Nombre')],
+          ['uses', tr('Usos que quedan')],
+          ['max', tr('Máximo')],
+          ['recharge', tr('Recarga ("corto" o "largo")')],
         ]}
         onChange={(resources) => set({ resources: resources as CombatMapping['resources'] })}
       />
       <TableMapping
-        label="Inventario (los objetos consumibles de ⚗ Creaciones restan de la cantidad)"
+        label={tr('Inventario (los objetos consumibles de ⚗ Creaciones restan de la cantidad)')}
         lists={lists}
         value={combat.inventory ?? null}
         columns={[
-          ['name', 'Nombre'],
-          ['qty', 'Cantidad'],
+          ['name', tr('Nombre')],
+          ['qty', tr('Cantidad')],
         ]}
         onChange={(inventory) => set({ inventory: inventory as CombatMapping['inventory'] })}
       />
-      <p className="muted hint">Para ⚗ Creaciones: con qué se tiran las salvaciones de las áreas y qué usan de serie los hechizos nuevos (vacío = lo de la 5e si la hoja tiene esos campos).</p>
+      <p className="muted hint">{tr('Para ⚗ Creaciones: con qué se tiran las salvaciones de las áreas y qué usan de serie los hechizos nuevos (vacío = lo de la 5e si la hoja tiene esos campos).')}</p>
       <div className="field-row">
         <label>
-          Salvaciones ({'{a}'} = característica)
+          {tr('Salvaciones (')}{'{a}'}{' '}{tr('= característica)')}
           <input value={combat.saves ?? ''} placeholder="sv_{a}" onChange={(e) => set({ saves: e.target.value || undefined })} />
         </label>
         <label>
-          Modificador de lanzamiento
+          {tr('Modificador de lanzamiento')}
           <input value={combat.spellMod ?? ''} placeholder="conj_mod" onChange={(e) => set({ spellMod: e.target.value || undefined })} />
         </label>
       </div>
       <div className="field-row">
         <label>
-          Bono de ataque de conjuro
+          {tr('Bono de ataque de conjuro')}
           <input value={combat.spellAttack ?? ''} placeholder="conj_ataque" onChange={(e) => set({ spellAttack: e.target.value || undefined })} />
         </label>
         <label>
-          CD de conjuro
+          {tr('CD de conjuro')}
           <input value={combat.spellDc ?? ''} placeholder="conj_cd" onChange={(e) => set({ spellDc: e.target.value || undefined })} />
         </label>
       </div>
-      <p className="muted hint">Para 🎯 Aplicar y la IA: campos de texto con los tipos de daño, separados por comas, que el personaje resiste (mitad), anula (inmune) o recibe doble (vulnerable).</p>
+      <p className="muted hint">{tr('Para 🎯 Aplicar y la IA: campos de texto con los tipos de daño, separados por comas, que el personaje resiste (mitad), anula (inmune) o recibe doble (vulnerable).')}</p>
       <div className="field-row">
         {(
           [
-            ['resist', 'Resistencias'],
-            ['immune', 'Inmunidades'],
-            ['vulnerable', 'Vulnerabilidades'],
+            ['resist', tr('Resistencias')],
+            ['immune', tr('Inmunidades')],
+            ['vulnerable', tr('Vulnerabilidades')],
           ] as const
         ).map(([k, label]) => (
           <label key={k}>
@@ -479,7 +480,7 @@ function TableMapping({
             onChange(l ? { list: l.key, ...Object.fromEntries(columns.map(([k]) => [k, l.columns?.find((c) => c.key === value?.[k])?.key ?? first])) } : null);
           }}
         >
-          <option value="">Ninguna</option>
+          <option value="">{tr('Ninguna')}</option>
           {lists.map((f) => (
             <option key={f.key} value={f.key}>
               {f.label} ({f.key})
@@ -521,7 +522,7 @@ function StatusesEditor({ template, update }: { template: SheetTemplate; update:
       .replace(/^_+|_+$/g, '')
       .slice(0, 40) || 'estado';
   function add() {
-    const label = prompt('Nombre del estado');
+    const label = prompt(tr('Nombre del estado'));
     if (!label?.trim()) return;
     let id = slug(label);
     while (list.some((d) => d.id === id)) id += '_2';
@@ -529,17 +530,17 @@ function StatusesEditor({ template, update }: { template: SheetTemplate; update:
   }
   return (
     <details className="help">
-      <summary>Estados de los tokens ({list.length})</summary>
+      <summary>{tr('Estados de los tokens (')}{list.length})</summary>
       <ul className="status-defs">
         {list.map((d, i) => (
           <li key={d.id} className="row">
-            <input className="status-icon" value={d.icon} maxLength={8} aria-label="Icono" onChange={(e) => patch(i, { icon: e.target.value || '❗' })} />
-            <input value={d.label} maxLength={40} aria-label="Nombre" onChange={(e) => patch(i, { label: e.target.value })} />
-            <label className="switch" title="La IA se salta el turno de quien lo tenga">
+            <input className="status-icon" value={d.icon} maxLength={8} aria-label={tr('Icono')} onChange={(e) => patch(i, { icon: e.target.value || '❗' })} />
+            <input value={d.label} maxLength={40} aria-label={tr('Nombre')} onChange={(e) => patch(i, { label: e.target.value })} />
+            <label className="switch" title={tr('La IA se salta el turno de quien lo tenga')}>
               <input type="checkbox" checked={d.incapacitated} onChange={(e) => patch(i, { incapacitated: e.target.checked })} />
-              Pierde el turno
+              {tr('Pierde el turno')}
             </label>
-            <button className="ghost small danger" title="Quitar" onClick={() => set((l) => l.filter((_, j) => j !== i))}>
+            <button className="ghost small danger" title={tr('Quitar')} onClick={() => set((l) => l.filter((_, j) => j !== i))}>
               ✕
             </button>
           </li>
@@ -547,10 +548,10 @@ function StatusesEditor({ template, update }: { template: SheetTemplate; update:
       </ul>
       <div className="row">
         <button className="ghost small" onClick={add}>
-          + Estado
+          {tr('+ Estado')}
         </button>
         <button className="ghost small" onClick={() => set(() => DND5E_STATUSES.map((d) => ({ ...d })))}>
-          Restaurar los de 5e
+          {tr('Restaurar los de 5e')}
         </button>
       </div>
     </details>
@@ -569,22 +570,22 @@ function SectionEditor({ section, onChange, onMove, onDelete }: SectionProps) {
     <div className="template-section">
       <div className="field-row three">
         <label>
-          Título
+          {tr('Título')}
           <input value={section.title} onChange={(e) => onChange((s) => void (s.title = e.target.value))} />
         </label>
         <label>
-          Columnas
+          {tr('Columnas')}
           <input type="number" min={1} max={6} value={section.columns} onChange={(e) => onChange((s) => void (s.columns = Number(e.target.value) || 1))} />
         </label>
         <div className="row end">
-          <button className="ghost small" onClick={() => onMove(-1)} title="Subir sección">
+          <button className="ghost small" onClick={() => onMove(-1)} title={tr('Subir sección')}>
             ↑
           </button>
-          <button className="ghost small" onClick={() => onMove(1)} title="Bajar sección">
+          <button className="ghost small" onClick={() => onMove(1)} title={tr('Bajar sección')}>
             ↓
           </button>
           <button className="ghost small danger" onClick={onDelete}>
-            Quitar sección
+            {tr('Quitar sección')}
           </button>
         </div>
       </div>
@@ -596,7 +597,7 @@ function SectionEditor({ section, onChange, onMove, onDelete }: SectionProps) {
 function FieldsEditor({ fields, onChange, allowList }: { fields: SheetField[]; onChange: (fn: (f: SheetField[]) => void) => void; allowList: boolean }) {
   const [open, setOpen] = useState<number | null>(null);
   const addField = () => {
-    onChange((f) => void f.push({ key: `campo_${Date.now().toString(36).slice(-4)}`, label: 'Nuevo campo', type: 'text' }));
+    onChange((f) => void f.push({ key: `campo_${Date.now().toString(36).slice(-4)}`, label: tr('Nuevo campo'), type: 'text' }));
     setOpen(fields.length);
   };
 
@@ -605,7 +606,7 @@ function FieldsEditor({ fields, onChange, allowList }: { fields: SheetField[]; o
       {fields.map((f, i) => (
         <div key={i} className={`field-editor ${open === i ? 'open' : ''}`}>
           <div className="field-summary" onClick={() => setOpen(open === i ? null : i)}>
-            <span>{f.label || '(sin etiqueta)'}</span>
+            <span>{f.label || tr('(sin etiqueta)')}</span>
             <code>{f.key}</code>
             <span className="muted">{FIELD_TYPE_LABELS[f.type]}</span>
             {f.roll && <span title={f.roll}>🎲</span>}
@@ -625,7 +626,7 @@ function FieldsEditor({ fields, onChange, allowList }: { fields: SheetField[]; o
         </div>
       ))}
       <button className="ghost small" onClick={addField}>
-        + Campo
+        {tr('+ Campo')}
       </button>
     </div>
   );
@@ -642,15 +643,15 @@ function FieldForm({ field, onChange, allowList }: { field: SheetField; onChange
     <div className="field-form">
       <div className="field-row three">
         <label>
-          Etiqueta
+          {tr('Etiqueta')}
           <input value={field.label} onChange={(e) => set('label', e.target.value)} />
         </label>
         <label>
-          Clave (para fórmulas)
+          {tr('Clave (para fórmulas)')}
           <input value={field.key} onChange={(e) => set('key', e.target.value.replace(/[^a-zA-Z0-9_]/g, '_'))} />
         </label>
         <label>
-          Tipo
+          {tr('Tipo')}
           <select value={field.type} onChange={(e) => set('type', e.target.value as FieldType)}>
             {types.map((t) => (
               <option key={t} value={t}>
@@ -662,7 +663,7 @@ function FieldForm({ field, onChange, allowList }: { field: SheetField; onChange
       </div>
       {field.type === 'computed' && (
         <label>
-          Fórmula
+          {tr('Fórmula')}
           <input value={field.formula ?? ''} placeholder="floor((fue - 10) / 2)" onChange={(e) => set('formula', opt(e.target.value))} />
           {formulaErr && <small className="error">{formulaErr}</small>}
         </label>
@@ -670,12 +671,12 @@ function FieldForm({ field, onChange, allowList }: { field: SheetField; onChange
       {field.type !== 'list' && (
         <div className="field-row">
           <label>
-            Tirada (opcional)
+            {tr('Tirada (opcional)')}
             <input value={field.roll ?? ''} placeholder="1d20 + @{fue_mod}" onChange={(e) => set('roll', opt(e.target.value))} />
             {rollErr && <small className="error">{rollErr}</small>}
           </label>
           <label>
-            Nombre de la tirada
+            {tr('Nombre de la tirada')}
             <input value={field.rollLabel ?? ''} placeholder={field.label} onChange={(e) => set('rollLabel', opt(e.target.value))} />
           </label>
         </div>
@@ -683,13 +684,13 @@ function FieldForm({ field, onChange, allowList }: { field: SheetField; onChange
       {field.roll && field.type !== 'list' && (
         <label className="switch">
           <input type="checkbox" checked={field.initiative ?? false} onChange={(e) => set('initiative', e.target.checked || undefined)} />
-          Esta tirada es la iniciativa (añade al personaje al orden de turnos)
+          {tr('Esta tirada es la iniciativa (añade al personaje al orden de turnos)')}
         </label>
       )}
       <div className="field-row three">
         {!['computed', 'list'].includes(field.type) && (
           <label>
-            Valor inicial
+            {tr('Valor inicial')}
             <input
               value={field.default === undefined ? '' : String(field.default)}
               onChange={(e) => {
@@ -700,17 +701,17 @@ function FieldForm({ field, onChange, allowList }: { field: SheetField; onChange
           </label>
         )}
         <label>
-          Ancho (columnas)
+          {tr('Ancho (columnas)')}
           <input type="number" min={1} max={6} value={field.span ?? 1} onChange={(e) => set('span', Number(e.target.value) > 1 ? Number(e.target.value) : undefined)} />
         </label>
         <label>
-          Ayuda (tooltip)
+          {tr('Ayuda (tooltip)')}
           <input value={field.hint ?? ''} onChange={(e) => set('hint', opt(e.target.value))} />
         </label>
       </div>
       {field.type === 'select' && (
         <label>
-          Opciones (una por línea, «valor: Etiqueta»)
+          {tr('Opciones (una por línea, «valor: Etiqueta»)')}
           <textarea
             rows={4}
             defaultValue={(field.options ?? []).map((o) => `${o.value}: ${o.label}`).join('\n')}
@@ -732,7 +733,7 @@ function FieldForm({ field, onChange, allowList }: { field: SheetField; onChange
       )}
       {field.type === 'list' && (
         <div className="list-columns">
-          <span className="sheet-label">Columnas de la tabla</span>
+          <span className="sheet-label">{tr('Columnas de la tabla')}</span>
           <FieldsEditor
             fields={field.columns ?? []}
             allowList={false}

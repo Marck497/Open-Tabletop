@@ -1,6 +1,7 @@
 import { allFields, computeAll, createResolver, type CombatMapping, type SheetRow, type SheetTemplate, type SheetValues } from '../schemas/sheet.js';
 import { evaluate } from '../expr.js';
 import { BUILTIN_TEMPLATES, combatOf } from './index.js';
+import { tr } from '../i18n/index.js';
 
 /**
  * Botones de acción de la hoja: atacar, lanzar conjuros gastando espacios, gastar usos de
@@ -108,22 +109,22 @@ export class ActionError extends Error {}
 export function spendSlot(template: SheetTemplate, values: SheetValues, spellLevel: number, slot?: number): { patch: SheetValues; slot: number; left: number; max: number } {
   const a = actionsOf(template);
   const slots = slotsOf(template, values);
-  if (!a.slots || !slots.length) throw new ActionError('Esta hoja no tiene espacios de conjuro');
+  if (!a.slots || !slots.length) throw new ActionError(tr('Esta hoja no tiene espacios de conjuro'));
   const pick = slot !== undefined ? slots.find((s) => s.level === slot) : slots.find((s) => s.level >= spellLevel && s.used < s.max);
-  if (!pick || pick.level < spellLevel) throw new ActionError(slot !== undefined ? `No se puede lanzar con un espacio de nivel ${slot}` : `No te quedan espacios de nivel ${spellLevel} o superior`);
-  if (pick.used >= pick.max) throw new ActionError(`No te quedan espacios de nivel ${pick.level}`);
+  if (!pick || pick.level < spellLevel) throw new ActionError(slot !== undefined ? tr('No se puede lanzar con un espacio de nivel {slot}', { slot }) : tr('No te quedan espacios de nivel {spellLevel} o superior', { spellLevel }));
+  if (pick.used >= pick.max) throw new ActionError(tr('No te quedan espacios de nivel {level}', { level: pick.level }));
   return { patch: { [slotKey(a.slots.used, pick.level)]: pick.used + 1 }, slot: pick.level, left: pick.max - pick.used - 1, max: pick.max };
 }
 
 /** Gasta un uso de un recurso. */
 export function spendUse(template: SheetTemplate, values: SheetValues, rowId: string): { patch: SheetValues; name: string; left: number; max: number } {
   const r = actionsOf(template).resources;
-  if (!r) throw new ActionError('Esta hoja no tiene tabla de recursos');
+  if (!r) throw new ActionError(tr('Esta hoja no tiene tabla de recursos'));
   const rows = rowsOf(values, r.list);
   const row = rows.find((x) => x._id === rowId);
-  if (!row) throw new ActionError('Recurso no encontrado');
+  if (!row) throw new ActionError(tr('Recurso no encontrado'));
   const uses = num(row[r.uses]);
-  if (uses <= 0) throw new ActionError(`No te quedan usos de ${String(row[r.name] || 'ese recurso')}`);
+  if (uses <= 0) throw new ActionError(tr('No te quedan usos de {0}', { '0': String(row[r.name] || tr('ese recurso')) }));
   return {
     patch: { [r.list]: rows.map((x) => (x._id === rowId ? { ...x, [r.uses]: uses - 1 } : x)) },
     name: String(row[r.name] ?? ''),
@@ -149,7 +150,7 @@ export function restPatch(template: SheetTemplate, values: SheetValues, kind: Re
       const max = keys.has(a.hpMax) ? num(values[a.hpMax] ?? computeAll(template, values)[a.hpMax]) : num(computeAll(template, values)[a.hpMax]);
       if (max > 0 && num(values[a.hp]) < max) {
         patch[a.hp] = max;
-        recovered.push('los PG');
+        recovered.push(tr('los PG'));
       }
     }
     if (a.hpTemp && num(values[a.hpTemp]) !== 0) patch[a.hpTemp] = 0;
@@ -163,7 +164,7 @@ export function restPatch(template: SheetTemplate, values: SheetValues, kind: Re
         any = true;
       }
     }
-    if (any) recovered.push(pact && kind === 'short' ? 'los espacios de pacto' : 'los espacios de conjuro');
+    if (any) recovered.push(pact && kind === 'short' ? tr('los espacios de pacto') : tr('los espacios de conjuro'));
   }
   if (a.resources) {
     const r = a.resources;

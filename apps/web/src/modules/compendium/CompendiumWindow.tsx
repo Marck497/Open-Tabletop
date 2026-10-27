@@ -1,15 +1,16 @@
 import { useMemo, useState } from 'react';
-import { crValue, MONSTERS, monsterAi, SIZE_CELLS, type Character, type Monster } from '@vtt/shared';
+import { localName, crValue, MONSTERS, monsterAi, SIZE_CELLS, type Character, type Monster } from '@vtt/shared';
 import { api } from '../../core/api';
 import { useBoard } from '../board/store';
 import { addCharacterToken } from '../sheets/tokens';
 import { useSheets } from '../sheets/store';
+import { lang, tr } from '../../core/i18n';
 
 const CR_FILTERS = [
-  { id: 'all', label: 'Todos', test: () => true },
-  { id: 'low', label: 'VD ≤ 1', test: (cr: number) => cr <= 1 },
-  { id: 'mid', label: 'VD 2-4', test: (cr: number) => cr >= 2 && cr <= 4 },
-  { id: 'high', label: 'VD 5+', test: (cr: number) => cr >= 5 },
+  { id: 'all', label: tr('Todos'), test: () => true },
+  { id: 'low', label: tr('VD ≤ 1'), test: (cr: number) => cr <= 1 },
+  { id: 'mid', label: tr('VD 2-4'), test: (cr: number) => cr >= 2 && cr <= 4 },
+  { id: 'high', label: tr('VD 5+'), test: (cr: number) => cr >= 5 },
 ] as const;
 
 const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
@@ -27,7 +28,7 @@ export function CompendiumWindow({ campaignId, onClose }: { campaignId: string; 
   const list = useMemo(() => {
     const q = norm(query.trim());
     const test = CR_FILTERS.find((f) => f.id === filter)!.test;
-    return MONSTERS.filter((m) => test(crValue(m.cr)) && (!q || norm(`${m.name} ${m.en} ${m.type}`).includes(q))).sort(
+    return MONSTERS.filter((m) => test(crValue(m.cr)) && (!q || norm(`${m.name} ${m.en} ${m.type} ${tr(m.type)}`).includes(q))).sort(
       (a, b) => crValue(a.cr) - crValue(b.cr) || a.name.localeCompare(b.name),
     );
   }, [query, filter]);
@@ -37,12 +38,12 @@ export function CompendiumWindow({ campaignId, onClose }: { campaignId: string; 
     setMessage(null);
     try {
       for (let i = 1; i <= count; i++) {
-        const name = count > 1 ? `${m.name} ${i}` : m.name;
+        const name = count > 1 ? `${localName(m)} ${i}` : localName(m);
         const { character } = await api.post<{ character: Character }>(`/campaigns/${campaignId}/compendium/${m.id}`, { name });
         useSheets.getState().upsert(character);
         if (toBoard) await addCharacterToken(character, { cells: SIZE_CELLS[m.size], ai: monsterAi(m) });
       }
-      setMessage(`${count > 1 ? `${count} × ` : ''}${m.name}: ${toBoard ? 'en el tablero con la IA activada' : 'añadido a Personajes'}.`);
+      setMessage(`${count > 1 ? `${count} × ` : ''}${localName(m)}: ${toBoard ? tr('en el tablero con la IA activada') : tr('añadido a Personajes')}.`);
     } catch (e) {
       setMessage((e as Error).message);
     } finally {
@@ -52,15 +53,15 @@ export function CompendiumWindow({ campaignId, onClose }: { campaignId: string; 
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="card modal compendium" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Compendio de monstruos">
+      <div className="card modal compendium" onClick={(e) => e.stopPropagation()} role="dialog" aria-label={tr('Compendio de monstruos')}>
         <div className="row spread">
-          <h2>📖 Compendio de monstruos</h2>
-          <button className="ghost small" onClick={onClose} title="Cerrar">
+          <h2>{tr('📖 Compendio de monstruos')}</h2>
+          <button className="ghost small" onClick={onClose} title={tr('Cerrar')}>
             ✕
           </button>
         </div>
         <div className="row">
-          <input placeholder="Buscar (nombre, inglés o tipo)" value={query} onChange={(e) => setQuery(e.target.value)} autoFocus />
+          <input placeholder={tr('Buscar (nombre, inglés o tipo)')} value={query} onChange={(e) => setQuery(e.target.value)} autoFocus />
           {CR_FILTERS.map((f) => (
             <button key={f.id} className={`small ${filter === f.id ? 'active' : ''}`} onClick={() => setFilter(f.id)}>
               {f.label}
@@ -68,9 +69,9 @@ export function CompendiumWindow({ campaignId, onClose }: { campaignId: string; 
           ))}
         </div>
         <label className="switch">
-          Cuántos
+          {tr('Cuántos')}
           <input type="number" className="tiny-number" min={1} max={10} value={count} onChange={(e) => setCount(Math.max(1, Math.min(10, Math.round(Number(e.target.value)) || 1)))} />
-          <small className="muted">(cada uno con su hoja, para llevar su vida por separado)</small>
+          <small className="muted">{tr('(cada uno con su hoja, para llevar su vida por separado)')}</small>
         </label>
         {message && <p className="muted">{message}</p>}
         <ul className="compendium-list">
@@ -78,32 +79,32 @@ export function CompendiumWindow({ campaignId, onClose }: { campaignId: string; 
             <li key={m.id}>
               <div className="row spread compendium-row">
                 <button className="ghost compendium-name" onClick={() => setOpenId(openId === m.id ? null : m.id)}>
-                  <strong>{m.name}</strong> <small className="muted">{m.en}</small>
+                  <strong>{localName(m)}</strong> {lang === 'es' && <small className="muted">{m.en}</small>}
                 </button>
                 <span className="compendium-stats">
-                  VD {m.cr} · CA {m.ac} · PG {m.hp}
+                  {tr('VD')} {m.cr}{' '}{tr('· CA')}{' '}{m.ac}{' '}{tr('· PG')}{' '}{m.hp}
                 </span>
                 <span className="row">
-                  <button className="ghost small" disabled={busy} onClick={() => void add(m, false)} title="Crea su hoja en Personajes">
-                    + Hoja
+                  <button className="ghost small" disabled={busy} onClick={() => void add(m, false)} title={tr('Crea su hoja en Personajes')}>
+                    {tr('+ Hoja')}
                   </button>
-                  <button className="small primary" disabled={busy || !hasScene} onClick={() => void add(m, true)} title="Crea su hoja y su token en el centro de la vista, con la IA activada">
-                    + Al tablero
+                  <button className="small primary" disabled={busy || !hasScene} onClick={() => void add(m, true)} title={tr('Crea su hoja y su token en el centro de la vista, con la IA activada')}>
+                    {tr('+ Al tablero')}
                   </button>
                 </span>
               </div>
               {openId === m.id && <MonsterDetails m={m} />}
             </li>
           ))}
-          {list.length === 0 && <p className="muted">Ningún monstruo coincide.</p>}
+          {list.length === 0 && <p className="muted">{tr('Ningún monstruo coincide.')}</p>}
         </ul>
-        <p className="muted hint">Datos del SRD 5.1 de D&D (CC-BY-4.0). Al añadirlos puedes cambiar lo que quieras en su hoja.</p>
+        <p className="muted hint">{tr('Datos del SRD 5.1 de D&D (CC-BY-4.0). Al añadirlos puedes cambiar lo que quieras en su hoja.')}</p>
       </div>
     </div>
   );
 }
 
-const ABILITY_LABELS = ['FUE', 'DES', 'CON', 'INT', 'SAB', 'CAR'];
+const ABILITY_LABELS = ['FUE', 'DES', 'CON', 'INT', 'SAB', 'CAR'].map((a) => tr(a));
 const mod = (v: number) => {
   const m = Math.floor((v - 10) / 2);
   return m >= 0 ? `+${m}` : `${m}`;
@@ -114,7 +115,7 @@ function MonsterDetails({ m }: { m: Monster }) {
   return (
     <div className="monster-details">
       <p className="muted">
-        {m.type}, {m.size} · {m.speed} pies{m.speedNote ? `, ${m.speedNote}` : ''} · Dados de golpe {m.hitDice}
+        {tr(m.type)}, {tr(m.size)} · {m.speed} {tr('pies')}{m.speedNote ? `, ${tr(m.speedNote)}` : ''}{' '}{tr('· Dados de golpe')}{' '}{m.hitDice}
       </p>
       <div className="ability-row">
         {m.abilities.map((v, i) => (
@@ -126,13 +127,13 @@ function MonsterDetails({ m }: { m: Monster }) {
       <ul>
         {m.attacks.map((a) => (
           <li key={a.name}>
-            <strong>{a.name}</strong> {a.bonus} al ataque, {a.ranged ? `a distancia ${a.reach * 5} pies` : `alcance ${a.reach * 5} pies`}: {a.damage} {a.type}
+            <strong>{tr(a.name)}</strong> {a.bonus}{' '}{tr('al ataque,')}{' '}{a.ranged ? tr('a distancia {0} pies', { '0': a.reach * 5 }) : tr('alcance {0} pies', { '0': a.reach * 5 })}: {a.damage} {tr(a.type)}
           </li>
         ))}
       </ul>
-      {m.traits && <p>{m.traits}</p>}
+      {m.traits && <p>{tr(m.traits)}</p>}
       <p className="muted">
-        IA: {ai.behavior === 'ranged' ? 'a distancia' : ai.behavior === 'cautious' ? 'prudente' : ai.behavior === 'guard' ? 'guardián' : 'cuerpo a cuerpo'}, ataca con {m.attacks[ai.attackIndex]?.name}.
+        {tr('IA:')}{' '}{ai.behavior === 'ranged' ? tr('a distancia') : ai.behavior === 'cautious' ? tr('prudente') : ai.behavior === 'guard' ? tr('guardián') : tr('cuerpo a cuerpo')}{tr(', ataca con')}{' '}{m.attacks[ai.attackIndex]?.name}.
       </p>
     </div>
   );

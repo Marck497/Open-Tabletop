@@ -1,3 +1,4 @@
+import { tr } from './i18n/index.js';
 /**
  * Mini lenguaje de fórmulas y tiradas, seguro (sin eval) y compartido por servidor y web.
  *
@@ -99,7 +100,7 @@ function tokenize(src: string): Token[] {
       i += op[0].length;
       continue;
     }
-    throw new ExprError(`Carácter no válido: "${c}"`);
+    throw new ExprError(tr('Carácter no válido: "{c}"', { c }));
   }
   return out;
 }
@@ -137,13 +138,13 @@ function parse(tokens: Token[]): Node {
     return t?.t === 'op' && t.v === v;
   };
   const expect = (v: string) => {
-    if (!isOp(v)) throw new ExprError(`Se esperaba "${v}"`);
+    if (!isOp(v)) throw new ExprError(tr('Se esperaba "{v}"', { v }));
     pos++;
   };
 
   function primary(): Node {
     const t = tokens[pos++];
-    if (!t) throw new ExprError('Expresión incompleta');
+    if (!t) throw new ExprError(tr('Expresión incompleta'));
     switch (t.t) {
       case 'num':
         return { k: 'num', v: t.v };
@@ -171,7 +172,7 @@ function parse(tokens: Token[]): Node {
         }
         if (t.v === '-' || t.v === '+' || t.v === '!') return { k: 'un', op: t.v, a: primary() };
     }
-    throw new ExprError('Expresión no válida');
+    throw new ExprError(tr('Expresión no válida'));
   }
 
   function expr(minPrec: number): Node {
@@ -187,7 +188,7 @@ function parse(tokens: Token[]): Node {
   }
 
   const root = expr(0);
-  if (pos < tokens.length) throw new ExprError('Sobra texto al final de la expresión');
+  if (pos < tokens.length) throw new ExprError(tr('Sobra texto al final de la expresión'));
   return root;
 }
 
@@ -235,8 +236,8 @@ function evaluateNode(node: Node, opts: EvalOptions, rolls: DiceRoll[], depth: n
     }
     case 'dice': {
       const { count, sides, keep, raw } = node.tok;
-      if (!opts.rng) throw new ExprError('Las fórmulas no pueden tirar dados');
-      if (count > MAX_DICE || sides > MAX_SIDES || sides < 1) throw new ExprError('Demasiados dados');
+      if (!opts.rng) throw new ExprError(tr('Las fórmulas no pueden tirar dados'));
+      if (count > MAX_DICE || sides > MAX_SIDES || sides < 1) throw new ExprError(tr('Demasiados dados'));
       const results = Array.from({ length: count }, () => 1 + Math.floor(opts.rng!() * sides));
       let kept = results.map((_, i) => i);
       if (keep) {
@@ -280,11 +281,11 @@ function evaluateNode(node: Node, opts: EvalOptions, rolls: DiceRoll[], depth: n
         case '>=':
           return num(a) >= num(b) ? 1 : 0;
       }
-      throw new ExprError(`Operador desconocido ${node.op}`);
+      throw new ExprError(tr('Operador desconocido {op}', { op: node.op }));
     }
     case 'call': {
       const fn = FUNCS[node.fn];
-      if (!fn) throw new ExprError(`Función desconocida: ${node.fn}`);
+      if (!fn) throw new ExprError(tr('Función desconocida: {fn}', { fn: node.fn }));
       if (node.fn === 'if') {
         const [c, a, b] = node.args;
         const cond = c ? evaluateNode(c, opts, rolls, depth) : 0;

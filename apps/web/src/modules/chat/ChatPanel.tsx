@@ -6,6 +6,7 @@ import { RollDetail } from '../dice/RollDetail';
 import { useSheets } from '../sheets/store';
 import { useTutorial } from '../tutorial/store';
 import { useChat } from './useChat';
+import { tr } from '../../core/i18n';
 
 interface Props {
   campaignId: string;
@@ -74,10 +75,10 @@ export function ChatPanel({ campaignId, isGm, meId, members }: Props) {
       >
         {hasMore && messages.length > 0 && (
           <button className="ghost small load-older" onClick={() => void loadOlder()}>
-            Cargar anteriores
+            {tr('Cargar anteriores')}
           </button>
         )}
-        {messages.length === 0 && <p className="muted hint">Aún no hay mensajes. Prueba con <code>/r 1d20</code>.</p>}
+        {messages.length === 0 && <p className="muted hint">{tr('Aún no hay mensajes. Prueba con')}{' '}<code>/r 1d20</code>.</p>}
         {messages.map((m) => (
           <Message key={m.id} m={m} meId={meId} isGm={isGm} nameOf={nameOf} />
         ))}
@@ -95,8 +96,8 @@ export function ChatPanel({ campaignId, isGm, meId, members }: Props) {
       <form className="chat-form" onSubmit={send}>
         <div className="row">
           {mine.length > 0 && (
-            <select value={as} onChange={(e) => setAs(e.target.value)} title="Hablar como">
-              <option value="">Yo</option>
+            <select value={as} onChange={(e) => setAs(e.target.value)} title={tr('Hablar como')}>
+              <option value="">{tr('Yo')}</option>
               {mine.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
@@ -104,23 +105,23 @@ export function ChatPanel({ campaignId, isGm, meId, members }: Props) {
               ))}
             </select>
           )}
-          <button type="button" className="ghost small" onClick={() => setShowHelp((v) => !v)} title="Comandos">
+          <button type="button" className="ghost small" onClick={() => setShowHelp((v) => !v)} title={tr('Comandos')}>
             ?
           </button>
           {isGm && (
             <button
               type="button"
               className="ghost small danger"
-              title="Vaciar chat"
-              onClick={() => confirm('¿Borrar todo el historial del chat?') && void api.delete(`/campaigns/${campaignId}/chat`)}
+              title={tr('Vaciar chat')}
+              onClick={() => confirm(tr('¿Borrar todo el historial del chat?')) && void api.delete(`/campaigns/${campaignId}/chat`)}
             >
-              Vaciar
+              {tr('Vaciar')}
             </button>
           )}
         </div>
         <input
           value={text}
-          placeholder="Escribe o tira: /r 1d20+3"
+          placeholder={tr('Escribe o tira: /r 1d20+3')}
           maxLength={2000}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => {
@@ -163,7 +164,7 @@ function Message({ m, meId, isGm, nameOf }: { m: ChatMessage; meId: string; isGm
       <strong>{who}</strong>
       {m.characterName && <small className="muted"> ({m.userName})</small>}
       {m.whisperTo && (
-        <small className="muted"> {m.userId === meId ? `susurra a ${m.whisperTo.map(nameOf).join(', ')}` : 'te susurra'}</small>
+        <small className="muted"> {m.userId === meId ? tr('susurra a {0}', { '0': m.whisperTo.map(nameOf).join(', ') }) : tr('te susurra')}</small>
       )}
       : <span className="chat-text">{m.text}</span>
     </div>

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { tr } from '../../core/i18n';
 
 interface Props {
   icon: string;
@@ -33,7 +34,7 @@ export function ToolMenu({ icon, label, title, on, inline, children, ...rest }: 
     <div className="tool-group tool-menu" ref={ref} data-tour={rest['data-tour']}>
       <button className={`small ${open ? 'open' : ''}`} title={title} aria-haspopup="true" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
         {icon} {label}
-        {on && <span className="tool-on" aria-label="activado" />}
+        {on && <span className="tool-on" aria-label={tr('activado')} />}
         <span className="caret" aria-hidden>
           ▾
         </span>

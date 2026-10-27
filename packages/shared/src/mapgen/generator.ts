@@ -1,6 +1,7 @@
 import { generateCave, generateDungeon, isSolidCell, seededRng, type GeneratedMap } from '../schemas/terrain.js';
 import { furnishRoomKinds, type GeneratedObject, type RoomKind } from './furnish.js';
 import { generateForest, generateRoad, generateVillage } from './outdoor.js';
+import { tr } from '../i18n/index.js';
 
 /**
  * Generador de mapas con estilos (mazmorra, cripta, castillo, alcantarillas, mina, cueva, y de
@@ -13,7 +14,7 @@ export type MapStyle = (typeof MAP_STYLES)[number];
 
 export const MAP_SIZES = ['few', 'normal', 'many'] as const;
 export type MapSize = (typeof MAP_SIZES)[number];
-export const MAP_SIZE_LABELS: Record<MapSize, string> = { few: 'Pocas salas', normal: 'Normal', many: 'Muchas salas' };
+export const MAP_SIZE_LABELS: Record<MapSize, string> = { few: tr('Pocas salas'), normal: tr('Normal'), many: tr('Muchas salas') };
 
 interface StyleDef {
   name: string;
@@ -36,9 +37,9 @@ interface StyleDef {
 
 export const MAP_STYLE_DEFS: Record<MapStyle, StyleDef> = {
   dungeon: {
-    name: 'Mazmorra',
+    name: tr('Mazmorra'),
     icon: '🏰',
-    description: 'Salas de piedra unidas por pasillos, con almacenes, cuarteles, celdas y algún tesoro.',
+    description: tr('Salas de piedra unidas por pasillos, con almacenes, cuarteles, celdas y algún tesoro.'),
     floor: 'p',
     corridor: 'c',
     minRoom: 3,
@@ -55,9 +56,9 @@ export const MAP_STYLE_DEFS: Record<MapStyle, StyleDef> = {
     ],
   },
   crypt: {
-    name: 'Cripta',
+    name: tr('Cripta'),
     icon: '⚰️',
-    description: 'Tumbas, osarios y capillas a la luz de las velas.',
+    description: tr('Tumbas, osarios y capillas a la luz de las velas.'),
     floor: 'p',
     corridor: 'p',
     minRoom: 3,
@@ -72,9 +73,9 @@ export const MAP_STYLE_DEFS: Record<MapStyle, StyleDef> = {
     ],
   },
   castle: {
-    name: 'Castillo',
+    name: tr('Castillo'),
     icon: '👑',
-    description: 'Salas grandes de mármol: trono, comedor, dormitorios, armería, biblioteca y cocina.',
+    description: tr('Salas grandes de mármol: trono, comedor, dormitorios, armería, biblioteca y cocina.'),
     floor: 'm',
     corridor: 'p',
     minRoom: 4,
@@ -91,9 +92,9 @@ export const MAP_STYLE_DEFS: Record<MapStyle, StyleDef> = {
     ],
   },
   sewer: {
-    name: 'Alcantarillas',
+    name: tr('Alcantarillas'),
     icon: '🌊',
-    description: 'Canales de agua entre salas de adoquín: cisternas, nidos de ratas y escombros.',
+    description: tr('Canales de agua entre salas de adoquín: cisternas, nidos de ratas y escombros.'),
     floor: 'c',
     corridor: 'a',
     minRoom: 3,
@@ -108,9 +109,9 @@ export const MAP_STYLE_DEFS: Record<MapStyle, StyleDef> = {
     ],
   },
   mine: {
-    name: 'Mina',
+    name: tr('Mina'),
     icon: '⛏️',
-    description: 'Galerías de tierra entre cámaras de roca con vetas, vagonetas y derrumbes.',
+    description: tr('Galerías de tierra entre cámaras de roca con vetas, vagonetas y derrumbes.'),
     floor: 'o',
     corridor: 'd',
     minRoom: 3,
@@ -125,9 +126,9 @@ export const MAP_STYLE_DEFS: Record<MapStyle, StyleDef> = {
     ],
   },
   cave: {
-    name: 'Cueva',
+    name: tr('Cueva'),
     icon: '🕳️',
-    description: 'Cueva natural rodeada de roca, con rocas, setas, huesos y telarañas.',
+    description: tr('Cueva natural rodeada de roca, con rocas, setas, huesos y telarañas.'),
     floor: 'o',
     corridor: 'o',
     minRoom: 3,
@@ -135,12 +136,12 @@ export const MAP_STYLE_DEFS: Record<MapStyle, StyleDef> = {
     density: 1,
     torches: 0,
     kinds: [],
-    sizeLabels: { few: 'Más roca', normal: 'Normal', many: 'Más abierta' },
+    sizeLabels: { few: tr('Más roca'), normal: tr('Normal'), many: tr('Más abierta') },
   },
   forest: {
-    name: 'Bosque',
+    name: tr('Bosque'),
     icon: '🌲',
-    description: 'Arboleda con una senda, un claro (a veces con un campamento o unas ruinas) y quizá una charca.',
+    description: tr('Arboleda con una senda, un claro (a veces con un campamento o unas ruinas) y quizá una charca.'),
     outdoor: true,
     floor: 'g',
     corridor: 'd',
@@ -149,12 +150,12 @@ export const MAP_STYLE_DEFS: Record<MapStyle, StyleDef> = {
     density: 0,
     torches: 0,
     kinds: [],
-    sizeLabels: { few: 'Poco espeso', normal: 'Normal', many: 'Muy espeso' },
+    sizeLabels: { few: tr('Poco espeso'), normal: tr('Normal'), many: tr('Muy espeso') },
   },
   road: {
-    name: 'Camino',
+    name: tr('Camino'),
     icon: '🛤️',
-    description: 'Un camino entre arboledas, a veces con un río y su puente, y un carro volcado: perfecto para una emboscada.',
+    description: tr('Un camino entre arboledas, a veces con un río y su puente, y un carro volcado: perfecto para una emboscada.'),
     outdoor: true,
     floor: 'g',
     corridor: 'd',
@@ -163,12 +164,12 @@ export const MAP_STYLE_DEFS: Record<MapStyle, StyleDef> = {
     density: 0,
     torches: 0,
     kinds: [],
-    sizeLabels: { few: 'Despejado', normal: 'Normal', many: 'Boscoso' },
+    sizeLabels: { few: tr('Despejado'), normal: tr('Normal'), many: tr('Boscoso') },
   },
   village: {
-    name: 'Pueblo',
+    name: tr('Pueblo'),
     icon: '🏘️',
-    description: 'Calles de tierra, una plaza con pozo y casas con sus paredes y puertas: taberna, tienda, herrería, templo, establo y viviendas.',
+    description: tr('Calles de tierra, una plaza con pozo y casas con sus paredes y puertas: taberna, tienda, herrería, templo, establo y viviendas.'),
     outdoor: true,
     floor: 'g',
     corridor: 'd',
@@ -177,7 +178,7 @@ export const MAP_STYLE_DEFS: Record<MapStyle, StyleDef> = {
     density: 0,
     torches: 0,
     kinds: [],
-    sizeLabels: { few: 'Aldea', normal: 'Pueblo', many: 'Muchas casas' },
+    sizeLabels: { few: tr('Aldea'), normal: tr('Pueblo'), many: tr('Muchas casas') },
   },
 };
 

@@ -1,6 +1,7 @@
 import type { BoardItem, CreateItemInput, Point, UpdateItemInput, Wall } from '@vtt/shared';
 import { emitAck } from '../../core/socket';
 import { useBoard } from './store';
+import { tr } from '../../core/i18n';
 
 /**
  * Deshacer y rehacer (Ctrl+Z / Ctrl+Y) lo que hace cada uno en el tablero: crear, mover, editar
@@ -113,9 +114,9 @@ async function run(from: 'undo' | 'redo') {
   try {
     await step[from]();
     (from === 'undo' ? redoStack : undoStack).push({ ...step, mergeKey: undefined });
-    useBoard.getState().showNotice(from === 'undo' ? '↶ Deshecho' : '↷ Rehecho');
+    useBoard.getState().showNotice(from === 'undo' ? tr('↶ Deshecho') : tr('↷ Rehecho'));
   } catch (e) {
-    useBoard.getState().showNotice(`No se puede ${from === 'undo' ? 'deshacer' : 'rehacer'}: ${(e as Error).message}`);
+    useBoard.getState().showNotice(tr('No se puede {0}: {message}', { '0': from === 'undo' ? tr('deshacer') : tr('rehacer'), message: (e as Error).message }));
   } finally {
     busy = false;
   }

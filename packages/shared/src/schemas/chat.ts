@@ -1,5 +1,6 @@
 import type { DiceRoll } from '../expr.js';
 import type { AiSettings } from './ai.js';
+import { tr } from '../i18n/index.js';
 
 export type ChatKind = 'text' | 'emote' | 'roll' | 'system';
 
@@ -95,11 +96,11 @@ export interface InitiativeState {
 }
 
 export const CHAT_HELP = [
-  ['/r 1d20+5 Ataque', 'Tirar dados (lo que va detrás de la tirada es la etiqueta)'],
-  ['/gr 1d20', 'Tirada secreta (solo la ves tú y el DM)'],
-  ['/w Ana texto', 'Susurrar a alguien (por su nombre visible)'],
-  ['/em se esconde', 'Acción en tercera persona'],
-  ['/tutorial', 'Recorrido guiado por el programa (el DM puede ver el de jugador con /tutorial jugador)'],
+  ['/r 1d20+5 Ataque', tr('Tirar dados (lo que va detrás de la tirada es la etiqueta)')],
+  ['/gr 1d20', tr('Tirada secreta (solo la ves tú y el DM)')],
+  ['/w Ana texto', tr('Susurrar a alguien (por su nombre visible)')],
+  ['/em se esconde', tr('Acción en tercera persona')],
+  ['/tutorial', tr('Recorrido guiado por el programa (el DM puede ver el de jugador con /tutorial jugador)')],
 ] as const;
 
 /**

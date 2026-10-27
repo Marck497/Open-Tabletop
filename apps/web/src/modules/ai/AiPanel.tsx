@@ -11,6 +11,7 @@ import {
   type TokenAi,
 } from '@vtt/shared';
 import { updateSelected } from '../board/actions';
+import { tr } from '../../core/i18n';
 
 /** Configuración de la IA de un token (en el panel del elemento seleccionado, solo DM). */
 export function AiPanel({ item, hasSheet }: { item: BoardItem; hasSheet: boolean }) {
@@ -34,15 +35,15 @@ export function AiPanel({ item, hasSheet }: { item: BoardItem; hasSheet: boolean
 
   return (
     <fieldset className="owners ai-panel">
-      <legend>🤖 IA de enemigo</legend>
+      <legend>{tr('🤖 IA de enemigo')}</legend>
       <label className="switch">
         <input type="checkbox" checked={!!ai?.enabled} onChange={(e) => save({ enabled: e.target.checked })} />
-        Actúa solo en su turno
+        {tr('Actúa solo en su turno')}
       </label>
       {ai?.enabled && (
         <>
           <label>
-            Comportamiento
+            {tr('Comportamiento')}
             <select value={draft.behavior} onChange={(e) => save({ behavior: e.target.value as AiBehavior })}>
               {AI_BEHAVIORS.map((b) => (
                 <option key={b} value={b}>
@@ -52,7 +53,7 @@ export function AiPanel({ item, hasSheet }: { item: BoardItem; hasSheet: boolean
             </select>
           </label>
           <label>
-            Objetivo
+            {tr('Objetivo')}
             <select value={draft.target} onChange={(e) => save({ target: e.target.value as AiTarget })}>
               {AI_TARGETS.map((t) => (
                 <option key={t} value={t}>
@@ -64,24 +65,24 @@ export function AiPanel({ item, hasSheet }: { item: BoardItem; hasSheet: boolean
           <div className="field-row">
             {draft.behavior === 'ranged' ? (
               <label>
-                Alcance (casillas)
+                {tr('Alcance (casillas)')}
                 <input {...num('range', 1)} />
               </label>
             ) : (
               <label>
-                Alcance c/c (casillas)
+                {tr('Alcance c/c (casillas)')}
                 <input {...num('reach', 1)} />
               </label>
             )}
             {draft.behavior === 'guard' && (
               <label>
-                Reacciona a (casillas)
+                {tr('Reacciona a (casillas)')}
                 <input {...num('guardRadius', 1)} />
               </label>
             )}
             {draft.behavior === 'cautious' && (
               <label>
-                Huye con menos de (%)
+                {tr('Huye con menos de (%)')}
                 <input
                   type="number"
                   min={0}
@@ -95,11 +96,11 @@ export function AiPanel({ item, hasSheet }: { item: BoardItem; hasSheet: boolean
           </div>
           <div className="field-row">
             <label>
-              Velocidad
+              {tr('Velocidad')}
               <input
                 type="number"
                 min={0}
-                placeholder={hasSheet ? 'la de su hoja' : '30'}
+                placeholder={hasSheet ? tr('la de su hoja') : '30'}
                 value={draft.speed ?? ''}
                 onChange={(e) => setDraft({ ...draft, speed: e.target.value === '' ? null : Math.max(0, Number(e.target.value)) })}
                 onBlur={() => draft.speed !== ai?.speed && save({})}
@@ -107,22 +108,22 @@ export function AiPanel({ item, hasSheet }: { item: BoardItem; hasSheet: boolean
             </label>
             {hasSheet && !draft.attack && (
               <label>
-                Ataque de su hoja nº
+                {tr('Ataque de su hoja nº')}
                 <input {...num('attackIndex', 0)} value={draft.attackIndex + 1} onChange={(e) => setDraft({ ...draft, attackIndex: Math.max(0, Math.round(Number(e.target.value)) - 1) })} />
               </label>
             )}
           </div>
           <label>
-            Ataque {hasSheet && <small className="muted">(vacío = usa la tabla de ataques de su hoja)</small>}
-            <input placeholder="Nombre, p. ej. Garras" maxLength={60} {...text('attackName')} />
+            {tr('Ataque')}{' '}{hasSheet && <small className="muted">{tr('(vacío = usa la tabla de ataques de su hoja)')}</small>}
+            <input placeholder={tr('Nombre, p. ej. Garras')} maxLength={60} {...text('attackName')} />
           </label>
           <div className="field-row">
             <label>
-              Tirada de ataque
+              {tr('Tirada de ataque')}
               <input placeholder="1d20 + 5" maxLength={200} {...text('attack')} />
             </label>
             <label>
-              Daño
+              {tr('Daño')}
               <input placeholder="2d6 + 3" maxLength={200} {...text('damage')} />
             </label>
           </div>

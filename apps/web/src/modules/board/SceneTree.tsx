@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { buildSceneTree, folderCycle, userColor, type CampaignMember, type Scene, type SceneFolder, type SceneTreeNode } from '@vtt/shared';
 import { api } from '../../core/api';
 import { getSocket } from '../../core/socket';
+import { tr } from '../../core/i18n';
 
 const COLLAPSED_KEY = 'vtt:sceneFolders:collapsed';
 const SCENE_MIME = 'application/x-vtt-scene';
@@ -31,14 +32,14 @@ function readCollapsed(): Set<string> {
 }
 
 export async function newScene(campaignId: string, count: number, folderId: string | null = null) {
-  const name = prompt('Nombre de la escena', `Escena ${count + 1}`);
+  const name = prompt(tr('Nombre de la escena'), tr('Escena {0}', { '0': count + 1 }));
   if (!name?.trim()) return null;
   const { scene } = await api.post<{ scene: Scene }>(`/campaigns/${campaignId}/scenes`, { name: name.trim(), folderId });
   return scene;
 }
 
 export async function newFolder(campaignId: string, parentId: string | null = null) {
-  const name = prompt('Nombre de la carpeta', 'Nueva carpeta');
+  const name = prompt(tr('Nombre de la carpeta'), tr('Nueva carpeta'));
   if (name?.trim()) await api.post(`/campaigns/${campaignId}/scene-folders`, { name: name.trim(), parentId });
 }
 
@@ -92,7 +93,7 @@ export function SceneTree({ campaignId, scenes, folders, members, partySceneId, 
 
   /** Coloca una carpeta dentro de otra (al final) o antes de otra carpeta. */
   function placeFolder(id: string, parentId: string | null, beforeId?: string) {
-    if (folderCycle(folders, id, parentId)) return setError('Una carpeta no puede ir dentro de sí misma.');
+    if (folderCycle(folders, id, parentId)) return setError(tr('Una carpeta no puede ir dentro de sí misma.'));
     const moved = folders.find((f) => f.id === id);
     if (!moved) return;
     const siblings = folders.filter((f) => (f.parentId ?? null) === parentId && f.id !== id).sort(byOrder);
@@ -123,11 +124,11 @@ export function SceneTree({ campaignId, scenes, folders, members, partySceneId, 
   }
 
   async function renameFolder(f: SceneFolder) {
-    const name = prompt('Nombre de la carpeta', f.name);
+    const name = prompt(tr('Nombre de la carpeta'), f.name);
     if (name?.trim() && name.trim() !== f.name) await api.patch(`/scene-folders/${f.id}`, { name: name.trim() }).catch((e: Error) => setError(e.message));
   }
   async function deleteFolder(f: SceneFolder) {
-    if (!confirm(`¿Borrar la carpeta "${f.name}"? Las escenas que tiene no se borran: pasan a la carpeta de arriba.`)) return;
+    if (!confirm(tr('¿Borrar la carpeta "{name}"? Las escenas que tiene no se borran: pasan a la carpeta de arriba.', { name: f.name }))) return;
     await api.delete(`/scene-folders/${f.id}`).catch((e: Error) => setError(e.message));
   }
 
@@ -147,23 +148,23 @@ export function SceneTree({ campaignId, scenes, folders, members, partySceneId, 
           onDragLeave={() => setOver(null)}
           onDrop={(e) => onDrop(e, { kind: 'scene', scene: s })}
         >
-          <button className="ghost scene-name" onClick={() => onView(s.id)} title="Abrir (solo tú)">
+          <button className="ghost scene-name" onClick={() => onView(s.id)} title={tr('Abrir (solo tú)')}>
             🗺 {s.name}
           </button>
           {s.id === partySceneId && (
-            <span className="badge gm" title="La escena de la party">
-              Party
+            <span className="badge gm" title={tr('La escena de la party')}>
+              {tr('Party')}
             </span>
           )}
           <span className="scene-players">
             {here.map((p) => (
-              <span key={p.id} className="player-dot" style={{ background: userColor(p.id) }} title={`${p.displayName} está aquí`}>
+              <span key={p.id} className="player-dot" style={{ background: userColor(p.id) }} title={tr('{displayName} está aquí', { displayName: p.displayName })}>
                 {p.displayName.slice(0, 1).toUpperCase()}
               </span>
             ))}
           </span>
-          <button className={`ghost small ${moving === s.id ? 'active' : ''}`} onClick={() => setMoving(moving === s.id ? null : s.id)} title="Llevar jugadores a esta escena">
-            Llevar ▾
+          <button className={`ghost small ${moving === s.id ? 'active' : ''}`} onClick={() => setMoving(moving === s.id ? null : s.id)} title={tr('Llevar jugadores a esta escena')}>
+            {tr('Llevar ▾')}
           </button>
         </div>
         {moving === s.id && (
@@ -207,19 +208,19 @@ export function SceneTree({ campaignId, scenes, folders, members, partySceneId, 
             onDrop(e, { kind: 'folder', folder: f, mode: e.clientY - r.top < r.height * 0.3 ? 'before' : 'inside' });
           }}
         >
-          <button className="ghost scene-name" onClick={() => toggleFolder(f.id)} aria-expanded={!closed} title={closed ? 'Abrir carpeta' : 'Cerrar carpeta'}>
+          <button className="ghost scene-name" onClick={() => toggleFolder(f.id)} aria-expanded={!closed} title={closed ? tr('Abrir carpeta') : tr('Cerrar carpeta')}>
             {closed ? '▸' : '▾'} 📁 {f.name} <small className="muted">{count}</small>
           </button>
-          <button className="ghost small" onClick={() => void newScene(campaignId, scenes.length, f.id).then((s) => s && onView(s.id))} title="Nueva escena en esta carpeta">
+          <button className="ghost small" onClick={() => void newScene(campaignId, scenes.length, f.id).then((s) => s && onView(s.id))} title={tr('Nueva escena en esta carpeta')}>
             +
           </button>
-          <button className="ghost small" onClick={() => void newFolder(campaignId, f.id)} title="Nueva subcarpeta">
+          <button className="ghost small" onClick={() => void newFolder(campaignId, f.id)} title={tr('Nueva subcarpeta')}>
             📁+
           </button>
-          <button className="ghost small" onClick={() => void renameFolder(f)} title="Renombrar">
+          <button className="ghost small" onClick={() => void renameFolder(f)} title={tr('Renombrar')}>
             ✎
           </button>
-          <button className="ghost small danger" onClick={() => void deleteFolder(f)} title="Borrar la carpeta (no sus escenas)">
+          <button className="ghost small danger" onClick={() => void deleteFolder(f)} title={tr('Borrar la carpeta (no sus escenas)')}>
             ✕
           </button>
         </div>
@@ -229,7 +230,7 @@ export function SceneTree({ campaignId, scenes, folders, members, partySceneId, 
             {n.scenes.map((s) => sceneRow(s, depth + 1))}
             {!n.folders.length && !n.scenes.length && (
               <li className="muted hint" style={{ paddingLeft: (depth + 1) * 14 + 8 }}>
-                Vacía: arrastra escenas aquí.
+                {tr('Vacía: arrastra escenas aquí.')}
               </li>
             )}
           </ul>
@@ -254,7 +255,7 @@ export function SceneTree({ campaignId, scenes, folders, members, partySceneId, 
           onDragLeave={() => setOver(null)}
           onDrop={(e) => onDrop(e, { kind: 'root' })}
         >
-          Suelta aquí para sacar de las carpetas
+          {tr('Suelta aquí para sacar de las carpetas')}
         </div>
       )}
       {error && <p className="error">{error}</p>}
@@ -285,27 +286,27 @@ function MovePlayers({
   return (
     <div className="move-players">
       <button className="small primary" onClick={() => void run(api.put(`/campaigns/${campaignId}/active-scene`, { sceneId: scene.id }))}>
-        👥 Toda la party
+        {tr('👥 Toda la party')}
       </button>
       {players.length > 0 ? (
         <>
-          <span className="muted">o solo a:</span>
+          <span className="muted">{tr('o solo a:')}</span>
           {players.map((p) => {
             const at = p.sceneId ?? partySceneId;
             return (
-              <label key={p.id} className="switch" title={at === scene.id ? 'Ya está en esta escena' : undefined}>
+              <label key={p.id} className="switch" title={at === scene.id ? tr('Ya está en esta escena') : undefined}>
                 <input type="checkbox" checked={picked.includes(p.id)} onChange={() => setPicked(picked.includes(p.id) ? picked.filter((x) => x !== p.id) : [...picked, p.id])} />
                 {p.displayName}
-                {at === scene.id && <small className="muted">(aquí)</small>}
+                {at === scene.id && <small className="muted">{tr('(aquí)')}</small>}
               </label>
             );
           })}
           <button className="small" disabled={!picked.length} onClick={() => void run(api.put(`/campaigns/${campaignId}/player-scene`, { sceneId: scene.id, userIds: picked }))}>
-            Llevar a {picked.length || 'los marcados'}
+            {tr('Llevar a')}{' '}{picked.length || tr('los marcados')}
           </button>
         </>
       ) : (
-        <span className="muted">Aún no hay jugadores en la partida.</span>
+        <span className="muted">{tr('Aún no hay jugadores en la partida.')}</span>
       )}
     </div>
   );
@@ -317,21 +318,21 @@ export function SceneSwitcher(props: Omit<Props, 'scenes' | 'folders'> & { curre
   const { scenes, folders } = useSceneList(props.campaignId);
   return (
     <div className="scene-switcher" data-tour="scene-switcher">
-      <button className={`small ${open ? 'active' : ''}`} onClick={() => setOpen(!open)} aria-expanded={open} title="Cambiar de escena o llevar a los jugadores">
-        🗺 {props.current?.name ?? 'Escenas'} ▾
+      <button className={`small ${open ? 'active' : ''}`} onClick={() => setOpen(!open)} aria-expanded={open} title={tr('Cambiar de escena o llevar a los jugadores')}>
+        🗺 {props.current?.name ?? tr('Escenas')} ▾
       </button>
       {open && (
         <>
           <div className="scene-switcher-backdrop" onClick={() => setOpen(false)} />
           <div className="scene-switcher-menu card">
             <div className="row spread">
-              <strong>Escenas</strong>
+              <strong>{tr('Escenas')}</strong>
               <span className="row">
                 <button className="ghost small" onClick={() => void newScene(props.campaignId, scenes.length).then((s) => s && props.onView(s.id))}>
-                  + Escena
+                  {tr('+ Escena')}
                 </button>
                 <button className="ghost small" onClick={() => void newFolder(props.campaignId)}>
-                  + Carpeta
+                  {tr('+ Carpeta')}
                 </button>
               </span>
             </div>
@@ -344,7 +345,7 @@ export function SceneSwitcher(props: Omit<Props, 'scenes' | 'folders'> & { curre
                 setOpen(false);
               }}
             />
-            <p className="muted hint">Pulsa una escena para verla tú solo. Con "Llevar" mueves a toda la party o a quien marques. Arrastra para ordenar y meter en carpetas.</p>
+            <p className="muted hint">{tr('Pulsa una escena para verla tú solo. Con "Llevar" mueves a toda la party o a quien marques. Arrastra para ordenar y meter en carpetas.')}</p>
           </div>
         </>
       )}

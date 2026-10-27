@@ -5,11 +5,12 @@ import { useBoard } from '../board/store';
 import { currentFxTarget } from '../fx/target';
 import { newRowId } from '../sheets/SheetField';
 import { useSheets } from '../sheets/store';
+import { tr } from '../../core/i18n';
 
 /** Añade la creación a la hoja: filas enlazadas en conjuros, ataques, inventario y recursos. Devuelve las tablas tocadas. */
 export async function addToSheet(c: Character, template: SheetTemplate, entry: HomebrewEntry): Promise<string[]> {
   const rows = homebrewRows(template, entry, c.values);
-  if (!rows.length) throw new Error('La plantilla de hoja no tiene tablas donde ponerla');
+  if (!rows.length) throw new Error(tr('La plantilla de hoja no tiene tablas donde ponerla'));
   const values: Character['values'] = {};
   for (const { list, row } of rows) {
     const current = (values[list] as SheetRow[] | undefined) ?? (Array.isArray(c.values[list]) ? (c.values[list] as SheetRow[]) : []);
@@ -30,12 +31,12 @@ export function placeTemplate(effect: Pick<ChatEffect, 'area' | 'name'>) {
   const { scene, startTemplate, showNotice } = useBoard.getState();
   if (!effect.area) return;
   if (!scene) {
-    alert('Abre una escena para colocar la plantilla.');
+    alert(tr('Abre una escena para colocar la plantilla.'));
     return;
   }
   const cells = effect.area.size / (scene.cellDistance || 5);
   startTemplate({ shape: effect.area.shape, cells, label: effect.name });
-  showNotice(`${effect.name}: haz clic donde empieza el área y arrastra para orientarla`);
+  showNotice(tr('{name}: haz clic donde empieza el área y arrastra para orientarla', { name: effect.name }));
 }
 
 /** Tokens a los que se aplica: los de mi plantilla de área si hay una puesta; si no, el seleccionado. */
@@ -52,10 +53,10 @@ export function currentTargets() {
 export async function applyEffect(messageId: string, name: string) {
   const targets = currentTargets();
   if (!targets.length) {
-    alert('Selecciona un token o coloca la plantilla de área encima de los objetivos.');
+    alert(tr('Selecciona un token o coloca la plantilla de área encima de los objetivos.'));
     return;
   }
   const names = targets.map((t) => t.name || useSheets.getState().characters[t.characterId ?? '']?.name || 'token');
-  if (!confirm(`¿Aplicar ${name} a ${names.join(', ')}?`)) return;
+  if (!confirm(tr('¿Aplicar {name} a {1}?', { name, '1': names.join(', ') }))) return;
   await emitAck('effect:apply', { messageId, itemIds: targets.map((t) => t.id) }).catch((e: Error) => alert(e.message));
 }

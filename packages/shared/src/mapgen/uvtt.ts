@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { SCENE_PACKAGE_FORMAT, SCENE_PACKAGE_VERSION, type ScenePackageInput } from '../schemas/scenePackage.js';
 import { MAX_WALLS, type WallInput } from '../schemas/walls.js';
+import { tr } from '../i18n/index.js';
 
 /**
  * Importar mapas en formato «Universal VTT» (.dd2vtt de Dungeondraft, .uvtt de Dungeon Alchemist,
@@ -43,7 +44,7 @@ export const uvttSchema = z.object({
       }),
     )
     .default([]),
-  image: z.string().min(1, 'El archivo no trae la imagen del mapa'),
+  image: z.string().min(1, tr('El archivo no trae la imagen del mapa')),
 });
 export type Uvtt = z.infer<typeof uvttSchema>;
 
@@ -103,17 +104,17 @@ export function uvttToScenePackage(input: unknown, name: string): ScenePackageIn
   const parsed = uvttSchema.safeParse(input);
   if (!parsed.success) {
     const issue = parsed.error.issues[0];
-    throw new Error(`Mapa no válido${issue ? ` (${issue.path.join('.')}: ${issue.message})` : ''}`);
+    throw new Error(tr('Mapa no válido{0}', { '0': issue ? ` (${issue.path.join('.')}: ${issue.message})` : '' }));
   }
   const map = parsed.data;
   const g = IMPORT_GRID_SIZE;
   const { x: ox, y: oy } = map.resolution.map_origin;
   const w = Math.ceil(map.resolution.map_size.x - 1e-6);
   const h = Math.ceil(map.resolution.map_size.y - 1e-6);
-  if (w < 1 || h < 1) throw new Error('El mapa no tiene tamaño');
-  if (w > MAX_CELLS || h > MAX_CELLS) throw new Error(`El mapa mide ${w} × ${h} casillas y el máximo es ${MAX_CELLS} × ${MAX_CELLS}`);
+  if (w < 1 || h < 1) throw new Error(tr('El mapa no tiene tamaño'));
+  if (w > MAX_CELLS || h > MAX_CELLS) throw new Error(tr('El mapa mide {w} × {h} casillas y el máximo es {MAX_CELLS} × {MAX_CELLS}', { w, h, MAX_CELLS }));
   const mime = imageMimeOf(map.image);
-  if (!mime) throw new Error('La imagen del mapa no es PNG, JPG ni WEBP');
+  if (!mime) throw new Error(tr('La imagen del mapa no es PNG, JPG ni WEBP'));
   const px = (p: { x: number; y: number }) => ({ x: (p.x - ox) * g, y: (p.y - oy) * g });
 
   const walls: WallInput[] = [];
@@ -132,7 +133,7 @@ export function uvttToScenePackage(input: unknown, name: string): ScenePackageIn
     if (Math.hypot(b.x - a.x, b.y - a.y) < 1) continue;
     walls.push({ id: `uv${walls.length.toString(36)}`, x1: a.x, y1: a.y, x2: b.x, y2: b.y, kind: 'door', open: !p.closed, onImage: true });
   }
-  if (walls.length > MAX_WALLS) throw new Error(`El mapa trae ${walls.length} tramos de pared y el máximo es ${MAX_WALLS}: simplifica las paredes al exportarlo`);
+  if (walls.length > MAX_WALLS) throw new Error(tr('El mapa trae {length} tramos de pared y el máximo es {MAX_WALLS}: simplifica las paredes al exportarlo', { length: walls.length, MAX_WALLS }));
 
   const cellDistance = 5;
   const lights = map.lights
@@ -147,7 +148,7 @@ export function uvttToScenePackage(input: unknown, name: string): ScenePackageIn
         y: at.y - g / 4,
         width: g / 2,
         height: g / 2,
-        name: 'Luz',
+        name: tr('Luz'),
         color: colorOf(l.color),
         light: { bright: half, dim: half, color: colorOf(l.color) },
       };
@@ -158,7 +159,7 @@ export function uvttToScenePackage(input: unknown, name: string): ScenePackageIn
     version: SCENE_PACKAGE_VERSION,
     exportedAt: new Date().toISOString(),
     scene: {
-      name: name.trim().slice(0, 80) || 'Mapa importado',
+      name: name.trim().slice(0, 80) || tr('Mapa importado'),
       widthCells: w,
       heightCells: h,
       gridSize: g,

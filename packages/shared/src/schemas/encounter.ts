@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { tr } from '../i18n/index.js';
 
 /**
  * Encuentros preparados: grupos de monstruos del compendio que el DM guarda en la partida
@@ -18,7 +19,7 @@ export type EncounterMonster = z.infer<typeof encounterMonsterSchema>;
 const monstersSchema = z
   .array(encounterMonsterSchema)
   .max(30)
-  .refine((list) => list.reduce((n, m) => n + m.count, 0) <= MAX_ENCOUNTER_MONSTERS, `Como mucho ${MAX_ENCOUNTER_MONSTERS} monstruos por encuentro`);
+  .refine((list) => list.reduce((n, m) => n + m.count, 0) <= MAX_ENCOUNTER_MONSTERS, tr('Como mucho {MAX_ENCOUNTER_MONSTERS} monstruos por encuentro', { MAX_ENCOUNTER_MONSTERS }));
 
 export const encounterInputSchema = z.object({
   name: z.string().trim().min(1).max(80),

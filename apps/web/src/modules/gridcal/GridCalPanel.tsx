@@ -3,6 +3,7 @@ import { Line, Rect } from 'react-konva';
 import type { Box, Scene } from '@vtt/shared';
 import { useBoard } from '../board/store';
 import { applyCalibration, stopCalibration, useGridCal } from './store';
+import { tr } from '../../core/i18n';
 
 /** Paleta flotante para ajustar la cuadrícula de una imagen de mapa a la de la escena (solo el DM). */
 export function GridCalPanel({ scene }: { scene: Scene }) {
@@ -17,47 +18,46 @@ export function GridCalPanel({ scene }: { scene: Scene }) {
   const total = +width > 0 ? Math.round(+width) : 0;
 
   return (
-    <aside className="map-editor" aria-label="Ajustar cuadrícula">
+    <aside className="map-editor" aria-label={tr('Ajustar cuadrícula')}>
       <div className="row spread">
-        <strong>📐 Ajustar cuadrícula</strong>
-        <button className="ghost small" title="Cancelar" onClick={stopCalibration}>
+        <strong>{tr('📐 Ajustar cuadrícula')}</strong>
+        <button className="ghost small" title={tr('Cancelar')} onClick={stopCalibration}>
           ✕
         </button>
       </div>
       <p className="map-hint">
-        Para que las casillas dibujadas en la imagen coincidan con las de la escena: <b>arrastra sobre la imagen un rectángulo que cubra justo unas casillas</b> de su
-        cuadrícula. Cuantas más marques, más preciso (acerca el zoom con la rueda; botón derecho para moverte).
+        {tr('Para que las casillas dibujadas en la imagen coincidan con las de la escena:')}{' '}<b>{tr('arrastra sobre la imagen un rectángulo que cubra justo unas casillas')}</b>{' '}{tr('de su cuadrícula. Cuantas más marques, más preciso (acerca el zoom con la rueda; botón derecho para moverte).')}
       </p>
-      <p className="map-hint">{cal.marked ? `Marcado: ${Math.round(cal.marked.width)} × ${Math.round(cal.marked.height)} píxeles.` : 'Aún no has marcado nada.'}</p>
+      <p className="map-hint">{cal.marked ? tr('Marcado: {0} × {1} píxeles.', { '0': Math.round(cal.marked.width), '1': Math.round(cal.marked.height) }) : tr('Aún no has marcado nada.')}</p>
       <div className="row map-row">
-        <span className="tool-label">Casillas</span>
-        <input type="number" min={1} max={200} value={cal.cols} aria-label="Casillas de ancho" style={{ width: 56 }} onChange={(e) => setCols(num(e.target.value))} />
+        <span className="tool-label">{tr('Casillas')}</span>
+        <input type="number" min={1} max={200} value={cal.cols} aria-label={tr('Casillas de ancho')} style={{ width: 56 }} onChange={(e) => setCols(num(e.target.value))} />
         ×
-        <input type="number" min={1} max={200} value={cal.rows} aria-label="Casillas de alto" style={{ width: 56 }} onChange={(e) => cal.set({ rows: num(e.target.value) })} />
+        <input type="number" min={1} max={200} value={cal.rows} aria-label={tr('Casillas de alto')} style={{ width: 56 }} onChange={(e) => cal.set({ rows: num(e.target.value) })} />
       </div>
-      <p className="map-hint">Las líneas naranjas deben caer sobre las de la imagen.</p>
+      <p className="map-hint">{tr('Las líneas naranjas deben caer sobre las de la imagen.')}</p>
       <button className="small primary" disabled={!cal.marked} onClick={() => void applyCalibration()}>
-        Aplicar
+        {tr('Aplicar')}
       </button>
 
-      <div className="map-group">O, si sabes cuánto mide</div>
+      <div className="map-group">{tr('O, si sabes cuánto mide')}</div>
       <div className="row map-row">
-        <span className="tool-label">Ancho</span>
-        <input type="number" min={1} max={200} placeholder={String(Math.round(item.width / g))} value={width} aria-label="Casillas de ancho de la imagen" style={{ width: 64 }} onChange={(e) => setWidth(e.target.value)} />
-        casillas
+        <span className="tool-label">{tr('Ancho')}</span>
+        <input type="number" min={1} max={200} placeholder={String(Math.round(item.width / g))} value={width} aria-label={tr('Casillas de ancho de la imagen')} style={{ width: 64 }} onChange={(e) => setWidth(e.target.value)} />
+        {tr('casillas')}
       </div>
       {total > 0 && (
         <p className="map-hint">
-          Quedará de {total} × {+((item.height * total) / item.width).toFixed(1)} casillas.
+          {tr('Quedará de {w} × {h} casillas.', { w: total, h: +((item.height * total) / item.width).toFixed(1) })}
         </p>
       )}
       <button className="small" disabled={!total} onClick={() => void applyCalibration(total)}>
-        Aplicar ancho
+        {tr('Aplicar ancho')}
       </button>
 
-      <label className="switch" title="Lleva la imagen a la esquina y cambia el tamaño de la escena para que quepa entera">
+      <label className="switch" title={tr('Lleva la imagen a la esquina y cambia el tamaño de la escena para que quepa entera')}>
         <input type="checkbox" checked={cal.fitScene} onChange={(e) => cal.set({ fitScene: e.target.checked })} />
-        Ajustar la escena a la imagen
+        {tr('Ajustar la escena a la imagen')}
       </label>
     </aside>
   );

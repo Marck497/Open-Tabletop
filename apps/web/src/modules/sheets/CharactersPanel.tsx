@@ -9,6 +9,7 @@ import { LootWindow } from '../loot/LootWindow';
 import { CharacterCreator } from '../srd/CharacterCreator';
 import { SrdBrowser } from '../srd/SrdBrowser';
 import { useSheets } from './store';
+import { tr } from '../../core/i18n';
 
 /** Lista de personajes que el usuario puede ver ("diario" en Roll20). */
 export function CharactersPanel({
@@ -36,7 +37,7 @@ export function CharactersPanel({
   const [homebrew, setHomebrew] = useState<{ draft: HomebrewDraft | null } | null>(null);
 
   async function create() {
-    const name = prompt(isGm ? 'Nombre del personaje o PNJ' : 'Nombre de tu personaje');
+    const name = prompt(isGm ? tr('Nombre del personaje o PNJ') : tr('Nombre de tu personaje'));
     if (!name?.trim()) return;
     const { character } = await api.post<{ character: Character }>(`/campaigns/${campaignId}/characters`, { name: name.trim() });
     useSheets.getState().upsert(character);
@@ -46,40 +47,40 @@ export function CharactersPanel({
   return (
     <div className="panel">
       <div className="row spread">
-        <h3>Personajes</h3>
+        <h3>{tr('Personajes')}</h3>
         <span className="row">
           {isGm && (
-            <button className="ghost small" onClick={() => setCompendium(true)} title="Monstruos del SRD 5e con su hoja y su IA">
-              📖 Compendio
+            <button className="ghost small" onClick={() => setCompendium(true)} title={tr('Monstruos del SRD 5e con su hoja y su IA')}>
+              {tr('📖 Compendio')}
             </button>
           )}
           {isGm && (
-            <button className="ghost small" onClick={() => setEncounters(true)} title="Grupos de monstruos preparados: su dificultad y soltarlos en el tablero con un clic">
-              ⚔ Encuentros
+            <button className="ghost small" onClick={() => setEncounters(true)} title={tr('Grupos de monstruos preparados: su dificultad y soltarlos en el tablero con un clic')}>
+              {tr('⚔ Encuentros')}
             </button>
           )}
           {isGm && (
-            <button className="ghost small" onClick={() => setLoot(true)} title="Reparte objetos y monedas a los inventarios de los personajes">
-              💰 Botín
+            <button className="ghost small" onClick={() => setLoot(true)} title={tr('Reparte objetos y monedas a los inventarios de los personajes')}>
+              {tr('💰 Botín')}
             </button>
           )}
-          <button className="ghost small" onClick={() => void create()} title="Hoja en blanco">
-            + Nuevo
+          <button className="ghost small" onClick={() => void create()} title={tr('Hoja en blanco')}>
+            {tr('+ Nuevo')}
           </button>
         </span>
       </div>
       <div className="row" data-tour="library">
-        <button className="small" onClick={() => setCreator(true)} title="Especie, clase, características, equipo y conjuros del SRD 5e: la hoja sale rellena">
-          ✨ Crear personaje 5e
+        <button className="small" onClick={() => setCreator(true)} title={tr('Especie, clase, características, equipo y conjuros del SRD 5e: la hoja sale rellena')}>
+          {tr('✨ Crear personaje 5e')}
         </button>
-        <button className="ghost small" onClick={() => setRules(true)} title="Conjuros, objetos, clases y especies del SRD 5e">
-          📚 Reglas
+        <button className="ghost small" onClick={() => setRules(true)} title={tr('Conjuros, objetos, clases y especies del SRD 5e')}>
+          {tr('📚 Reglas')}
         </button>
-        <button className="ghost small" onClick={() => setHomebrew({ draft: null })} title="Crea y edita hechizos, ataques y objetos que funcionan con los botones de las hojas">
-          ⚗ Creaciones
+        <button className="ghost small" onClick={() => setHomebrew({ draft: null })} title={tr('Crea y edita hechizos, ataques y objetos que funcionan con los botones de las hojas')}>
+          {tr('⚗ Creaciones')}
         </button>
       </div>
-      {list.length === 0 && <p className="muted hint">{isGm ? 'Crea los PJ y PNJ de la partida.' : 'Crea tu personaje o pide al DM que te asigne uno.'}</p>}
+      {list.length === 0 && <p className="muted hint">{isGm ? tr('Crea los PJ y PNJ de la partida.') : tr('Crea tu personaje o pide al DM que te asigne uno.')}</p>}
       <ul className="character-list">
         {list.map((c) => (
           <li key={c.id}>
@@ -88,19 +89,19 @@ export function CharactersPanel({
               onClick={() => openSheet(c.id)}
               draggable={isGm}
               onDragStart={(e) => e.dataTransfer.setData('application/x-vtt-character', c.id)}
-              title={isGm ? 'Abrir hoja (arrástralo al tablero para crear su token)' : 'Abrir hoja'}
+              title={isGm ? tr('Abrir hoja (arrástralo al tablero para crear su token)') : tr('Abrir hoja')}
             >
               <span className="avatar small">{c.avatarAssetId ? <img src={assetUrl(c.avatarAssetId)} alt="" /> : c.name.slice(0, 1)}</span>
               <span className="member-name">{c.name}</span>
               {isGm && c.controlledBy.length === 0 && <span className="badge">PNJ</span>}
-              {!isGm && c.controlledBy.includes(meId) && <span className="badge gm">Tuyo</span>}
+              {!isGm && c.controlledBy.includes(meId) && <span className="badge gm">{tr('Tuyo')}</span>}
             </button>
           </li>
         ))}
       </ul>
       {isGm && (
         <button className="ghost small" onClick={onEditTemplate}>
-          ⚙ Editar plantilla de hoja
+          {tr('⚙ Editar plantilla de hoja')}
         </button>
       )}
       {creator && <CharacterCreator campaignId={campaignId} onClose={() => setCreator(false)} />}

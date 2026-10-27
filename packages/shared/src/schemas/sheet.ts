@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { evaluate } from '../expr.js';
+import { tr } from '../i18n/index.js';
 
 /**
  * Plantilla de hoja de personaje. Es solo datos: el DM puede editarla entera
@@ -9,13 +10,13 @@ export const FIELD_TYPES = ['text', 'number', 'textarea', 'checkbox', 'select', 
 export type FieldType = (typeof FIELD_TYPES)[number];
 
 export const FIELD_TYPE_LABELS: Record<FieldType, string> = {
-  text: 'Texto',
-  number: 'Número',
-  textarea: 'Texto largo',
-  checkbox: 'Casilla',
-  select: 'Lista de opciones',
-  computed: 'Calculado (fórmula)',
-  list: 'Tabla (filas repetibles)',
+  text: tr('Texto'),
+  number: tr('Número'),
+  textarea: tr('Texto largo'),
+  checkbox: tr('Casilla'),
+  select: tr('Lista de opciones'),
+  computed: tr('Calculado (fórmula)'),
+  list: tr('Tabla (filas repetibles)'),
 };
 
 const keySchema = z
@@ -23,7 +24,7 @@ const keySchema = z
   .trim()
   .min(1)
   .max(48)
-  .regex(/^[a-z_][a-z0-9_]*$/i, 'Solo letras sin tildes, números y "_" (sin empezar por número)');
+  .regex(/^[a-z_][a-z0-9_]*$/i, tr('Solo letras sin tildes, números y "_" (sin empezar por número)'));
 
 const baseField = {
   key: keySchema,
@@ -165,7 +166,7 @@ export const sheetTemplateSchema = z
     const seen = new Set<string>();
     for (const s of t.sections)
       for (const f of s.fields) {
-        if (seen.has(f.key)) ctx.addIssue({ code: 'custom', message: `Clave repetida: "${f.key}"`, path: ['sections'] });
+        if (seen.has(f.key)) ctx.addIssue({ code: 'custom', message: tr('Clave repetida: "{key}"', { key: f.key }), path: ['sections'] });
         seen.add(f.key);
       }
   });

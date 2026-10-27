@@ -1,3 +1,4 @@
+import { tr } from '../i18n/index.js';
 /**
  * Pincel de objetos: al arrastrar, esparce objetos (emojis) por las casillas que toca el pincel,
  * al azar y sin amontonarlos. Cada casilla se sortea una sola vez por trazo, para que pasar dos
@@ -7,9 +8,9 @@
 export const SCATTER_DENSITIES = ['low', 'medium', 'high'] as const;
 export type ScatterDensity = (typeof SCATTER_DENSITIES)[number];
 export const SCATTER_DENSITY_LABELS: Record<ScatterDensity, string> = {
-  low: 'Pocos',
-  medium: 'Normal',
-  high: 'Muchos',
+  low: tr('Pocos'),
+  medium: tr('Normal'),
+  high: tr('Muchos'),
 };
 /** Probabilidad de que salga un objeto en cada casilla libre. */
 const CHANCE: Record<ScatterDensity, number> = {

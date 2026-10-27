@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import {
+  tr,
   ActionError,
   actionsOf,
   checkSyntax,
@@ -135,7 +136,7 @@ export function createSheetActions(ctx: AppContext) {
             break;
           }
           const resolve = createResolver(template, values, row);
-          const name = String(row[a.attacks.name] || 'Ataque');
+          const name = String(row[a.attacks.name] || tr('Ataque'));
           // Ataque (si el bono es un número o una fórmula; un "CD 13 DES" no se tira).
           const bonus = String(row[a.attacks.attack] ?? '').trim();
           const attack = bonus && !checkSyntax(bonus) ? rollText(`1d20 + @{${a.attacks.attack}}`, resolve) : null;
@@ -145,10 +146,10 @@ export function createSheetActions(ctx: AppContext) {
           const crit = natural !== undefined && natural >= critFrom;
           const parts: ChatRollPart[] = [];
           const damage = rollText(String(row[a.attacks.damage] ?? ''), resolve, crit);
-          if (damage) parts.push({ ...damage, label: `Daño${damage.note ? ` (${damage.note})` : ''}${crit ? ' ×2 dados' : ''}` });
+          if (damage) parts.push({ ...damage, label: tr('Daño{0}{1}', { '0': damage.note ? ` (${damage.note})` : '', '1': crit ? tr(' ×2 dados') : '' }) });
           const extra = a.attacks.extra ? rollText(String(row[a.attacks.extra] ?? ''), resolve, crit) : null;
-          if (extra) parts.push({ ...extra, label: `Extra${extra.note ? ` (${extra.note})` : ''}` });
-          const verdict = crit ? ' — ¡crítico!' : natural === 1 ? ' — pifia' : '';
+          if (extra) parts.push({ ...extra, label: tr('Extra{0}', { '0': extra.note ? ` (${extra.note})` : '' }) });
+          const verdict = crit ? tr(' — ¡crítico!') : natural === 1 ? tr(' — pifia') : '';
           cue = fxForRow('attack', name, String(row[a.attacks.damage] ?? ''), crit);
           if (attack) {
             message = chat.insert({ ...base, kind: 'roll', text: '', roll: { label: `${name}${verdict}`, expression: attack.expression, total: attack.total, rolls: attack.rolls, parts, crit } });
@@ -166,25 +167,25 @@ export function createSheetActions(ctx: AppContext) {
             useEntry(entry, row, action.slot);
             break;
           }
-          const name = String(row[a.spells.name] || 'Conjuro');
+          const name = String(row[a.spells.name] || tr('Conjuro'));
           const level = Math.max(0, Math.round(num(row[a.spells.level])));
           let how = 'truco';
           if (level > 0) {
             const spent = spendSlot(template, values, level, action.slot);
             patch = spent.patch;
-            how = `espacio de nivel ${spent.slot}, quedan ${spent.left}/${spent.max}`;
+            how = tr('espacio de nivel {slot}, quedan {left}/{max}', { slot: spent.slot, left: spent.left, max: spent.max });
           }
           const effect = rollText(String(row[a.spells.effect] ?? ''), createResolver(template, values, row));
           cue = fxForRow('cast', name, String(row[a.spells.effect] ?? ''));
           message = effect
             ? chat.insert({ ...base, kind: 'roll', text: '', roll: { label: `${name} (${how})${effect.note ? `: ${effect.note}` : ''}`, expression: effect.expression, total: effect.total, rolls: effect.rolls } })
-            : chat.insert({ ...base, kind: 'emote', text: `lanza ${name} (${how}).`, roll: null });
+            : chat.insert({ ...base, kind: 'emote', text: tr('lanza {name} ({how}).', { name, how }), roll: null });
           break;
         }
         case 'use': {
           const used = spendUse(template, values, action.rowId);
           patch = used.patch;
-          message = chat.insert({ ...base, kind: 'emote', text: `usa ${used.name || 'un recurso'} (quedan ${used.left}/${used.max}).`, roll: null });
+          message = chat.insert({ ...base, kind: 'emote', text: tr('usa {0} (quedan {left}/{max}).', { '0': used.name || tr('un recurso'), left: used.left, max: used.max }), roll: null });
           break;
         }
         case 'homebrew': {
@@ -198,11 +199,11 @@ export function createSheetActions(ctx: AppContext) {
         case 'rest': {
           const rest = restPatch(template, values, action.rest);
           patch = Object.keys(rest.patch).length ? rest.patch : null;
-          const what = action.rest === 'long' ? 'un descanso largo' : 'un descanso corto';
+          const what = action.rest === 'long' ? tr('un descanso largo') : tr('un descanso corto');
           message = chat.insert({
             ...base,
             kind: 'emote',
-            text: rest.recovered.length ? `hace ${what} y recupera ${listEs(rest.recovered)}.` : `hace ${what} (no tenía nada que recuperar).`,
+            text: rest.recovered.length ? tr('hace {what} y recupera {1}.', { what, '1': listEs(rest.recovered) }) : tr('hace {what} (no tenía nada que recuperar).', { what }),
             roll: null,
           });
           break;
@@ -221,5 +222,5 @@ export function createSheetActions(ctx: AppContext) {
 
 /** "a, b y c". */
 function listEs(items: string[]) {
-  return items.length <= 1 ? (items[0] ?? '') : `${items.slice(0, -1).join(', ')} y ${items.at(-1)}`;
+  return items.length <= 1 ? (items[0] ?? '') : tr('{0} y {1}', { '0': items.slice(0, -1).join(', '), '1': items.at(-1) });
 }

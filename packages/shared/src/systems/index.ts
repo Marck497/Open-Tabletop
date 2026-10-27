@@ -2,11 +2,12 @@ import { allFields, createResolver, sheetTemplateSchema, type CombatMapping, typ
 import { dnd5eTemplate } from './dnd5e.js';
 import { DND5E_STATUSES, GENERIC_STATUSES } from './statuses.js';
 import { genericTemplate } from './generic.js';
+import { tr } from '../i18n/index.js';
 
 /** Plantillas incluidas de serie. Se copian a cada partida, donde el DM puede editarlas. */
 export const BUILTIN_TEMPLATES: Record<string, { label: string; template: SheetTemplate }> = {
-  dnd5e: { label: 'D&D 5e', template: sheetTemplateSchema.parse(dnd5eTemplate) },
-  generic: { label: 'Genérico (vacío)', template: sheetTemplateSchema.parse(genericTemplate) },
+  dnd5e: { label: tr('D&D 5e'), template: sheetTemplateSchema.parse(dnd5eTemplate) },
+  generic: { label: tr('Genérico (vacío)'), template: sheetTemplateSchema.parse(genericTemplate) },
 };
 
 export const DEFAULT_TEMPLATE_ID = 'dnd5e';

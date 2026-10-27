@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { and, eq } from 'drizzle-orm';
 import {
+  tr,
   compareInitiative,
   DEFAULT_AI_SETTINGS,
   evaluate,
@@ -264,7 +265,7 @@ export function createInitiativeService(ctx: AppContext) {
         die = Math.floor(secureRng() * 20) + 1;
         total = die + bonus;
       }
-      const name = item.name || ch?.name || 'Token';
+      const name = item.name || ch?.name || tr('Token');
       const hidden = item.layer === 'gm';
       const existing = entryFor(item);
       if (existing) {
@@ -298,7 +299,7 @@ export function createInitiativeService(ctx: AppContext) {
           characterId: null,
           characterName: null,
           kind: 'system',
-          text: `🎲 Iniciativa${secret ? ' (ocultos)' : ''}: ${list.map(fmt).join(' · ')}`,
+          text: tr('🎲 Iniciativa{0}: {1}', { '0': secret ? tr(' (ocultos)') : '', '1': list.map(fmt).join(' · ') }),
           roll: null,
           whisperTo: null,
           secret,

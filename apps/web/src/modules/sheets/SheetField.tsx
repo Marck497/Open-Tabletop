@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { SheetField as Field, SheetRow, SheetValue } from '@vtt/shared';
+import { tr } from '../../core/i18n';
 
 interface Props {
   field: Field;
@@ -24,7 +25,7 @@ export function SheetFieldView({ field, value, computed, readOnly, onChange, onR
   };
 
   const rollBtn = onRoll && field.roll && (
-    <button type="button" className="roll-btn" onClick={onRoll} title={`Tirar: ${field.roll}`}>
+    <button type="button" className="roll-btn" onClick={onRoll} title={tr('Tirar: {roll}', { roll: field.roll })}>
       🎲
     </button>
   );
@@ -47,7 +48,7 @@ export function SheetFieldView({ field, value, computed, readOnly, onChange, onR
         <select value={String(value ?? '')} disabled={readOnly} onChange={(e) => onChange(e.target.value)}>
           {(field.options ?? []).map((o) => (
             <option key={o.value} value={o.value}>
-              {o.label}
+              {tr(o.label)}
             </option>
           ))}
         </select>
@@ -75,8 +76,8 @@ export function SheetFieldView({ field, value, computed, readOnly, onChange, onR
     );
 
   return (
-    <label className={`sheet-field type-${field.type}`} style={field.span ? { gridColumn: `span ${field.span}` } : undefined} title={field.hint}>
-      <span className="sheet-label">{field.label}</span>
+    <label className={`sheet-field type-${field.type}`} style={field.span ? { gridColumn: `span ${field.span}` } : undefined} title={field.hint && tr(field.hint)}>
+      <span className="sheet-label">{tr(field.label)}</span>
       <span className="sheet-control">
         {control}
         {rollBtn}

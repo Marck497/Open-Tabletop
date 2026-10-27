@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { Wall } from './walls.js';
+import { tr } from '../i18n/index.js';
 
 /**
  * Suelo del mapa pintado por casillas. Se guarda como un texto con un carácter por casilla
@@ -8,7 +9,7 @@ import type { Wall } from './walls.js';
  */
 export const TERRAIN_EMPTY = '.';
 
-export const TERRAIN_GROUPS = ['Interior', 'Exterior', 'Agua y peligros', 'Muros'] as const;
+export const TERRAIN_GROUPS = [tr('Interior'), tr('Exterior'), tr('Agua y peligros'), tr('Muros')] as const;
 export type TerrainGroup = (typeof TERRAIN_GROUPS)[number];
 
 export interface TerrainDef {
@@ -23,26 +24,26 @@ export interface TerrainDef {
 }
 
 export const TERRAINS: TerrainDef[] = [
-  { id: 'p', name: 'Losas de piedra', color: '#7d7a76', group: 'Interior' },
-  { id: 'c', name: 'Adoquines', color: '#6f6a64', group: 'Interior' },
-  { id: 'w', name: 'Madera', color: '#8a5a33', group: 'Interior' },
-  { id: 'b', name: 'Baldosas', color: '#b9b2a3', group: 'Interior' },
-  { id: 'm', name: 'Mármol', color: '#d9d6cf', group: 'Interior' },
-  { id: 'k', name: 'Alfombra', color: '#8e2b2b', group: 'Interior' },
-  { id: 'o', name: 'Suelo de cueva', color: '#5d544b', group: 'Interior' },
-  { id: 'g', name: 'Hierba', color: '#4f7a35', group: 'Exterior' },
-  { id: 'd', name: 'Tierra', color: '#7a5b3a', group: 'Exterior' },
-  { id: 's', name: 'Arena', color: '#cdb27a', group: 'Exterior' },
-  { id: 'n', name: 'Nieve', color: '#e6edf2', group: 'Exterior' },
-  { id: 'f', name: 'Bosque', color: '#2f5426', group: 'Exterior' },
-  { id: 'a', name: 'Agua', color: '#3d78a8', group: 'Agua y peligros' },
-  { id: 'A', name: 'Agua profunda', color: '#1f4a75', group: 'Agua y peligros' },
-  { id: 'v', name: 'Pantano', color: '#4c5a34', group: 'Agua y peligros' },
-  { id: 'h', name: 'Hielo', color: '#a9d3e6', group: 'Agua y peligros' },
-  { id: 'l', name: 'Lava', color: '#d4541c', group: 'Agua y peligros' },
-  { id: 'x', name: 'Abismo', color: '#0d0c10', group: 'Agua y peligros' },
-  { id: 'r', name: 'Roca', color: '#3b3836', group: 'Muros', solid: true },
-  { id: 'B', name: 'Muro de ladrillo', color: '#6b4a3a', group: 'Muros', solid: true },
+  { id: 'p', name: tr('Losas de piedra'), color: '#7d7a76', group: tr('Interior') },
+  { id: 'c', name: tr('Adoquines'), color: '#6f6a64', group: tr('Interior') },
+  { id: 'w', name: tr('Madera'), color: '#8a5a33', group: tr('Interior') },
+  { id: 'b', name: tr('Baldosas'), color: '#b9b2a3', group: tr('Interior') },
+  { id: 'm', name: tr('Mármol'), color: '#d9d6cf', group: tr('Interior') },
+  { id: 'k', name: tr('Alfombra'), color: '#8e2b2b', group: tr('Interior') },
+  { id: 'o', name: tr('Suelo de cueva'), color: '#5d544b', group: tr('Interior') },
+  { id: 'g', name: tr('Hierba'), color: '#4f7a35', group: tr('Exterior') },
+  { id: 'd', name: tr('Tierra'), color: '#7a5b3a', group: tr('Exterior') },
+  { id: 's', name: tr('Arena'), color: '#cdb27a', group: tr('Exterior') },
+  { id: 'n', name: tr('Nieve'), color: '#e6edf2', group: tr('Exterior') },
+  { id: 'f', name: tr('Bosque'), color: '#2f5426', group: tr('Exterior') },
+  { id: 'a', name: tr('Agua'), color: '#3d78a8', group: tr('Agua y peligros') },
+  { id: 'A', name: tr('Agua profunda'), color: '#1f4a75', group: tr('Agua y peligros') },
+  { id: 'v', name: tr('Pantano'), color: '#4c5a34', group: tr('Agua y peligros') },
+  { id: 'h', name: tr('Hielo'), color: '#a9d3e6', group: tr('Agua y peligros') },
+  { id: 'l', name: tr('Lava'), color: '#d4541c', group: tr('Agua y peligros') },
+  { id: 'x', name: tr('Abismo'), color: '#0d0c10', group: tr('Agua y peligros') },
+  { id: 'r', name: tr('Roca'), color: '#3b3836', group: tr('Muros'), solid: true },
+  { id: 'B', name: tr('Muro de ladrillo'), color: '#6b4a3a', group: tr('Muros'), solid: true },
 ];
 
 const BY_ID = new Map(TERRAINS.map((t) => [t.id, t]));
@@ -55,7 +56,7 @@ const CODES = TERRAINS.map((t) => t.id).join('');
 export const terrainSchema = z
   .string()
   .max(MAX_TERRAIN_CELLS)
-  .regex(new RegExp(`^[.${CODES}]*$`), 'Terreno desconocido');
+  .regex(new RegExp(`^[.${CODES}]*$`), tr('Terreno desconocido'));
 
 /** ¿Hace de pared? (vacío o sólido) */
 export const isSolidCell = (code: string | undefined) => !code || code === TERRAIN_EMPTY || !!BY_ID.get(code)?.solid;

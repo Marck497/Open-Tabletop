@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { assetUrl, type Asset } from '@vtt/shared';
 import { api } from '../../core/api';
 import { uploadAsset } from './assets';
+import { tr } from '../../core/i18n';
 
 interface Props {
   campaignId: string;
@@ -38,7 +39,7 @@ export function AssetPicker({ campaignId, onPick, onClose }: Props) {
   }
 
   async function remove(asset: Asset) {
-    if (!confirm(`¿Borrar "${asset.name}"? Los elementos que la usen se quedarán sin imagen.`)) return;
+    if (!confirm(tr('¿Borrar "{name}"? Los elementos que la usen se quedarán sin imagen.', { name: asset.name }))) return;
     await api.delete(`/assets/${asset.id}`);
     setAssets((a) => a.filter((x) => x.id !== asset.id));
   }
@@ -47,9 +48,9 @@ export function AssetPicker({ campaignId, onPick, onClose }: Props) {
     <div className="modal-backdrop" onMouseDown={onClose}>
       <div className="modal card" onMouseDown={(e) => e.stopPropagation()}>
         <div className="row spread">
-          <h2>Imágenes</h2>
+          <h2>{tr('Imágenes')}</h2>
           <button className="ghost small" onClick={onClose}>
-            Cerrar
+            {tr('Cerrar')}
           </button>
         </div>
         <div
@@ -61,7 +62,7 @@ export function AssetPicker({ campaignId, onPick, onClose }: Props) {
             void onFiles(e.dataTransfer.files);
           }}
         >
-          {busy ? 'Subiendo…' : 'Arrastra imágenes aquí o haz clic para subir (PNG, JPG, WEBP, GIF, SVG)'}
+          {busy ? tr('Subiendo…') : tr('Arrastra imágenes aquí o haz clic para subir (PNG, JPG, WEBP, GIF, SVG)')}
           <input ref={inputRef} type="file" accept="image/*" multiple hidden onChange={(e) => void onFiles(e.target.files)} />
         </div>
         {error && <p className="error">{error}</p>}
@@ -71,7 +72,7 @@ export function AssetPicker({ campaignId, onPick, onClose }: Props) {
               <button className="asset-thumb" onClick={() => onPick(a)} title={a.name}>
                 <img src={assetUrl(a.id)} alt={a.name} loading="lazy" />
               </button>
-              <button className="ghost small danger" onClick={() => void remove(a)} title="Borrar">
+              <button className="ghost small danger" onClick={() => void remove(a)} title={tr('Borrar')}>
                 ✕
               </button>
             </li>

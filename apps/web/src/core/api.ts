@@ -1,3 +1,5 @@
+import { tr } from './i18n';
+
 /** Cliente HTTP mínimo para la API. Envía la cookie de sesión y convierte errores en excepciones. */
 export class ApiError extends Error {
   constructor(
@@ -16,7 +18,7 @@ async function request<T>(method: string, url: string, body?: unknown): Promise<
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new ApiError(res.status, data.error ?? `Error ${res.status}`);
+  if (!res.ok) throw new ApiError(res.status, data.error ? tr(data.error) : tr('Error {status}', { status: res.status }));
   return data as T;
 }
 

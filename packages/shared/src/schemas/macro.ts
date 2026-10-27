@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { tr } from '../i18n/index.js';
 
 /**
  * Macros: botones con una o varias líneas de chat (tiradas, comandos, texto)
@@ -27,8 +28,8 @@ export const macroInputSchema = z.object({
   command: z
     .string()
     .max(2000)
-    .refine((c) => macroLines(c).length > 0, 'La macro está vacía')
-    .refine((c) => macroLines(c).length <= MAX_MACRO_LINES, `Como mucho ${MAX_MACRO_LINES} líneas`),
+    .refine((c) => macroLines(c).length > 0, tr('La macro está vacía'))
+    .refine((c) => macroLines(c).length <= MAX_MACRO_LINES, tr('Como mucho {MAX_MACRO_LINES} líneas', { MAX_MACRO_LINES })),
   characterId: z.string().nullable(),
   shared: z.boolean(),
   inBar: z.boolean(),

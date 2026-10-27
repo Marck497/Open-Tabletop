@@ -18,6 +18,12 @@ describe('resistencias, inmunidades y vulnerabilidades', () => {
     expect(parseDamageTypes('Fuego, frío y Relámpago; veneno')).toEqual(['fuego', 'frio', 'relampago', 'veneno']);
   });
 
+  it('los tipos en inglés valen igual que en español', () => {
+    expect(parseDamageTypes('Fire, cold and Lightning')).toEqual(['fuego', 'frio', 'relampago']);
+    const def = { resist: parseDamageTypes('fuego'), immune: [], vulnerable: [] };
+    expect(applyDefenses([{ type: 'fire', amount: 9 }], def).total).toBe(4);
+  });
+
   it('inmune anula, resistente divide (hacia abajo), vulnerable dobla y resistente + vulnerable se anulan', () => {
     const def = { resist: ['fuego', 'frio'], immune: ['veneno'], vulnerable: ['frio', 'radiante'] };
     const r = applyDefenses(

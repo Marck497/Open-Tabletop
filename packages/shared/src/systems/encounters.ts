@@ -1,4 +1,5 @@
 import { crValue, monsterById, MONSTERS } from '../compendium/monsters.js';
+import { tr } from '../i18n/index.js';
 
 /**
  * Dificultad de los encuentros de 5e (SRD 5.1, «Creating Encounters»): se suma la PX de los
@@ -43,7 +44,7 @@ export const xpOfCr = (cr: string) => CR_XP[cr] ?? CR_XP[String(Math.round(crVal
 
 export const DIFFICULTIES = ['trivial', 'easy', 'medium', 'hard', 'deadly'] as const;
 export type Difficulty = (typeof DIFFICULTIES)[number];
-export const DIFFICULTY_LABELS: Record<Difficulty, string> = { trivial: 'Trivial', easy: 'Fácil', medium: 'Media', hard: 'Difícil', deadly: 'Mortal' };
+export const DIFFICULTY_LABELS: Record<Difficulty, string> = { trivial: tr('Trivial'), easy: tr('Fácil'), medium: tr('Media'), hard: tr('Difícil'), deadly: tr('Mortal') };
 
 /** Umbrales de PX por personaje según su nivel: fácil, media, difícil y mortal. */
 const THRESHOLDS: [number, number, number, number][] = [

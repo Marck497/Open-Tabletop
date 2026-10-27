@@ -11,6 +11,7 @@ import {
   type UpdateCampaignInput,
 } from '@vtt/shared';
 import type { AppContext } from '../../core/module.js';
+import { enterLang } from '../../core/lang.js';
 import { badRequest, forbidden, notFound } from '../../core/errors.js';
 import { campaignMembers, campaigns, users } from '../../db/schema.js';
 
@@ -36,6 +37,8 @@ export function createCampaignService(ctx: AppContext) {
   function requireMember(campaignId: string, userId: string): CampaignRole {
     const role = getRole(campaignId, userId);
     if (!role) throw notFound('Partida no encontrada');
+    const c = db.select({ lang: campaigns.lang }).from(campaigns).where(eq(campaigns.id, campaignId)).get();
+    if (c) enterLang(c.lang);
     return role;
   }
 
@@ -64,6 +67,7 @@ export function createCampaignService(ctx: AppContext) {
         name: campaigns.name,
         description: campaigns.description,
         systemId: campaigns.systemId,
+        lang: campaigns.lang,
         createdAt: campaigns.createdAt,
         role: campaignMembers.role,
       })
@@ -77,6 +81,7 @@ export function createCampaignService(ctx: AppContext) {
   function create(userId: string, input: CreateCampaignInput): CampaignDetail {
     const data = createCampaignSchema.parse(input);
     const id = randomUUID();
+    enterLang(data.lang);
     db.transaction((tx) => {
       tx.insert(campaigns).values({ id, ...data, ownerId: userId, inviteCode: newInviteCode() }).run();
       tx.insert(campaignMembers).values({ campaignId: id, userId, role: 'gm' }).run();
@@ -108,6 +113,7 @@ export function createCampaignService(ctx: AppContext) {
       name: c.name,
       description: c.description,
       systemId: c.systemId,
+      lang: c.lang,
       createdAt: c.createdAt,
       ownerId: c.ownerId,
       activeSceneId: role === 'gm' ? c.activeSceneId : (members.find((m) => m.id === userId)?.sceneId ?? c.activeSceneId),

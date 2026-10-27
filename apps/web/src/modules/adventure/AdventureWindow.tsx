@@ -16,18 +16,19 @@ import {
 } from '@vtt/shared';
 import { api } from '../../core/api';
 import { PartyLine, useParty } from '../encounters/EncountersWindow';
+import { tr } from '../../core/i18n';
 
 /** Nombre por defecto según el lugar. */
 const DEFAULT_NAMES: Record<MapStyle, string> = {
-  dungeon: 'La mazmorra olvidada',
-  crypt: 'La cripta del liche',
-  castle: 'El castillo maldito',
-  sewer: 'Bajo las alcantarillas',
-  mine: 'La mina abandonada',
-  cave: 'La cueva de los ecos',
-  forest: 'El bosque sombrío',
-  road: 'Emboscada en el camino',
-  village: 'Problemas en el pueblo',
+  dungeon: tr('La mazmorra olvidada'),
+  crypt: tr('La cripta del liche'),
+  castle: tr('El castillo maldito'),
+  sewer: tr('Bajo las alcantarillas'),
+  mine: tr('La mina abandonada'),
+  cave: tr('La cueva de los ecos'),
+  forest: tr('El bosque sombrío'),
+  road: tr('Emboscada en el camino'),
+  village: tr('Problemas en el pueblo'),
 };
 
 interface Summary {
@@ -70,10 +71,10 @@ export function AdventureWindow({ campaignId, onClose, onCreated }: { campaignId
         traps,
         ambush,
       });
-      const parts = [`${summary.places} sitios numerados`];
-      if (summary.encounters) parts.push(`${summary.encounters} encuentros (${summary.monsters} monstruos escondidos)`);
-      if (summary.traps) parts.push(`${summary.traps} trampas`);
-      onCreated(scene, `«${scene.name}» lista: ${parts.join(', ')} y un tesoro. Los jugadores aún no la ven: llévalos con «Llevar» cuando quieras.`);
+      const parts = [tr('{places} sitios numerados', { places: summary.places })];
+      if (summary.encounters) parts.push(tr('{encounters} encuentros ({monsters} monstruos escondidos)', { encounters: summary.encounters, monsters: summary.monsters }));
+      if (summary.traps) parts.push(tr('{traps} trampas', { traps: summary.traps }));
+      onCreated(scene, tr('«{name}» lista: {1} y un tesoro. Los jugadores aún no la ven: llévalos con «Llevar» cuando quieras.', { name: scene.name, '1': parts.join(', ') }));
     } catch (e) {
       setError((e as Error).message);
       setBusy(false);
@@ -82,21 +83,21 @@ export function AdventureWindow({ campaignId, onClose, onCreated }: { campaignId
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="card modal adventure" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Aventura rápida">
+      <div className="card modal adventure" onClick={(e) => e.stopPropagation()} role="dialog" aria-label={tr('Aventura rápida')}>
         <div className="row spread">
-          <h2>✨ Aventura rápida</h2>
-          <button className="ghost small" onClick={onClose} title="Cerrar">
+          <h2>{tr('✨ Aventura rápida')}</h2>
+          <button className="ghost small" onClick={onClose} title={tr('Cerrar')}>
             ✕
           </button>
         </div>
-        <p className="muted">Crea una escena nueva lista para jugar: el mapa amueblado, una nota en cada sala con lo que hay, encuentros escondidos, trampas y un tesoro al final. Luego puedes retocarlo todo.</p>
+        <p className="muted">{tr('Crea una escena nueva lista para jugar: el mapa amueblado, una nota en cada sala con lo que hay, encuentros escondidos, trampas y un tesoro al final. Luego puedes retocarlo todo.')}</p>
         <label>
-          Nombre
+          {tr('Nombre')}
           <input value={name} maxLength={80} placeholder={DEFAULT_NAMES[style]} onChange={(e) => setName(e.target.value)} />
         </label>
-        <div className="map-group">Lugar</div>
+        <div className="map-group">{tr('Lugar')}</div>
         {[false, true].map((outdoor) => (
-          <div key={String(outdoor)} className="row wrap" role="group" aria-label={outdoor ? 'Exteriores' : 'Interiores'}>
+          <div key={String(outdoor)} className="row wrap" role="group" aria-label={outdoor ? tr('Exteriores') : tr('Interiores')}>
             {MAP_STYLES.filter((st) => !!MAP_STYLE_DEFS[st].outdoor === outdoor).map((st) => (
               <button key={st} className={`small ${style === st ? 'active' : ''}`} title={MAP_STYLE_DEFS[st].description} onClick={() => setStyle(st)}>
                 {MAP_STYLE_DEFS[st].icon} {MAP_STYLE_DEFS[st].name}
@@ -106,7 +107,7 @@ export function AdventureWindow({ campaignId, onClose, onCreated }: { campaignId
         ))}
         <div className="field-row">
           <label>
-            Tamaño de la escena
+            {tr('Tamaño de la escena')}
             <select value={size} onChange={(e) => setSize(e.target.value as AdventureSize)}>
               {ADVENTURE_SIZES.map((s) => (
                 <option key={s} value={s}>
@@ -116,7 +117,7 @@ export function AdventureWindow({ campaignId, onClose, onCreated }: { campaignId
             </select>
           </label>
           <label>
-            {MAP_STYLE_DEFS[style].outdoor && style !== 'village' ? 'Espesura' : 'Salas'}
+            {MAP_STYLE_DEFS[style].outdoor && style !== 'village' ? tr('Espesura') : tr('Salas')}
             <select value={rooms} onChange={(e) => setRooms(e.target.value as MapSize)}>
               {MAP_SIZES.map((s) => (
                 <option key={s} value={s}>
@@ -128,7 +129,7 @@ export function AdventureWindow({ campaignId, onClose, onCreated }: { campaignId
         </div>
         <PartyLine party={party} />
         <label>
-          Dificultad de los encuentros (el último, uno más)
+          {tr('Dificultad de los encuentros (el último, uno más)')}
           <select value={difficulty} onChange={(e) => setDifficulty(e.target.value as AdventureDifficulty)}>
             {ADVENTURE_DIFFICULTIES.map((d) => (
               <option key={d} value={d}>
@@ -139,25 +140,25 @@ export function AdventureWindow({ campaignId, onClose, onCreated }: { campaignId
         </label>
         <label className="switch">
           <input type="checkbox" checked={encounters} onChange={(e) => setEncounters(e.target.checked)} />
-          Encuentros (monstruos del compendio con su hoja y su IA)
+          {tr('Encuentros (monstruos del compendio con su hoja y su IA)')}
         </label>
         {encounters && (
           <label className="switch">
             <input type="checkbox" checked={ambush} onChange={(e) => setAmbush(e.target.checked)} />
-            Que aparezcan solos cuando un jugador entre en su sala
+            {tr('Que aparezcan solos cuando un jugador entre en su sala')}
           </label>
         )}
         <label className="switch">
           <input type="checkbox" checked={traps} onChange={(e) => setTraps(e.target.checked)} />
-          Trampas (con salvación y daño según el nivel)
+          {tr('Trampas (con salvación y daño según el nivel)')}
         </label>
         {error && <p className="notice-line">{error}</p>}
         <div className="row">
           <button className="primary" disabled={busy} onClick={() => void create()}>
-            {busy ? 'Creando…' : '✨ Crear aventura'}
+            {busy ? tr('Creando…') : tr('✨ Crear aventura')}
           </button>
           <button className="ghost" onClick={onClose}>
-            Cancelar
+            {tr('Cancelar')}
           </button>
         </div>
       </div>

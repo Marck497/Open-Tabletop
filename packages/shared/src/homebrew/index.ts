@@ -12,15 +12,16 @@ import {
 import { allFields, createResolver, type SheetRow, type SheetTemplate, type SheetValues } from '../schemas/sheet.js';
 import type { SrdItem, SrdSpell } from '../srd/types.js';
 import { actionsOf, saveOptions, type SheetActions } from '../systems/actions.js';
+import { tr } from '../i18n/index.js';
 
 /** Valores de una creación nueva: los hechizos ya traen el ataque y la CD de conjuro de la plantilla. */
 export function blankHomebrew(kind: HomebrewKind, template?: SheetTemplate | null): HomebrewData {
   const a = template ? actionsOf(template) : null;
   const ref = (v: string | undefined) => (v ? (/^[a-z_][a-z0-9_]*$/i.test(v) ? `@{${v}}` : v) : '');
   const base = homebrewDataSchema.parse({});
-  if (kind === 'spell') return { ...base, level: 1, attackBonus: ref(a?.spellAttack), saveDc: ref(a?.spellDc), castTime: '1 acción', duration: 'Instantánea' };
+  if (kind === 'spell') return { ...base, level: 1, attackBonus: ref(a?.spellAttack), saveDc: ref(a?.spellDc), castTime: tr('1 acción'), duration: tr('Instantánea') };
   if (kind === 'attack') return { ...base, attack: 'melee', damage: [{ dice: '1d6', type: '' }] };
-  return { ...base, level: 0, category: 'objeto maravilloso' };
+  return { ...base, level: 0, category: tr('objeto maravilloso') };
 }
 
 const isNumber = (v: string) => /^[+-]?\d+(\.\d+)?$/.test(v.trim());
@@ -82,7 +83,7 @@ export function rollHomebrew(d: HomebrewData, opts: { resolve: (name: string) =>
     const r = evaluate(expression, { resolve, rng });
     const d20 = r.rolls.find((x) => x.sides === 20);
     const natural = d20 ? (d20.results[d20.kept[0] ?? 0] ?? null) : null;
-    attack = { label: ATTACK_KIND_LABELS[d.attack], expression: `1d20 + ${d.attackBonus}`, total: Math.round(r.value), rolls: r.rolls, natural, crit: natural !== null && natural >= d.critFrom };
+    attack = { label: tr(ATTACK_KIND_LABELS[d.attack]), expression: `1d20 + ${d.attackBonus}`, total: Math.round(r.value), rolls: r.rolls, natural, crit: natural !== null && natural >= d.critFrom };
   }
   const crit = !!attack?.crit;
   const rollPart = (expression: string, label: string, double: boolean): ChatRollPart => {
@@ -103,7 +104,7 @@ export function rollHomebrew(d: HomebrewData, opts: { resolve: (name: string) =>
   d.damage.forEach((p, i) => {
     if (!p.dice.trim()) return;
     const expression = i === 0 ? upcastExpression(p.dice, d.upcast, steps) : p.dice;
-    const part = rollPart(expression, `Daño${p.type ? ` de ${p.type}` : ''}${crit ? ' ×2 dados' : ''}`, crit);
+    const part = rollPart(expression, tr('Daño{0}{1}', { '0': p.type ? tr(' de {type}', { type: p.type }) : '', '1': crit ? tr(' ×2 dados') : '' }), crit);
     parts.push(part);
     damage += part.total;
     damageParts.push({ type: p.type, amount: part.total });
@@ -112,7 +113,7 @@ export function rollHomebrew(d: HomebrewData, opts: { resolve: (name: string) =>
   let heal = 0;
   if (d.heal.trim()) {
     const hasDamage = d.damage.some((p) => p.dice.trim());
-    const part = rollPart(hasDamage ? d.heal : upcastExpression(d.heal, d.upcast, steps), 'Curación', false);
+    const part = rollPart(hasDamage ? d.heal : upcastExpression(d.heal, d.upcast, steps), tr('Curación'), false);
     parts.push(part);
     heal = part.total;
   }
@@ -135,7 +136,7 @@ export function rowFor(template: SheetTemplate, list: string, set: Record<string
 const damageText = (d: HomebrewData) => {
   const p = d.damage.find((x) => x.dice.trim());
   if (p) return `${p.dice} ${p.type}`.trim();
-  return d.heal.trim() ? `${d.heal} curación` : '';
+  return d.heal.trim() ? tr('{heal} curación', { heal: d.heal }) : '';
 };
 
 /**
@@ -155,7 +156,7 @@ export function homebrewRows(template: SheetTemplate, entry: Pick<HomebrewEntry,
   const wantsAttackRow = entry.kind === 'attack' || (entry.kind === 'item' && (d.attack !== 'none' || d.damage.some((p) => p.dice.trim()))) || (entry.kind === 'spell' && !a.spells);
   if (entry.kind === 'spell' && a.spells) add(a.spells.list, { [a.spells.name]: entry.name, [a.spells.level]: d.level, [a.spells.effect]: damageText(d) });
   if (wantsAttackRow && a.attacks) {
-    const bonus = d.attack !== 'none' && d.attackBonus ? signed(d.attackBonus) : d.save ? `CD ${dc} ${(save?.label ?? d.save).slice(0, 3).toUpperCase()}` : '';
+    const bonus = d.attack !== 'none' && d.attackBonus ? signed(d.attackBonus) : d.save ? tr('CD {dc} {1}', { dc, '1': (save?.label ?? d.save).slice(0, 3).toUpperCase() }) : '';
     const rest = d.damage.filter((p) => p.dice.trim()).slice(1);
     add(a.attacks.list, {
       [a.attacks.name]: entry.name,
@@ -174,18 +175,18 @@ export function homebrewRows(template: SheetTemplate, entry: Pick<HomebrewEntry,
 export function homebrewSummary(entry: Pick<HomebrewEntry, 'kind' | 'data'>, opts: { saveLabel?: string; statusLabel?: (id: string) => string; unit?: string } = {}): string {
   const d = entry.data;
   const parts: string[] = [];
-  if (entry.kind === 'spell') parts.push(d.level ? `Nivel ${d.level}${d.school ? ` de ${d.school.toLowerCase()}` : ''}` : `Truco${d.school ? ` de ${d.school.toLowerCase()}` : ''}`);
-  if (entry.kind === 'item') parts.push([d.category, d.rarity].filter(Boolean).join(', ') || 'Objeto');
-  if (d.attack !== 'none') parts.push(`${ATTACK_KIND_LABELS[d.attack]} ${d.attackBonus ? signed(d.attackBonus) : ''}`.trim());
-  if (d.save) parts.push(`Salvación de ${opts.saveLabel ?? d.save} CD ${d.saveDc || '?'}${d.saveHalf && d.damage.length ? ' (mitad)' : ''}`);
+  if (entry.kind === 'spell') parts.push(d.level ? tr('Nivel {level}{1}', { level: d.level, '1': d.school ? tr(' de {0}', { '0': d.school.toLowerCase() }) : '' }) : tr('Truco{0}', { '0': d.school ? tr(' de {0}', { '0': d.school.toLowerCase() }) : '' }));
+  if (entry.kind === 'item') parts.push([d.category, d.rarity].filter(Boolean).join(', ') || tr('Objeto'));
+  if (d.attack !== 'none') parts.push(`${tr(ATTACK_KIND_LABELS[d.attack])} ${d.attackBonus ? signed(d.attackBonus) : ''}`.trim());
+  if (d.save) parts.push(tr('Salvación de {0} CD {1}{2}', { '0': opts.saveLabel ?? d.save, '1': d.saveDc || '?', '2': d.saveHalf && d.damage.length ? tr(' (mitad)') : '' }));
   const dmg = d.damage.filter((p) => p.dice.trim()).map((p) => `${p.dice} ${p.type}`.trim());
   if (dmg.length) parts.push(dmg.join(' + '));
-  if (d.heal.trim()) parts.push(`Cura ${d.heal}`);
-  if (d.upcast.trim() && entry.kind === 'spell' && d.level > 0) parts.push(`+${d.upcast} por nivel superior`);
-  if (d.area.shape !== 'none' && d.area.size > 0) parts.push(`${AREA_SHAPE_LABELS[d.area.shape].split(' (')[0]} de ${d.area.size} ${opts.unit ?? 'pies'}`);
+  if (d.heal.trim()) parts.push(tr('Cura {heal}', { heal: d.heal }));
+  if (d.upcast.trim() && entry.kind === 'spell' && d.level > 0) parts.push(tr('+{upcast} por nivel superior', { upcast: d.upcast }));
+  if (d.area.shape !== 'none' && d.area.size > 0) parts.push(tr('{0} de {size} {2}', { '0': tr(AREA_SHAPE_LABELS[d.area.shape]).split(' (')[0], size: d.area.size, '2': opts.unit ?? tr('pies') }));
   if (d.conditions.length) parts.push(d.conditions.map((c) => opts.statusLabel?.(c) ?? c).join(', '));
-  if (d.concentration) parts.push('concentración');
-  if (d.uses > 0) parts.push(`${d.uses} uso${d.uses > 1 ? 's' : ''}${d.recharge ? ` (descanso ${d.recharge})` : ''}`);
+  if (d.concentration) parts.push(tr('concentración'));
+  if (d.uses > 0) parts.push(tr('{uses} uso{1}{2}', { uses: d.uses, '1': d.uses > 1 ? 's' : '', '2': d.recharge ? tr(' (descanso {recharge})', { recharge: d.recharge }) : '' }));
   if (d.consumable) parts.push('consumible');
   return parts.join(' · ');
 }
@@ -260,7 +261,7 @@ export function homebrewFromSrdItem(it: SrdItem, template?: SheetTemplate | null
   const keys = new Set(template ? allFields(template).map((f) => f.key) : []);
   const ability = w ? (w.finesse ? 'max(@{fue_mod}, @{des_mod})' : w.ranged ? '@{des_mod}' : '@{fue_mod}') : '';
   const known = keys.has('competencia') && keys.has('fue_mod') && keys.has('des_mod');
-  const extra = w ? [w.twoHanded ? `${w.twoHanded} a dos manos` : '', w.range ? `alcance ${w.range} pies` : '', ...w.props].filter(Boolean).join(', ') : '';
+  const extra = w ? [w.twoHanded ? tr('{twoHanded} a dos manos', { twoHanded: w.twoHanded }) : '', w.range ? tr('alcance {range} pies', { range: w.range }) : '', ...w.props].filter(Boolean).join(', ') : '';
   return {
     kind: 'item',
     name: it.name,
@@ -276,7 +277,7 @@ export function homebrewFromSrdItem(it: SrdItem, template?: SheetTemplate | null
       // Bono a mano: depende de la Fuerza o la Destreza de quien la lleve.
       attackBonus: w ? (known ? `@{competencia} + ${ability}` : '+0') : '',
       damage: w ? [{ dice: known ? `${w.damage} + ${ability}` : w.damage, type: w.type }] : [],
-      range: w?.range ? `${w.range} pies` : '',
+      range: w?.range ? tr('{range} pies', { range: w.range }) : '',
     },
   };
 }

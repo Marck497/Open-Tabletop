@@ -93,3 +93,24 @@ export const TRAITS_ES = {
 };
 const COLORS = { Black: 'negro', Blue: 'azul', Brass: 'latón', Bronze: 'bronce', Copper: 'cobre', Gold: 'oro', Green: 'verde', Red: 'rojo', Silver: 'plata', White: 'blanco' };
 for (const [en, es] of Object.entries(COLORS)) TRAITS_ES[`Draconic Ancestry (${en})`] = `Linaje dracónico (${es})`;
+
+// Rarezas, categorías de objetos, elecciones de equipo, competencias y tipos de armadura.
+export const RARITY = { Common: 'común', Uncommon: 'poco común', Rare: 'rara', 'Very Rare': 'muy rara', Legendary: 'legendaria', Artifact: 'artefacto', Varies: 'variable' };
+export const ITEM_CAT = {
+  weapon: 'arma', armor: 'armadura', 'adventuring-gear': 'equipo', tools: 'herramienta', 'mounts-and-vehicles': 'montura o vehículo',
+  'wondrous-items': 'objeto maravilloso', potion: 'poción', ring: 'anillo', wand: 'varita', staff: 'bastón', scroll: 'pergamino', rod: 'cetro', ammunition: 'munición',
+};
+export const CATEGORY_ES = {
+  'simple-weapons': 'un arma sencilla', 'simple-melee-weapons': 'un arma sencilla cuerpo a cuerpo', 'martial-weapons': 'un arma marcial',
+  'martial-melee-weapons': 'un arma marcial cuerpo a cuerpo', 'holy-symbols': 'un símbolo sagrado', 'druidic-foci': 'un canalizador druídico',
+  'arcane-foci': 'un canalizador arcano', 'musical-instruments': 'un instrumento musical',
+};
+export const PROF_ES = {
+  'All armor': 'Todas las armaduras', 'Light Armor': 'Armaduras ligeras', 'Medium Armor': 'Armaduras intermedias', Shields: 'Escudos',
+  'Simple Weapons': 'Armas sencillas', 'Martial Weapons': 'Armas marciales', Clubs: 'Garrotes', 'Crossbows, light': 'Ballestas ligeras', Daggers: 'Dagas',
+  Darts: 'Dardos', 'Hand crossbows': 'Ballestas de mano', 'Herbalism Kit': 'Útiles de herborista', Javelins: 'Jabalinas', Longswords: 'Espadas largas',
+  Maces: 'Mazas', Quarterstaffs: 'Bastones', Rapiers: 'Estoques', Scimitars: 'Cimitarras', Shortswords: 'Espadas cortas', Sickles: 'Hoces', Slings: 'Hondas',
+  Spears: 'Lanzas', "Thieves' Tools": 'Herramientas de ladrón', Battleaxes: 'Hachas de guerra', Handaxes: 'Hachas de mano', 'Light hammers': 'Martillos ligeros',
+  Warhammers: 'Martillos de guerra', Shortbows: 'Arcos cortos', Longbows: 'Arcos largos', "Tinker's Tools": 'Herramientas de hojalatero',
+};
+export const ARMOR_KIND = { Light: 'ligera', Medium: 'intermedia', Heavy: 'pesada', Shield: 'escudo' };
